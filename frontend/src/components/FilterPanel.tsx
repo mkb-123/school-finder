@@ -1,18 +1,50 @@
-import { useState } from "react";
 import SendToggle from "./SendToggle";
 
-export default function FilterPanel() {
-  const [age, setAge] = useState("");
-  const [gender, setGender] = useState("");
-  const [schoolType, setSchoolType] = useState("");
-  const [minRating, setMinRating] = useState("");
-  const [maxDistance, setMaxDistance] = useState("");
-  const [hasBreakfastClub, setHasBreakfastClub] = useState(false);
-  const [hasAfterSchoolClub, setHasAfterSchoolClub] = useState(false);
+export interface Filters {
+  age: string;
+  gender: string;
+  schoolType: string;
+  minRating: string;
+  maxDistance: string;
+  hasBreakfastClub: boolean;
+  hasAfterSchoolClub: boolean;
+}
+
+export const DEFAULT_FILTERS: Filters = {
+  age: "",
+  gender: "",
+  schoolType: "",
+  minRating: "",
+  maxDistance: "",
+  hasBreakfastClub: false,
+  hasAfterSchoolClub: false,
+};
+
+interface FilterPanelProps {
+  filters: Filters;
+  onChange: (filters: Filters) => void;
+  schoolCount?: number;
+}
+
+export default function FilterPanel({
+  filters,
+  onChange,
+  schoolCount,
+}: FilterPanelProps) {
+  function set<K extends keyof Filters>(key: K, value: Filters[K]) {
+    onChange({ ...filters, [key]: value });
+  }
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+        {schoolCount !== undefined && (
+          <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+            {schoolCount} schools
+          </span>
+        )}
+      </div>
       <p className="mt-1 text-xs text-gray-500">
         Set constraints to narrow your results.
       </p>
@@ -28,25 +60,16 @@ export default function FilterPanel() {
           </label>
           <select
             id="filter-age"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
+            value={filters.age}
+            onChange={(e) => set("age", e.target.value)}
             className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">Any</option>
-            <option value="4">4 (Reception)</option>
-            <option value="5">5 (Year 1)</option>
-            <option value="6">6 (Year 2)</option>
-            <option value="7">7 (Year 3)</option>
-            <option value="8">8 (Year 4)</option>
-            <option value="9">9 (Year 5)</option>
-            <option value="10">10 (Year 6)</option>
-            <option value="11">11 (Year 7)</option>
-            <option value="12">12 (Year 8)</option>
-            <option value="13">13 (Year 9)</option>
-            <option value="14">14 (Year 10)</option>
-            <option value="15">15 (Year 11)</option>
-            <option value="16">16 (Year 12)</option>
-            <option value="17">17 (Year 13)</option>
+            {Array.from({ length: 14 }, (_, i) => i + 4).map((a) => (
+              <option key={a} value={String(a)}>
+                {a} (Year {a <= 5 ? "R" : a - 5})
+              </option>
+            ))}
           </select>
         </div>
 
@@ -60,8 +83,8 @@ export default function FilterPanel() {
           </label>
           <select
             id="filter-gender"
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
+            value={filters.gender}
+            onChange={(e) => set("gender", e.target.value)}
             className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">Any</option>
@@ -80,15 +103,13 @@ export default function FilterPanel() {
           </label>
           <select
             id="filter-type"
-            value={schoolType}
-            onChange={(e) => setSchoolType(e.target.value)}
+            value={filters.schoolType}
+            onChange={(e) => set("schoolType", e.target.value)}
             className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">Any</option>
             <option value="state">State</option>
-            <option value="academy">Academy</option>
-            <option value="free">Free School</option>
-            <option value="faith">Faith School</option>
+            <option value="private">Private</option>
           </select>
         </div>
 
@@ -102,14 +123,14 @@ export default function FilterPanel() {
           </label>
           <select
             id="filter-rating"
-            value={minRating}
-            onChange={(e) => setMinRating(e.target.value)}
+            value={filters.minRating}
+            onChange={(e) => set("minRating", e.target.value)}
             className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">Any</option>
-            <option value="outstanding">Outstanding</option>
-            <option value="good">Good</option>
-            <option value="requires_improvement">Requires Improvement</option>
+            <option value="Outstanding">Outstanding only</option>
+            <option value="Good">Good or better</option>
+            <option value="Requires improvement">Requires Improvement+</option>
           </select>
         </div>
 
@@ -119,14 +140,16 @@ export default function FilterPanel() {
             htmlFor="filter-distance"
             className="block text-sm font-medium text-gray-700"
           >
-            Max Distance (miles)
+            Max Distance (km)
           </label>
           <input
             id="filter-distance"
             type="number"
             placeholder="e.g. 3"
-            value={maxDistance}
-            onChange={(e) => setMaxDistance(e.target.value)}
+            min="0"
+            step="0.5"
+            value={filters.maxDistance}
+            onChange={(e) => set("maxDistance", e.target.value)}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
@@ -137,8 +160,8 @@ export default function FilterPanel() {
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input
               type="checkbox"
-              checked={hasBreakfastClub}
-              onChange={(e) => setHasBreakfastClub(e.target.checked)}
+              checked={filters.hasBreakfastClub}
+              onChange={(e) => set("hasBreakfastClub", e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-blue-600"
             />
             Has breakfast club
@@ -146,12 +169,39 @@ export default function FilterPanel() {
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input
               type="checkbox"
-              checked={hasAfterSchoolClub}
-              onChange={(e) => setHasAfterSchoolClub(e.target.checked)}
+              checked={filters.hasAfterSchoolClub}
+              onChange={(e) => set("hasAfterSchoolClub", e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-blue-600"
             />
             Has after-school club
           </label>
+        </div>
+
+        {/* Map legend */}
+        <div className="border-t border-gray-200 pt-4">
+          <p className="text-sm font-medium text-gray-700">Ofsted Colours</p>
+          <div className="mt-2 space-y-1 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-3 w-3 rounded-full bg-green-600" />
+              Outstanding
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-3 w-3 rounded-full bg-blue-600" />
+              Good
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-3 w-3 rounded-full bg-amber-500" />
+              Requires Improvement
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-3 w-3 rounded-full bg-red-600" />
+              Inadequate
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-3 w-3 rounded-full bg-gray-500" />
+              Not rated
+            </div>
+          </div>
         </div>
 
         {/* SEND toggle */}

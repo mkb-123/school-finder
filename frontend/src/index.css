@@ -1,9 +1,32 @@
+@import "leaflet/dist/leaflet.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Leaflet container needs an explicit height */
 .leaflet-container {
   width: 100%;
   height: 100%;
+}
+
+/* Ofsted-coloured circle markers */
+.school-marker-outstanding {
+  background-color: #16a34a;
+  border: 2px solid #15803d;
+}
+.school-marker-good {
+  background-color: #2563eb;
+  border: 2px solid #1d4ed8;
+}
+.school-marker-ri {
+  background-color: #d97706;
+  border: 2px solid #b45309;
+}
+.school-marker-inadequate {
+  background-color: #dc2626;
+  border: 2px solid #b91c1c;
+}
+.school-marker-default {
+  background-color: #6b7280;
+  border: 2px solid #4b5563;
 }
