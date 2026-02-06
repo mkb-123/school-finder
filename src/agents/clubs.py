@@ -266,6 +266,22 @@ class ClubsAgent(BaseAgent):
         records:
             Parsed club dicts as returned by :meth:`_parse_clubs`.
         """
+        from datetime import time as time_obj
+
+        def parse_time(time_str: str | None) -> time_obj | None:
+            """Convert time string like '10:30' to datetime.time object."""
+            if not time_str:
+                return None
+            try:
+                parts = time_str.split(":")
+                if len(parts) >= 2:
+                    hour = int(parts[0])
+                    minute = int(parts[1])
+                    return time_obj(hour, minute)
+            except (ValueError, AttributeError):
+                pass
+            return None
+
         settings = get_settings()
         engine = create_engine(f"sqlite:///{settings.SQLITE_PATH}")
 
@@ -277,8 +293,8 @@ class ClubsAgent(BaseAgent):
                     name=str(record.get("name", "")),
                     description=record.get("description"),
                     days_available=record.get("days_available"),
-                    start_time=record.get("start_time"),
-                    end_time=record.get("end_time"),
+                    start_time=parse_time(record.get("start_time")),  # Convert string to time
+                    end_time=parse_time(record.get("end_time")),      # Convert string to time
                     cost_per_session=record.get("cost_per_session"),
                 )
                 session.add(club)
