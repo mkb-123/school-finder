@@ -1542,8 +1542,20 @@ def _generate_test_ofsted_history(schools: list[School], session: Session) -> in
         # Delete existing history for this school
         session.query(OfstedHistory).filter_by(school_id=school.id).delete()
 
-        # Use current Ofsted rating or default to "Good"
-        current_rating = school.ofsted_rating if school.ofsted_rating in ratings else "Good"
+        # Use current Ofsted rating or generate realistic distribution
+        # UK distribution: ~20% Outstanding, ~60% Good, ~15% Requires Improvement, ~5% Inadequate
+        if school.ofsted_rating and school.ofsted_rating in ratings:
+            current_rating = school.ofsted_rating
+        else:
+            rand = random.random()
+            if rand < 0.20:
+                current_rating = "Outstanding"
+            elif rand < 0.80:
+                current_rating = "Good"
+            elif rand < 0.95:
+                current_rating = "Requires Improvement"
+            else:
+                current_rating = "Inadequate"
         current_date = school.ofsted_date or date(2023, 3, 15)
         current_idx = ratings.index(current_rating)
 
@@ -1570,6 +1582,10 @@ def _generate_test_ofsted_history(schools: list[School], session: Session) -> in
             )
         )
         count += 1
+
+        # Update school's current Ofsted rating to match the history
+        school.ofsted_rating = current_rating
+        school.ofsted_date = current_date
 
         # Add 1-3 previous inspections
         num_previous = random.randint(1, 3)
