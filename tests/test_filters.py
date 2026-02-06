@@ -31,7 +31,7 @@ class TestFilterByCouncil:
         schools = await test_repo.find_schools_by_filters(filters)
         names = _school_names(schools)
 
-        assert len(schools) == 5
+        assert len(schools) == 8
         assert "Bedford Modern School" not in names
         assert "Broughton Fields Primary School" in names
 
@@ -60,9 +60,12 @@ class TestFilterByGender:
         schools = await test_repo.find_schools_by_filters(filters)
         names = _school_names(schools)
 
-        # Bedford Modern (boys) should be excluded; Thornton College (girls) should stay
-        assert "Bedford Modern School" not in names
-        assert "Thornton College" in names
+        # Boys-only schools excluded (both lowercase and GIAS-style capitalized)
+        assert "Bedford Modern School" not in names  # gender_policy="boys"
+        assert "MK Boys Grammar" not in names  # gender_policy="Boys"
+        # Girls-only should stay
+        assert "Thornton College" in names  # gender_policy="girls"
+        assert "MK Girls Academy" in names  # gender_policy="Girls"
 
     @pytest.mark.asyncio
     async def test_male_excludes_girls_only(self, test_repo: SQLiteSchoolRepository):
@@ -70,19 +73,23 @@ class TestFilterByGender:
         schools = await test_repo.find_schools_by_filters(filters)
         names = _school_names(schools)
 
-        # Thornton College (girls) should be excluded; Bedford Modern (boys) should stay
-        assert "Thornton College" not in names
-        assert "Bedford Modern School" in names
+        # Girls-only schools excluded (both lowercase and GIAS-style capitalized)
+        assert "Thornton College" not in names  # gender_policy="girls"
+        assert "MK Girls Academy" not in names  # gender_policy="Girls"
+        # Boys-only should stay
+        assert "Bedford Modern School" in names  # gender_policy="boys"
+        assert "MK Boys Grammar" in names  # gender_policy="Boys"
 
     @pytest.mark.asyncio
     async def test_coed_schools_always_included(self, test_repo: SQLiteSchoolRepository):
-        """Co-ed schools must appear regardless of gender filter."""
+        """Co-ed schools must appear regardless of gender filter, whether stored as 'co-ed' or 'Mixed'."""
         for gender in ("male", "female"):
             filters = SchoolFilters(gender=gender)
             schools = await test_repo.find_schools_by_filters(filters)
             names = _school_names(schools)
-            assert "Broughton Fields Primary School" in names
-            assert "Walton High School" in names
+            assert "Broughton Fields Primary School" in names  # gender_policy="co-ed"
+            assert "Walton High School" in names  # gender_policy="co-ed"
+            assert "Shenley Brook End School" in names  # gender_policy="Mixed" (GIAS style)
 
 
 class TestFilterByAge:
@@ -94,11 +101,12 @@ class TestFilterByAge:
         schools = await test_repo.find_schools_by_filters(filters)
         names = _school_names(schools)
 
-        # Primary/prep schools: Broughton (4-11), MK Prep (2-11), St Thomas (4-11), Thornton (3-18)
-        assert "Broughton Fields Primary School" in names
-        assert "Milton Keynes Preparatory School" in names
-        assert "St Thomas Aquinas Catholic Primary School" in names
-        assert "Thornton College" in names
+        # Primary/prep schools that accept 5-year-olds
+        assert "Broughton Fields Primary School" in names  # 4-11
+        assert "Milton Keynes Preparatory School" in names  # 2-11
+        assert "St Thomas Aquinas Catholic Primary School" in names  # 4-11
+        assert "Thornton College" in names  # 3-18
+        assert "Shenley Brook End School" in names  # 4-11
 
     @pytest.mark.asyncio
     async def test_age_5_excludes_secondary(self, test_repo: SQLiteSchoolRepository):
@@ -106,9 +114,11 @@ class TestFilterByAge:
         schools = await test_repo.find_schools_by_filters(filters)
         names = _school_names(schools)
 
-        # Walton High (11-18) and Bedford Modern (7-18) don't accept 5-year-olds
-        assert "Walton High School" not in names
-        assert "Bedford Modern School" not in names
+        # Secondary-only schools don't accept 5-year-olds
+        assert "Walton High School" not in names  # 11-18
+        assert "Bedford Modern School" not in names  # 7-18
+        assert "MK Boys Grammar" not in names  # 11-18
+        assert "MK Girls Academy" not in names  # 11-18
 
     @pytest.mark.asyncio
     async def test_age_14_includes_secondary(self, test_repo: SQLiteSchoolRepository):
@@ -116,10 +126,12 @@ class TestFilterByAge:
         schools = await test_repo.find_schools_by_filters(filters)
         names = _school_names(schools)
 
-        # Secondary schools: Walton (11-18), Thornton (3-18), Bedford (7-18)
+        # Secondary schools: Walton (11-18), Thornton (3-18), Bedford (7-18), MK Boys (11-18), MK Girls (11-18)
         assert "Walton High School" in names
         assert "Thornton College" in names
         assert "Bedford Modern School" in names
+        assert "MK Boys Grammar" in names
+        assert "MK Girls Academy" in names
 
     @pytest.mark.asyncio
     async def test_age_14_excludes_primary_only(self, test_repo: SQLiteSchoolRepository):
@@ -131,6 +143,7 @@ class TestFilterByAge:
         assert "Broughton Fields Primary School" not in names
         assert "Milton Keynes Preparatory School" not in names
         assert "St Thomas Aquinas Catholic Primary School" not in names
+        assert "Shenley Brook End School" not in names
 
 
 class TestFilterByMinRating:
@@ -142,8 +155,8 @@ class TestFilterByMinRating:
         schools = await test_repo.find_schools_by_filters(filters)
         names = _school_names(schools)
 
-        # Only Outstanding: Broughton Fields, Thornton College
-        assert names == {"Broughton Fields Primary School", "Thornton College"}
+        # Only Outstanding: Broughton Fields, Thornton College, MK Boys Grammar
+        assert names == {"Broughton Fields Primary School", "Thornton College", "MK Boys Grammar"}
 
     @pytest.mark.asyncio
     async def test_good_or_better(self, test_repo: SQLiteSchoolRepository):
@@ -151,12 +164,15 @@ class TestFilterByMinRating:
         schools = await test_repo.find_schools_by_filters(filters)
         names = _school_names(schools)
 
-        # Outstanding + Good: Broughton, Thornton, Walton, MK Prep, Bedford Modern
+        # Outstanding + Good schools
         assert "Broughton Fields Primary School" in names
         assert "Thornton College" in names
         assert "Walton High School" in names
         assert "Milton Keynes Preparatory School" in names
         assert "Bedford Modern School" in names
+        assert "Shenley Brook End School" in names
+        assert "MK Boys Grammar" in names
+        assert "MK Girls Academy" in names
         # Requires Improvement is excluded
         assert "St Thomas Aquinas Catholic Primary School" not in names
 
@@ -166,7 +182,7 @@ class TestFilterByMinRating:
         schools = await test_repo.find_schools_by_filters(filters)
 
         # All schools except Inadequate (none in test data are Inadequate)
-        assert len(schools) == 6
+        assert len(schools) == 9
 
 
 class TestFilterByPrivate:
@@ -188,7 +204,7 @@ class TestFilterByPrivate:
 
         assert "Milton Keynes Preparatory School" not in names
         assert "Thornton College" not in names
-        assert len(schools) == 4
+        assert len(schools) == 7
 
 
 # ---------------------------------------------------------------------------
@@ -211,8 +227,11 @@ class TestCombinedFilters:
         assert "Milton Keynes Preparatory School" in names
         assert "St Thomas Aquinas Catholic Primary School" in names
         assert "Thornton College" in names
-        # Walton High (11-18) excluded by age
+        assert "Shenley Brook End School" in names
+        # Secondary schools excluded by age
         assert "Walton High School" not in names
+        assert "MK Boys Grammar" not in names
+        assert "MK Girls Academy" not in names
         # Bedford excluded by council
         assert "Bedford Modern School" not in names
 
@@ -234,14 +253,14 @@ class TestCombinedFilters:
         schools = await test_repo.find_schools_by_filters(filters)
         names = _school_names(schools)
 
-        assert names == {"Broughton Fields Primary School", "Thornton College"}
+        assert names == {"Broughton Fields Primary School", "Thornton College", "MK Boys Grammar"}
 
     @pytest.mark.asyncio
     async def test_no_filters_returns_all(self, test_repo: SQLiteSchoolRepository):
         """Passing no filter criteria should return every school in the database."""
         filters = SchoolFilters()
         schools = await test_repo.find_schools_by_filters(filters)
-        assert len(schools) == 6
+        assert len(schools) == 9
 
 
 # ---------------------------------------------------------------------------

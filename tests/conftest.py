@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from src.db.base import SchoolRepository
 from src.db.factory import get_school_repository
-from src.db.models import Base, School, SchoolClub
+from src.db.models import AdmissionsHistory, Base, School, SchoolClub, SchoolPerformance, SchoolTermDate
 from src.db.sqlite_repo import SQLiteSchoolRepository
 from src.main import app
 
@@ -132,6 +132,63 @@ def _create_test_schools() -> list[School]:
             ofsted_date=datetime.date(2023, 9, 12),
             is_private=False,
         ),
+        # School 7: uses GIAS-style "Mixed" gender_policy (not "co-ed")
+        School(
+            id=7,
+            name="Shenley Brook End School",
+            urn="110007",
+            type="state",
+            council="Milton Keynes",
+            address="Shenley Brook End, Milton Keynes",
+            postcode="MK5 7ZT",
+            lat=52.007,
+            lng=-0.805,
+            catchment_radius_km=2.0,
+            gender_policy="Mixed",
+            age_range_from=4,
+            age_range_to=11,
+            ofsted_rating="Good",
+            ofsted_date=datetime.date(2023, 7, 10),
+            is_private=False,
+        ),
+        # School 8: uses GIAS-style "Boys" (capital B)
+        School(
+            id=8,
+            name="MK Boys Grammar",
+            urn="110008",
+            type="state",
+            council="Milton Keynes",
+            address="Central Milton Keynes",
+            postcode="MK9 1AB",
+            lat=52.043,
+            lng=-0.759,
+            catchment_radius_km=3.0,
+            gender_policy="Boys",
+            age_range_from=11,
+            age_range_to=18,
+            ofsted_rating="Outstanding",
+            ofsted_date=datetime.date(2023, 5, 1),
+            is_private=False,
+        ),
+        # School 9: uses GIAS-style "Girls" (capital G)
+        School(
+            id=9,
+            name="MK Girls Academy",
+            urn="110009",
+            type="state",
+            council="Milton Keynes",
+            address="Bletchley, Milton Keynes",
+            postcode="MK2 2RL",
+            lat=51.998,
+            lng=-0.728,
+            catchment_radius_km=2.5,
+            gender_policy="Girls",
+            age_range_from=11,
+            age_range_to=18,
+            ofsted_rating="Good",
+            ofsted_date=datetime.date(2024, 2, 15),
+            is_private=False,
+        ),
     ]
 
 
@@ -168,6 +225,68 @@ def _create_test_clubs() -> list[SchoolClub]:
             end_time=datetime.time(16, 30),
             cost_per_session=0.0,
         ),
+        SchoolClub(
+            id=4,
+            school_id=7,
+            club_type="breakfast",
+            name="Morning Start Club",
+            days_available="Mon,Tue,Wed,Thu,Fri",
+            start_time=datetime.time(7, 45),
+            end_time=datetime.time(8, 45),
+            cost_per_session=3.50,
+        ),
+    ]
+
+
+def _create_test_performance() -> list[SchoolPerformance]:
+    """Return performance records for integration testing."""
+    return [
+        SchoolPerformance(id=1, school_id=1, metric_type="SATs", metric_value="112", year=2024, source_url=None),
+        SchoolPerformance(id=2, school_id=1, metric_type="SATs", metric_value="108", year=2023, source_url=None),
+        SchoolPerformance(id=3, school_id=2, metric_type="GCSE", metric_value="65%", year=2024, source_url=None),
+        SchoolPerformance(id=4, school_id=7, metric_type="SATs", metric_value="105", year=2024, source_url=None),
+    ]
+
+
+def _create_test_term_dates() -> list[SchoolTermDate]:
+    """Return term date records for integration testing."""
+    return [
+        SchoolTermDate(
+            id=1, school_id=1, academic_year="2024/2025", term_name="Autumn 1",
+            start_date=datetime.date(2024, 9, 4), end_date=datetime.date(2024, 10, 25),
+            half_term_start=datetime.date(2024, 10, 28), half_term_end=datetime.date(2024, 11, 1),
+        ),
+        SchoolTermDate(
+            id=2, school_id=1, academic_year="2024/2025", term_name="Spring 1",
+            start_date=datetime.date(2025, 1, 6), end_date=datetime.date(2025, 2, 14),
+        ),
+        SchoolTermDate(
+            id=3, school_id=7, academic_year="2024/2025", term_name="Autumn 1",
+            start_date=datetime.date(2024, 9, 5), end_date=datetime.date(2024, 10, 24),
+        ),
+    ]
+
+
+def _create_test_admissions() -> list[AdmissionsHistory]:
+    """Return admissions history records for integration testing."""
+    return [
+        AdmissionsHistory(
+            id=1, school_id=1, academic_year="2023/2024",
+            places_offered=60, applications_received=85,
+            last_distance_offered_km=1.8, waiting_list_offers=5,
+            appeals_heard=3, appeals_upheld=1,
+        ),
+        AdmissionsHistory(
+            id=2, school_id=1, academic_year="2022/2023",
+            places_offered=60, applications_received=78,
+            last_distance_offered_km=2.1, waiting_list_offers=3,
+            appeals_heard=2, appeals_upheld=0,
+        ),
+        AdmissionsHistory(
+            id=3, school_id=7, academic_year="2023/2024",
+            places_offered=45, applications_received=52,
+            last_distance_offered_km=1.5, waiting_list_offers=2,
+        ),
     ]
 
 
@@ -186,6 +305,9 @@ def db_path(tmp_path) -> str:
     with Session(sync_engine) as session:
         session.add_all(_create_test_schools())
         session.add_all(_create_test_clubs())
+        session.add_all(_create_test_performance())
+        session.add_all(_create_test_term_dates())
+        session.add_all(_create_test_admissions())
         session.commit()
 
     sync_engine.dispose()

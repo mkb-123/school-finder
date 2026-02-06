@@ -50,7 +50,7 @@ class TestSchoolsListEndpoint:
         response = test_client.get("/api/schools", params={"council": "Milton Keynes"})
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 5
+        assert len(data) == 8
         assert all(s["council"] == "Milton Keynes" for s in data)
 
     def test_filter_by_council_no_results(self, test_client: TestClient):
