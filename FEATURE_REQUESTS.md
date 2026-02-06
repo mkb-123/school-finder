@@ -46,6 +46,23 @@ Show the full Ofsted rating history for each school, not just the current rating
 
 Display a short, at-a-glance summary of each school's ethos on the school card and detail page — pulled from the school's own website or prospectus (e.g., "Nurturing creativity and independence", "Traditional values with high academic expectations", "Inclusive, play-based learning"). Helps parents quickly get a feel for the school's culture without clicking through to a full prospectus.
 
+## Additional Decision Support Weighting Sliders
+
+_Extends existing Feature 10 (Decision Support Page) which has weighted scoring for distance, rating, clubs, and fees._
+
+Add the following weighting sliders so parents can fine-tune how schools are ranked on the decision support page:
+
+- **Ofsted trajectory** — weight improving schools higher than stable ones at the same current rating
+- **Attendance rate** — school culture and engagement signal
+- **Class size** — trade-off between smaller classes (more attention) and larger school resources
+- **Parking/drop-off ease** — daily quality-of-life factor based on chaos rating data
+- **Holiday club on-site** — critical for working parents without nearby family support
+- **Uniform affordability** — for budget-conscious families comparing total costs
+- **Demographic diversity** — for parents who value a mixed school environment
+- **Sibling priority strength** — weight schools where younger children are more likely to follow
+- **School run ease** — combines journey time, walking safety, and transport options into one slider
+- **Homework intensity** — toggle between preferring more structured homework or a lighter approach
+
 ## School Demographics
 
 Show the demographic profile of each school using published DfE school census data. Include ethnic diversity breakdown, percentage of pupils with English as an additional language (EAL), percentage eligible for free school meals (a proxy for socioeconomic mix), and percentage with SEND support. Present this clearly and without judgement — some parents actively seek diverse, mixed environments while others want to understand the community their child will be part of. Allow comparison across shortlisted schools so parents can see how demographics differ between nearby options.
