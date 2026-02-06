@@ -31,6 +31,7 @@ export interface School {
   ofsted_date: string | null;
   is_private: boolean;
   catchment_radius_km: number;
+  website: string | null;
   prospectus_url: string | null;
   ethos: string | null;
 }

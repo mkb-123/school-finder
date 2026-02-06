@@ -158,6 +158,7 @@ class SchoolResponse(BaseModel):
     ofsted_date: datetime.date | None = None
     is_private: bool = False
     catchment_radius_km: float | None = None
+    website: str | None = None
     prospectus_url: str | None = None
     ethos: str | None = None
 

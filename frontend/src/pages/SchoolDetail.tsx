@@ -8,8 +8,6 @@ import type {
   AdmissionsEstimate,
 } from "../components/WaitingListGauge";
 import SendToggle, { useSendEnabled, SendInfoPanel } from "../components/SendToggle";
-import ParkingRatingDisplay from "../components/ParkingRatingDisplay";
-import ParkingRatingForm from "../components/ParkingRatingForm";
 import { OfstedTrajectory } from "../components/OfstedTrajectory";
 
 interface Club {
@@ -104,7 +102,6 @@ const TABS = [
   "Term Dates",
   "Admissions",
   "Class Sizes",
-  "Parking",
 ] as const;
 type Tab = (typeof TABS)[number];
 
@@ -670,6 +667,33 @@ export default function SchoolDetail() {
       >
         {activeTab === "Overview" && (
           <div className="space-y-6">
+            {/* School Website */}
+            {school.website && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">School Website</p>
+                      <p className="text-xs text-gray-600">Visit the official school website</p>
+                    </div>
+                  </div>
+                  <a
+                    href={school.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    Visit Website
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 1 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            )}
             {/* Prospectus Link */}
             {school.prospectus_url && (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
@@ -892,25 +916,6 @@ export default function SchoolDetail() {
 
         {activeTab === "Class Sizes" && (
           <ClassSizesTab classSizes={school.class_sizes ?? []} />
-        )}
-
-        {activeTab === "Parking" && (
-          <div className="space-y-6">
-            <ParkingRatingDisplay summary={school.parking_summary} />
-
-            <div className="rounded-lg border border-gray-200 bg-white p-6">
-              <h3 className="mb-4 text-lg font-semibold text-gray-900">
-                Submit Your Rating
-              </h3>
-              <ParkingRatingForm
-                schoolId={school.id}
-                onSubmitSuccess={() => {
-                  // Reload school data after successful submission
-                  window.location.reload();
-                }}
-              />
-            </div>
-          </div>
         )}
       </div>
     </main>
