@@ -142,7 +142,7 @@ class BaseAgent(ABC):
 
             except (httpx.TransportError, httpx.HTTPStatusError) as exc:
                 last_exc = exc
-                backoff = _BACKOFF_BASE ** attempt
+                backoff = _BACKOFF_BASE**attempt
                 self._logger.warning(
                     "Request to %s failed (attempt %d/%d): %s – retrying in %.1fs",
                     url,

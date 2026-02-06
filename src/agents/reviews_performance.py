@@ -35,9 +35,7 @@ _OFSTED_MI_CSV_URL = (
     "https://www.gov.uk/government/statistical-data-sets/"
     "monthly-management-information-ofsteds-school-inspections-outcomes"
 )
-_DFE_PERFORMANCE_CSV_URL = (
-    "https://www.compare-school-performance.service.gov.uk/download-data"
-)
+_DFE_PERFORMANCE_CSV_URL = "https://www.compare-school-performance.service.gov.uk/download-data"
 
 
 class ReviewsPerformanceAgent(BaseAgent):
