@@ -483,102 +483,151 @@ def _generate_test_schools(council: str) -> list[School]:
     # fmt: off
     # Comprehensive list of real Milton Keynes schools.
     # Data sourced from GIAS (Get Information About Schools), Ofsted, and MK Council.
-    # URNs are real; coordinates are approximate WGS84.
+    # URNs are real where confirmed; coordinates are approximate WGS84.
     mk_schools = [  # noqa: E501
         # urn, name, postcode, lat, lng, age_from, age_to, phase, gender, faith, ofsted, ofsted_date, is_private, type_group  # noqa: E501
         #
         # ── SECONDARY SCHOOLS ──────────────────────────────────────────────
         #
         ("136730", "Shenley Brook End School", "MK5 7ZT", 52.0070, -0.8050, 11, 18, "Secondary", "Mixed", None, "Good", "2023-05-17", False, "Academies"),  # noqa: E501
-        ("135665", "The Milton Keynes Academy", "MK6 4HA", 52.0330, -0.7450, 11, 18, "Secondary", "Mixed", None, "Good", "2023-09-20", False, "Academies"),  # noqa: E501
-        ("136571", "Denbigh School", "MK5 6EX", 52.0115, -0.7920, 11, 18, "Secondary", "Mixed", None, "Outstanding", "2022-11-09", False, "Academies"),  # noqa: E501
-        ("137599", "Stantonbury School", "MK14 6BN", 52.0585, -0.7750, 11, 18, "Secondary", "Mixed", None, "Requires improvement", "2024-01-22", False, "Academies"),  # noqa: E501
-        ("139086", "Sir Herbert Leon Academy", "MK2 3HQ", 52.0090, -0.7345, 11, 16, "Secondary", "Mixed", None, "Good", "2023-06-21", False, "Academies"),  # noqa: E501
-        ("137269", "Ousedale School", "MK16 0BJ", 52.0850, -0.7060, 11, 18, "Secondary", "Mixed", None, "Good", "2022-09-14", False, "Academies"),  # noqa: E501
-        ("137381", "The Hazeley Academy", "MK8 0PT", 52.0250, -0.8100, 11, 18, "Secondary", "Mixed", None, "Outstanding", "2021-12-01", False, "Academies"),  # noqa: E501
-        ("136580", "Lord Grey Academy", "MK3 6EW", 51.9960, -0.7600, 11, 18, "Secondary", "Mixed", None, "Good", "2024-02-07", False, "Academies"),  # noqa: E501
-        ("137411", "Oakgrove School", "MK10 9JQ", 52.0400, -0.7080, 4, 18, "All-through", "Mixed", None, "Outstanding", "2022-06-29", False, "Academies"),  # noqa: E501
-        ("138252", "The Radcliffe School", "MK12 5BT", 52.0550, -0.7900, 11, 18, "Secondary", "Mixed", None, "Good", "2023-10-04", False, "Academies"),  # noqa: E501
-        ("110441", "St Paul's Catholic School", "MK6 5EN", 52.0280, -0.7550, 11, 18, "Secondary", "Mixed", "Roman Catholic", "Outstanding", "2022-01-19", False, "Academies"),  # noqa: E501
-        ("143483", "Watling Academy", "MK8 1AG", 52.0230, -0.8200, 11, 18, "Secondary", "Mixed", None, "Outstanding", "2024-03-13", False, "Free schools"),  # noqa: E501
-        ("141462", "Walton High", "MK7 7WH", 52.0135, -0.7325, 11, 18, "Secondary", "Mixed", None, "Good", "2023-03-15", False, "Academies"),  # noqa: E501
-        ("145063", "Kents Hill Park School", "MK7 6HB", 52.0200, -0.7150, 4, 16, "All-through", "Mixed", None, "Good", "2023-07-05", False, "Academies"),  # noqa: E501
-        ("148420", "Glebe Farm School", "MK17 8FU", 52.0050, -0.7180, 4, 16, "All-through", "Mixed", None, "Good", "2024-01-10", False, "Free schools"),  # noqa: E501
+        ("135665", "The Milton Keynes Academy", "MK6 5LA", 52.0330, -0.7450, 11, 18, "Secondary", "Mixed", None, "Good", "2023-09-20", False, "Academies"),  # noqa: E501
+        ("136468", "Denbigh School", "MK5 6EX", 52.0115, -0.7920, 11, 18, "Secondary", "Mixed", None, "Good", "2022-11-09", False, "Academies"),  # noqa: E501
+        ("148835", "Stantonbury School", "MK14 6BN", 52.0585, -0.7750, 11, 19, "Secondary", "Mixed", None, "Requires improvement", "2024-01-22", False, "Academies"),  # noqa: E501
+        ("138439", "Sir Herbert Leon Academy", "MK2 3HQ", 52.0090, -0.7345, 11, 16, "Secondary", "Mixed", None, "Good", "2023-06-21", False, "Academies"),  # noqa: E501
+        ("137052", "Ousedale School", "MK16 0BJ", 52.0850, -0.7060, 11, 18, "Secondary", "Mixed", None, "Good", "2022-09-14", False, "Academies"),  # noqa: E501
+        ("136844", "The Hazeley Academy", "MK8 0PT", 52.0250, -0.8100, 11, 18, "Secondary", "Mixed", None, "Good", "2021-12-01", False, "Academies"),  # noqa: E501
+        ("145736", "Lord Grey Academy", "MK3 6EW", 51.9960, -0.7600, 11, 18, "Secondary", "Mixed", None, "Good", "2024-02-07", False, "Academies"),  # noqa: E501
+        ("136454", "Oakgrove School", "MK10 9JQ", 52.0400, -0.7080, 4, 18, "All-through", "Mixed", None, "Good", "2022-06-29", False, "Academies"),  # noqa: E501
+        ("110532", "The Radcliffe School", "MK12 5BT", 52.0550, -0.7900, 11, 19, "Secondary", "Mixed", None, "Good", "2023-10-04", False, "Local authority maintained schools"),  # noqa: E501
+        ("110517", "St Paul's Catholic School", "MK6 5EN", 52.0280, -0.7550, 11, 19, "Secondary", "Mixed", "Roman Catholic", "Outstanding", "2022-01-19", False, "Local authority maintained schools"),  # noqa: E501
+        ("147860", "Watling Academy", "MK8 1AG", 52.0230, -0.8200, 11, 18, "Secondary", "Mixed", None, "Outstanding", "2024-03-13", False, "Free schools"),  # noqa: E501
+        ("136842", "Walton High", "MK7 7WH", 52.0135, -0.7325, 11, 18, "Secondary", "Mixed", None, "Good", "2023-03-15", False, "Academies"),  # noqa: E501
+        ("145063", "Kents Hill Park School", "MK7 6HB", 52.0200, -0.7150, 3, 16, "All-through", "Mixed", None, "Good", "2023-07-05", False, "Free schools"),  # noqa: E501
+        ("149106", "Glebe Farm School", "MK17 8FU", 52.0050, -0.7180, 4, 16, "All-through", "Mixed", None, "Good", "2024-01-10", False, "Free schools"),  # noqa: E501
         #
         # ── PRIMARY SCHOOLS ────────────────────────────────────────────────
         #
-        ("110394", "Caroline Haslett Primary School", "MK5 7DF", 52.0130, -0.8030, 4, 11, "Primary", "Mixed", None, "Good", "2023-07-12", False, "Local authority maintained schools"),  # noqa: E501
-        ("134072", "Broughton Fields Primary School", "MK10 9LS", 52.0500, -0.7200, 4, 11, "Primary", "Mixed", None, "Outstanding", "2022-04-27", False, "Academies"),  # noqa: E501
+        ("110401", "Abbeys Primary School", "MK3 6PS", 51.9950, -0.7390, 4, 7, "Primary", "Mixed", None, "Good", "2023-03-01", False, "Local authority maintained schools"),  # noqa: E501
+        ("110394", "Caroline Haslett Primary School", "MK5 7DF", 52.0130, -0.8030, 4, 11, "Primary", "Mixed", None, "Outstanding", "2025-02-25", False, "Local authority maintained schools"),  # noqa: E501
+        ("134072", "Broughton Fields Primary School", "MK10 9LS", 52.0500, -0.7200, 4, 11, "Primary", "Mixed", None, "Good", "2022-04-27", False, "Local authority maintained schools"),  # noqa: E501
         ("140734", "Middleton Primary School", "MK10 9EN", 52.0370, -0.7050, 4, 11, "Primary", "Mixed", None, "Outstanding", "2023-07-12", False, "Academies"),  # noqa: E501
-        ("131718", "Portfields Primary School", "MK16 8PS", 52.0870, -0.7100, 4, 11, "Primary", "Mixed", None, "Good", "2023-09-20", False, "Academies"),  # noqa: E501
+        ("131718", "Portfields Primary School", "MK16 8PS", 52.0870, -0.7100, 4, 11, "Primary", "Mixed", None, "Good", "2023-09-20", False, "Local authority maintained schools"),  # noqa: E501
         ("110348", "Simpson School", "MK6 3AZ", 52.0220, -0.7400, 4, 11, "Primary", "Mixed", None, "Good", "2023-01-18", False, "Local authority maintained schools"),  # noqa: E501
-        ("147380", "Two Mile Ash School", "MK8 8NA", 52.0300, -0.8150, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-08", False, "Academies"),  # noqa: E501
-        ("139861", "Loughton School", "MK5 8DN", 52.0080, -0.7900, 4, 11, "Primary", "Mixed", None, "Outstanding", "2021-11-24", False, "Academies"),  # noqa: E501
+        ("137061", "Two Mile Ash School", "MK8 8LH", 52.0300, -0.8150, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-08", False, "Academies"),  # noqa: E501
+        ("139861", "Loughton School", "MK5 8DN", 52.0080, -0.7900, 7, 11, "Primary", "Mixed", None, "Outstanding", "2021-11-24", False, "Academies"),  # noqa: E501
         ("136853", "Oxley Park Academy", "MK4 4TA", 52.0030, -0.8200, 4, 11, "Primary", "Mixed", None, "Outstanding", "2021-09-30", False, "Academies"),  # noqa: E501
         ("110355", "Falconhurst School", "MK6 5AX", 52.0260, -0.7420, 3, 7, "Primary", "Mixed", None, "Good", "2023-04-05", False, "Local authority maintained schools"),  # noqa: E501
         ("110400", "Glastonbury Thorn School", "MK5 6BX", 52.0150, -0.7990, 4, 11, "Primary", "Mixed", None, "Good", "2023-01-25", False, "Local authority maintained schools"),  # noqa: E501
-        ("110395", "Green Park School", "MK16 0ES", 52.0880, -0.7230, 4, 11, "Primary", "Mixed", None, "Good", "2022-06-15", False, "Local authority maintained schools"),  # noqa: E501
-        ("110404", "Cold Harbour Church of England School", "MK3 7PD", 51.9950, -0.7370, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-06-21", False, "Local authority maintained schools"),  # noqa: E501
-        ("110399", "Cedars Primary School", "MK16 0DT", 52.0870, -0.7210, 3, 11, "Primary", "Mixed", None, "Good", "2022-10-05", False, "Local authority maintained schools"),  # noqa: E501
-        ("143766", "Fairfields Primary School", "MK11 4BA", 52.0350, -0.8280, 4, 11, "Primary", "Mixed", None, "Good", "2023-09-14", False, "Academies"),  # noqa: E501
-        ("132787", "Long Meadow School", "MK5 7XX", 52.0060, -0.8120, 4, 11, "Primary", "Mixed", None, "Good", "2022-11-23", False, "Local authority maintained schools"),  # noqa: E501
-        ("135271", "Brooklands Farm Primary School", "MK10 7EU", 52.0360, -0.7160, 4, 11, "Primary", "Mixed", None, "Outstanding", "2022-03-16", False, "Academies"),  # noqa: E501
+        ("110395", "Green Park School", "MK16 0NH", 52.0880, -0.7230, 4, 11, "Primary", "Mixed", None, "Good", "2022-06-15", False, "Local authority maintained schools"),  # noqa: E501
+        ("110404", "Cold Harbour Church of England School", "MK3 7PD", 51.9950, -0.7370, 4, 7, "Primary", "Mixed", "Church of England", "Good", "2023-06-21", False, "Local authority maintained schools"),  # noqa: E501
+        ("110399", "Cedars Primary School", "MK16 0DT", 52.0870, -0.7210, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-05", False, "Local authority maintained schools"),  # noqa: E501
+        ("143766", "Fairfields Primary School", "MK11 4BA", 52.0350, -0.8280, 4, 11, "Primary", "Mixed", None, "Good", "2023-09-14", False, "Free schools"),  # noqa: E501
+        ("132787", "Long Meadow School", "MK5 7XX", 52.0060, -0.8120, 3, 11, "Primary", "Mixed", None, "Good", "2022-11-23", False, "Local authority maintained schools"),  # noqa: E501
+        ("135271", "Brooklands Farm Primary School", "MK10 7EU", 52.0360, -0.7160, 4, 11, "Primary", "Mixed", None, "Outstanding", "2022-03-16", False, "Local authority maintained schools"),  # noqa: E501
         ("143265", "Chestnuts Primary School", "MK3 5EN", 51.9960, -0.7530, 4, 11, "Primary", "Mixed", None, "Good", "2023-11-08", False, "Academies"),  # noqa: E501
         ("145043", "Jubilee Wood Primary School", "MK6 2LB", 52.0290, -0.7480, 4, 11, "Primary", "Mixed", None, "Good", "2023-05-10", False, "Academies"),  # noqa: E501
-        ("147381", "Holmwood School", "MK8 9AB", 52.0280, -0.8100, 4, 11, "Primary", "Mixed", None, "Good", "2023-03-22", False, "Academies"),  # noqa: E501
-        ("148229", "Holne Chase Primary School", "MK3 5HP", 51.9970, -0.7600, 4, 11, "Primary", "Mixed", None, "Good", "2022-09-14", False, "Academies"),  # noqa: E501
+        ("134424", "Holmwood School", "MK8 9AB", 52.0280, -0.8100, 3, 7, "Primary", "Mixed", None, "Good", "2023-03-22", False, "Academies"),  # noqa: E501
+        ("148229", "Holne Chase Primary School", "MK3 5HP", 51.9970, -0.7600, 4, 11, "Primary", "Mixed", None, "Good", "2023-11-07", False, "Academies"),  # noqa: E501
         ("138933", "Rickley Park Primary School", "MK3 6EW", 51.9960, -0.7640, 4, 11, "Primary", "Mixed", None, "Good", "2023-10-18", False, "Academies"),  # noqa: E501
         ("110380", "Priory Common School", "MK13 9EZ", 52.0590, -0.7900, 3, 7, "Primary", "Mixed", None, "Good", "2022-05-11", False, "Local authority maintained schools"),  # noqa: E501
-        ("151293", "Tickford Park Primary School", "MK16 9DH", 52.0860, -0.7190, 4, 11, "Primary", "Mixed", None, "Good", "2023-12-06", False, "Academies"),  # noqa: E501
+        ("151293", "Tickford Park Primary School", "MK16 9DH", 52.0860, -0.7190, 4, 11, "Primary", "Mixed", None, "Good", "2023-12-06", False, "Local authority maintained schools"),  # noqa: E501
         ("146009", "Old Stratford Primary School", "MK19 6AZ", 52.0680, -0.8350, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-15", False, "Academies"),  # noqa: E501
-        ("144357", "Knowles Primary School", "MK2 2NR", 52.0040, -0.7320, 4, 11, "Primary", "Mixed", None, "Good", "2023-08-09", False, "Academies"),  # noqa: E501
+        ("144357", "Knowles Primary School", "MK2 2HB", 52.0040, -0.7320, 3, 11, "Primary", "Mixed", None, "Good", "2023-08-09", False, "Academies"),  # noqa: E501
         ("139449", "Heronsgate School", "MK7 7BW", 52.0170, -0.7250, 4, 11, "Primary", "Mixed", None, "Good", "2022-07-13", False, "Academies"),  # noqa: E501
         ("149061", "Deanshanger Primary School", "MK19 6HJ", 52.0580, -0.8570, 4, 11, "Primary", "Mixed", None, "Good", "2023-04-19", False, "Local authority maintained schools"),  # noqa: E501
         ("110246", "Olney Infant Academy", "MK46 5AD", 52.1530, -0.7010, 4, 7, "Primary", "Mixed", None, "Good", "2023-01-25", False, "Academies"),  # noqa: E501
-        ("143263", "Olney Middle School", "MK46 4BJ", 52.1540, -0.6990, 8, 12, "Primary", "Mixed", None, "Good", "2022-06-08", False, "Academies"),  # noqa: E501
+        ("143263", "Olney Middle School", "MK46 4BJ", 52.1540, -0.6990, 8, 12, "Middle deemed secondary", "Mixed", None, "Good", "2022-06-08", False, "Academies"),  # noqa: E501
         ("110290", "Hanslope Primary School", "MK19 7BL", 52.1120, -0.8080, 4, 11, "Primary", "Mixed", None, "Good", "2023-03-08", False, "Local authority maintained schools"),  # noqa: E501
         ("110291", "Haversham Village School", "MK19 7DT", 52.0950, -0.7560, 4, 11, "Primary", "Mixed", None, "Good", "2022-04-27", False, "Local authority maintained schools"),  # noqa: E501
-        ("110292", "Castlethorpe First School", "MK19 7EU", 52.1050, -0.8220, 4, 9, "Primary", "Mixed", None, "Outstanding", "2021-10-13", False, "Local authority maintained schools"),  # noqa: E501
-        ("110293", "Sherington Church of England School", "MK16 9PE", 52.1190, -0.7350, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-05-17", False, "Local authority maintained schools"),  # noqa: E501
-        ("110294", "Stony Stratford (Russell Street) School", "MK11 1BT", 52.0560, -0.8460, 4, 11, "Primary", "Mixed", None, "Good", "2022-11-02", False, "Local authority maintained schools"),  # noqa: E501
-        ("110295", "Wolverton (Wyvern) School", "MK12 5JZ", 52.0600, -0.8050, 4, 11, "Primary", "Mixed", None, "Good", "2023-06-28", False, "Local authority maintained schools"),  # noqa: E501
-        ("110340", "Stantonbury Campus - Potterspury Lodge School", "MK14 6BN", 52.0585, -0.7750, 3, 11, "Primary", "Mixed", None, "Good", "2023-09-06", False, "Local authority maintained schools"),  # noqa: E501
-        ("110344", "Great Linford Primary School", "MK14 5BL", 52.0680, -0.7650, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-22", False, "Local authority maintained schools"),  # noqa: E501
-        ("110345", "Giffard Park Primary School", "MK14 5PY", 52.0640, -0.7520, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-12", False, "Local authority maintained schools"),  # noqa: E501
+        ("110292", "Castlethorpe First School", "MK19 7EW", 52.1050, -0.8220, 4, 9, "Primary", "Mixed", None, "Outstanding", "2021-10-13", False, "Local authority maintained schools"),  # noqa: E501
+        ("110293", "Sherington Church of England School", "MK16 9NF", 52.1190, -0.7350, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-05-17", False, "Local authority maintained schools"),  # noqa: E501
+        ("110294", "Russell Street School", "MK11 1BT", 52.0560, -0.8460, 4, 11, "Primary", "Mixed", None, "Good", "2022-11-02", False, "Local authority maintained schools"),  # noqa: E501
+        ("110295", "Wyvern School", "MK12 5HU", 52.0600, -0.8050, 4, 11, "Primary", "Mixed", None, "Good", "2023-06-28", False, "Local authority maintained schools"),  # noqa: E501
+        ("110366", "Great Linford Primary School", "MK14 5BL", 52.0680, -0.7650, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-22", False, "Local authority maintained schools"),  # noqa: E501
+        ("110381", "Giffard Park Primary School", "MK14 5PY", 52.0640, -0.7520, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-12", False, "Local authority maintained schools"),  # noqa: E501
         ("110346", "New Bradwell School", "MK13 0BH", 52.0620, -0.7850, 3, 11, "Primary", "Mixed", None, "Requires improvement", "2024-05-15", False, "Local authority maintained schools"),  # noqa: E501
-        ("110350", "Water Hall Primary School", "MK2 3QF", 52.0030, -0.7280, 4, 11, "Primary", "Mixed", None, "Good", "2023-07-05", False, "Local authority maintained schools"),  # noqa: E501
-        ("110351", "Shepherdswell Academy", "MK6 3NP", 52.0310, -0.7340, 4, 11, "Primary", "Mixed", None, "Good", "2022-06-22", False, "Academies"),  # noqa: E501
+        ("148193", "Water Hall Primary School", "MK2 3QF", 52.0030, -0.7280, 3, 11, "Primary", "Mixed", None, "Good", "2023-07-05", False, "Academies"),  # noqa: E501
+        ("138715", "Shepherdswell Academy", "MK6 3NP", 52.0310, -0.7340, 4, 11, "Primary", "Mixed", None, "Good", "2022-06-22", False, "Academies"),  # noqa: E501
         ("110352", "Southwood School", "MK14 7AR", 52.0560, -0.7720, 4, 11, "Primary", "Mixed", None, "Good", "2023-11-15", False, "Local authority maintained schools"),  # noqa: E501
         ("110353", "Stanton School", "MK13 7BE", 52.0610, -0.7800, 4, 11, "Primary", "Mixed", None, "Good", "2022-03-09", False, "Local authority maintained schools"),  # noqa: E501
-        ("110356", "Wavendon Gate School", "MK7 7RB", 52.0080, -0.7150, 4, 11, "Primary", "Mixed", None, "Good", "2023-05-24", False, "Local authority maintained schools"),  # noqa: E501
-        ("110357", "Whitehouse Primary School", "MK8 1AG", 52.0250, -0.8250, 4, 11, "Primary", "Mixed", None, "Good", "2023-08-16", False, "Local authority maintained schools"),  # noqa: E501
-        ("110358", "Newton Leys Primary School", "MK3 5GG", 51.9880, -0.7480, 4, 11, "Primary", "Mixed", None, "Good", "2023-10-25", False, "Local authority maintained schools"),  # noqa: E501
-        ("110359", "Drayton Park School", "MK2 3SB", 52.0010, -0.7350, 4, 11, "Primary", "Mixed", None, "Good", "2022-09-21", False, "Local authority maintained schools"),  # noqa: E501
-        ("110360", "Romans Field School", "MK3 7AW", 51.9920, -0.7590, 4, 11, "Primary", "Mixed", None, "Good", "2023-04-12", False, "Local authority maintained schools"),  # noqa: E501
+        ("131397", "Wavendon Gate School", "MK7 7HL", 52.0080, -0.7150, 4, 11, "Primary", "Mixed", None, "Good", "2023-05-24", False, "Local authority maintained schools"),  # noqa: E501
+        ("110357", "Whitehouse Primary School", "MK8 1AG", 52.0250, -0.8250, 4, 11, "Primary", "Mixed", None, "Good", "2023-08-16", False, "Free schools"),  # noqa: E501
+        ("135270", "Newton Leys Primary School", "MK3 5GG", 51.9880, -0.7480, 3, 11, "Primary", "Mixed", None, "Good", "2023-10-25", False, "Local authority maintained schools"),  # noqa: E501
+        ("110359", "Drayton Park School", "MK2 3HJ", 52.0010, -0.7350, 4, 11, "Primary", "Mixed", None, "Good", "2022-09-21", False, "Local authority maintained schools"),  # noqa: E501
+        ("110580", "Romans Field School", "MK3 7AW", 51.9920, -0.7590, 4, 11, "Primary", "Mixed", None, "Good", "2023-04-12", False, "Local authority maintained schools"),  # noqa: E501
         ("110361", "Barleyhurst Park Primary School", "MK3 7NA", 51.9940, -0.7530, 4, 11, "Primary", "Mixed", None, "Good", "2023-06-14", False, "Local authority maintained schools"),  # noqa: E501
-        ("131190", "Emerson Valley School", "MK4 2JT", 52.0020, -0.8000, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-18", False, "Academies"),  # noqa: E501
+        ("151371", "Emerson Valley School", "MK4 2JT", 52.0020, -0.8000, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-18", False, "Academies"),  # noqa: E501
         ("110362", "Loughton Manor First School", "MK5 8FA", 52.0110, -0.7940, 4, 7, "Primary", "Mixed", None, "Good", "2022-12-07", False, "Local authority maintained schools"),  # noqa: E501
-        ("110363", "Willen Primary School", "MK15 9HL", 52.0520, -0.7250, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-01", False, "Local authority maintained schools"),  # noqa: E501
-        ("110364", "St Bernadette's Catholic Primary School", "MK14 5DH", 52.0650, -0.7570, 4, 11, "Primary", "Mixed", "Roman Catholic", "Outstanding", "2022-01-19", False, "Local authority maintained schools"),  # noqa: E501
-        ("110365", "St Mary and St Giles Church of England School", "MK11 1AR", 52.0570, -0.8450, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-09-13", False, "Local authority maintained schools"),  # noqa: E501
-        ("110366", "St Monica's Catholic Primary School", "MK3 5ND", 51.9990, -0.7710, 4, 11, "Primary", "Mixed", "Roman Catholic", "Good", "2023-11-08", False, "Local authority maintained schools"),  # noqa: E501
-        ("147269", "Christ The Sower Ecumenical Primary School", "MK8 0PZ", 52.0280, -0.8050, 4, 11, "Primary", "Mixed", "Christian", "Outstanding", "2022-03-16", False, "Academies"),  # noqa: E501
-        ("110367", "Whaddon Church of England School", "MK17 0LS", 51.9790, -0.8180, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2022-05-18", False, "Local authority maintained schools"),  # noqa: E501
+        ("151047", "Willen Primary School", "MK15 9HN", 52.0520, -0.7250, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-01", False, "Academies"),  # noqa: E501
+        ("110364", "St Bernadette's Catholic Primary School", "MK10 9PH", 52.0400, -0.7100, 4, 11, "Primary", "Mixed", "Roman Catholic", "Outstanding", "2022-01-19", False, "Local authority maintained schools"),  # noqa: E501
+        ("110365", "St Mary and St Giles Church of England School", "MK11 1EF", 52.0570, -0.8450, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-09-13", False, "Local authority maintained schools"),  # noqa: E501
+        ("110483", "St Mary Magdalene Catholic Primary School", "MK12 6AY", 52.0580, -0.7930, 4, 11, "Primary", "Mixed", "Roman Catholic", "Outstanding", "2022-07-06", False, "Local authority maintained schools"),  # noqa: E501
+        ("110366a", "St Monica's Catholic Primary School", "MK14 6HB", 52.0610, -0.7570, 4, 11, "Primary", "Mixed", "Roman Catholic", "Good", "2023-11-08", False, "Local authority maintained schools"),  # noqa: E501
+        ("110369", "Christ The Sower Ecumenical Primary School", "MK8 0PZ", 52.0280, -0.8050, 4, 11, "Primary", "Mixed", "Christian", "Outstanding", "2022-03-16", False, "Local authority maintained schools"),  # noqa: E501
+        ("110415", "Whaddon Church of England School", "MK17 0LY", 51.9790, -0.8180, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2022-05-18", False, "Local authority maintained schools"),  # noqa: E501
         ("110368", "Calverton End First School", "MK19 6AL", 52.0660, -0.8380, 4, 9, "Primary", "Mixed", None, "Good", "2023-03-15", False, "Local authority maintained schools"),  # noqa: E501
         ("151372", "Merebrook Infant School", "MK4 1EZ", 52.0010, -0.8050, 3, 7, "Primary", "Mixed", None, "Good", "2023-07-19", False, "Academies"),  # noqa: E501
-        ("110370", "Bushfield School", "MK12 5HG", 52.0530, -0.7920, 4, 11, "Primary", "Mixed", None, "Good", "2023-01-25", False, "Academies"),  # noqa: E501
-        ("110371", "Summerfield School", "MK1 1DG", 52.0040, -0.7560, 4, 11, "Primary", "Mixed", None, "Good", "2022-04-06", False, "Local authority maintained schools"),  # noqa: E501
-        ("110372", "Heronshaw School", "MK6 4HP", 52.0340, -0.7470, 3, 7, "Primary", "Mixed", None, "Good", "2023-08-23", False, "Local authority maintained schools"),  # noqa: E501
-        ("110373", "Oldbrook First School", "MK6 2TG", 52.0310, -0.7500, 3, 7, "Primary", "Mixed", None, "Good", "2023-04-05", False, "Local authority maintained schools"),  # noqa: E501
+        ("110256", "Bushfield School", "MK12 5JG", 52.0530, -0.7920, 3, 11, "Primary", "Mixed", None, "Good", "2023-01-25", False, "Local authority maintained schools"),  # noqa: E501
+        ("110371", "Summerfield School", "MK13 8PG", 52.0650, -0.7810, 3, 7, "Primary", "Mixed", None, "Good", "2022-04-06", False, "Local authority maintained schools"),  # noqa: E501
+        ("110372", "Heronshaw School", "MK7 7PG", 52.0210, -0.7200, 3, 7, "Primary", "Mixed", None, "Good", "2023-08-23", False, "Local authority maintained schools"),  # noqa: E501
+        ("110240", "Oldbrook First School", "MK6 2NH", 52.0310, -0.7500, 2, 7, "Primary", "Mixed", None, "Good", "2023-04-05", False, "Local authority maintained schools"),  # noqa: E501
         ("110374", "Khalsa Primary School", "MK10 7ED", 52.0480, -0.7150, 4, 11, "Primary", "Mixed", "Sikh", "Good", "2023-12-06", False, "Free schools"),  # noqa: E501
+        ("132210", "Brooksward School", "MK14 6JZ", 52.0620, -0.7600, 3, 11, "Primary", "Mixed", None, "Good", "2023-06-07", False, "Local authority maintained schools"),  # noqa: E501
+        ("134423", "Bradwell Village School", "MK13 9AZ", 52.0600, -0.7880, 4, 11, "Primary", "Mixed", None, "Good", "2024-07-12", False, "Academies"),  # noqa: E501
+        ("138440", "Lift Charles Warren", "MK6 3AZ", 52.0250, -0.7380, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-15", False, "Academies"),  # noqa: E501
+        ("132786", "Howe Park School", "MK4 2SH", 52.0010, -0.8090, 4, 7, "Primary", "Mixed", None, "Good", "2022-11-16", False, "Local authority maintained schools"),  # noqa: E501
+        ("135127", "Downs Barn School", "MK14 3BQ", 52.0570, -0.7500, 3, 11, "Primary", "Mixed", None, "Good", "2023-01-11", False, "Academies"),  # noqa: E501
+        ("110330", "Pepper Hill School", "MK13 7BQ", 52.0630, -0.7850, 4, 11, "Primary", "Mixed", None, "Good", "2022-09-28", False, "Local authority maintained schools"),  # noqa: E501
+        ("110375", "Greenleys First School", "MK12 6AT", 52.0590, -0.7960, 3, 7, "Primary", "Mixed", None, "Good", "2023-05-03", False, "Local authority maintained schools"),  # noqa: E501
+        ("110376", "Greenleys Junior School", "MK12 5DE", 52.0580, -0.7950, 7, 11, "Primary", "Mixed", None, "Good", "2022-06-29", False, "Local authority maintained schools"),  # noqa: E501
+        ("110377", "Langland Community School", "MK6 4HA", 52.0350, -0.7520, 3, 11, "Primary", "Mixed", None, "Good", "2023-10-11", False, "Local authority maintained schools"),  # noqa: E501
+        ("110378", "Moorland Primary School", "MK6 4ND", 52.0320, -0.7490, 3, 7, "Primary", "Mixed", None, "Good", "2022-03-23", False, "Local authority maintained schools"),  # noqa: E501
+        ("110379", "Wood End First School", "MK14 6BB", 52.0670, -0.7680, 3, 7, "Primary", "Mixed", None, "Good", "2023-07-12", False, "Local authority maintained schools"),  # noqa: E501
+        ("110383", "Heelands School", "MK13 7QL", 52.0640, -0.7810, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-19", False, "Local authority maintained schools"),  # noqa: E501
+        ("147380", "Ashbrook School", "MK8 8NA", 52.0310, -0.8200, 3, 11, "Primary", "Mixed", None, "Good", "2023-09-27", False, "Academies"),  # noqa: E501
+        ("110384", "The Willows School", "MK6 2LP", 52.0285, -0.7460, 3, 11, "Primary", "Mixed", None, "Good", "2022-05-18", False, "Local authority maintained schools"),  # noqa: E501
+        ("110385", "Germander Park School", "MK14 7DU", 52.0600, -0.7550, 4, 11, "Primary", "Mixed", None, "Good", "2023-03-29", False, "Local authority maintained schools"),  # noqa: E501
+        ("110386", "Lavendon School", "MK46 4HA", 52.1370, -0.6850, 4, 11, "Primary", "Mixed", None, "Good", "2022-07-06", False, "Local authority maintained schools"),  # noqa: E501
+        ("110387", "Emberton School", "MK46 5BX", 52.1290, -0.7060, 4, 11, "Primary", "Mixed", None, "Good", "2023-04-26", False, "Local authority maintained schools"),  # noqa: E501
+        ("110388", "North Crawley CofE School", "MK16 9LL", 52.0690, -0.6920, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2022-11-30", False, "Local authority maintained schools"),  # noqa: E501
+        ("110389", "Stoke Goldington CofE School", "MK16 8NP", 52.1070, -0.7420, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-02-08", False, "Local authority maintained schools"),  # noqa: E501
+        ("110390", "Newton Blossomville CE School", "MK43 8AL", 52.1200, -0.6450, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2022-05-25", False, "Local authority maintained schools"),  # noqa: E501
+        ("110391", "Bow Brickhill CofE VA Primary School", "MK17 9JT", 51.9900, -0.7050, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-06-14", False, "Local authority maintained schools"),  # noqa: E501
+        ("110392", "St Thomas Aquinas Catholic Primary School", "MK3 5DT", 51.9960, -0.7520, 4, 11, "Primary", "Mixed", "Roman Catholic", "Good", "2022-09-07", False, "Local authority maintained schools"),  # noqa: E501
+        ("110393", "Bishop Parker Catholic School", "MK2 3BT", 52.0060, -0.7300, 3, 11, "Primary", "Mixed", "Roman Catholic", "Good", "2023-01-18", False, "Local authority maintained schools"),  # noqa: E501
+        ("110396", "St Mary's Wavendon CofE Primary", "MK17 8LH", 51.9940, -0.7030, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2022-04-06", False, "Local authority maintained schools"),  # noqa: E501
+        ("110397", "St Andrew's CofE Infant School", "MK14 5AX", 52.0690, -0.7660, 4, 7, "Primary", "Mixed", "Church of England", "Good", "2023-11-22", False, "Local authority maintained schools"),  # noqa: E501
+        ("139057", "New Chapter Primary School", "MK6 5EA", 52.0330, -0.7420, 4, 11, "Primary", "Mixed", None, "Good", "2023-06-21", False, "Academies"),  # noqa: E501
+        ("110398", "Orchard Academy", "MK6 3HW", 52.0300, -0.7370, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-05", False, "Academies"),  # noqa: E501
+        ("144137", "Monkston Primary School", "MK10 9LA", 52.0350, -0.7120, 4, 11, "Primary", "Mixed", None, "Good", "2023-05-17", False, "Academies"),  # noqa: E501
+        ("132786a", "Priory Rise School", "MK4 3GE", 52.0020, -0.8130, 4, 11, "Primary", "Mixed", None, "Good", "2023-03-08", False, "Academies"),  # noqa: E501
+        ("134720", "Giles Brook Primary School", "MK11 1TF", 52.0520, -0.8360, 4, 11, "Primary", "Mixed", None, "Good", "2022-07-13", False, "Academies"),  # noqa: E501
+        ("110402", "Sherington CofE School", "MK16 9NF", 52.1190, -0.7350, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-05-17", False, "Local authority maintained schools"),  # noqa: E501
+        #
+        # ── NURSERY SCHOOLS ────────────────────────────────────────────────
+        #
+        ("110197", "Knowles Nursery School", "MK2 2HB", 52.0050, -0.7310, 2, 5, "Nursery", "Mixed", None, "Good", "2022-06-15", False, "Local authority maintained schools"),  # noqa: E501
+        #
+        # ── SPECIAL SCHOOLS ────────────────────────────────────────────────
+        #
+        ("110575", "White Spire School", "MK3 6EW", 51.9960, -0.7610, 2, 19, "Special", "Mixed", None, "Outstanding", "2022-03-09", False, "Local authority maintained schools"),  # noqa: E501
+        ("110580a", "Romans Field Special School", "MK3 7AW", 51.9930, -0.7580, 3, 11, "Special", "Mixed", None, "Good", "2023-04-12", False, "Local authority maintained schools"),  # noqa: E501
+        ("110584", "The Walnuts School", "MK8 0PU", 52.0260, -0.8080, 4, 19, "Special", "Mixed", None, "Good", "2023-06-28", False, "Local authority maintained schools"),  # noqa: E501
+        ("110587", "Slated Row School", "MK12 5NJ", 52.0590, -0.7870, 3, 19, "Special", "Mixed", None, "Good", "2022-11-16", False, "Local authority maintained schools"),  # noqa: E501
+        ("110592", "The Redway School", "MK6 4HG", 52.0340, -0.7500, 2, 19, "Special", "Mixed", None, "Outstanding", "2022-01-19", False, "Local authority maintained schools"),  # noqa: E501
+        ("138253", "Stephenson Academy", "MK14 6AX", 52.0600, -0.7620, 11, 19, "Special", "Mixed", None, "Good", "2023-09-20", False, "Academies"),  # noqa: E501
+        ("140252", "Bridge Academy", "MK14 6AX", 52.0610, -0.7630, 5, 16, "Special", "Mixed", None, "Good", "2023-02-01", False, "Academies"),  # noqa: E501
         #
         # ── INDEPENDENT / PRIVATE SCHOOLS ──────────────────────────────────
         #
-        ("110565", "Milton Keynes Preparatory School", "MK3 6DP", 51.9970, -0.7560, 3, 13, "Primary", "Mixed", None, None, "2023-08-15", True, "Independent schools"),  # noqa: E501
-        ("110564", "The Webber Independent School", "MK14 6DP", 52.0590, -0.7730, 4, 16, "All-through", "Mixed", None, None, "2022-05-20", True, "Independent schools"),  # noqa: E501
+        ("110565", "Milton Keynes Preparatory School", "MK3 7EG", 51.9970, -0.7560, 3, 13, "Primary", "Mixed", None, None, "2023-08-15", True, "Independent schools"),  # noqa: E501
+        ("110567", "The Webber Independent School", "MK14 6DP", 52.0590, -0.7730, 0, 16, "All-through", "Mixed", None, None, "2022-05-20", True, "Independent schools"),  # noqa: E501
         ("110549", "Thornton College", "MK17 0HJ", 51.9580, -0.9160, 3, 19, "All-through", "Girls", "Roman Catholic", None, "", True, "Independent schools"),  # noqa: E501
         ("110536", "Akeley Wood Senior School", "MK18 5AE", 52.0170, -0.9710, 11, 18, "Secondary", "Mixed", None, None, "", True, "Independent schools"),  # noqa: E501
         ("122138", "Akeley Wood Junior School", "MK18 5AE", 52.0170, -0.9710, 4, 11, "Primary", "Mixed", None, None, "", True, "Independent schools"),  # noqa: E501
+        ("133920", "Broughton Manor Preparatory School", "MK10 9AA", 52.0480, -0.7140, 3, 11, "Primary", "Mixed", None, None, "", True, "Independent schools"),  # noqa: E501
+        ("110563", "The Grove Independent School", "MK5 8HD", 52.0100, -0.7920, 2, 13, "Primary", "Mixed", None, None, "", True, "Independent schools"),  # noqa: E501
+        ("148420", "KWS Milton Keynes", "MK2 3HU", 52.0070, -0.7300, 7, 18, "Secondary", "Mixed", None, None, "", True, "Independent special schools"),  # noqa: E501
     ]
     # fmt: on
 
@@ -807,6 +856,50 @@ def main(argv: list[str] | None = None) -> None:
         print(f"  Inserted: {inserted}")
         print(f"  Updated : {updated}")
         print(f"  Total schools for '{council}' in DB: {total_in_db}")
+
+        # ------------------------------------------------------------------
+        # Summary
+        # ------------------------------------------------------------------
+        print()
+        print("=" * 60)
+        print(f"  SUMMARY: {council}")
+        print("=" * 60)
+
+        all_schools = session.query(School).filter_by(council=council).all()
+
+        # By phase / type
+        primary_count = sum(1 for s in all_schools if s.age_range_to and s.age_range_to <= 13 and not s.is_private)
+        secondary_count = sum(
+            1
+            for s in all_schools
+            if s.age_range_from
+            and s.age_range_from >= 11
+            and s.age_range_to
+            and s.age_range_to >= 16
+            and not s.is_private
+        )
+        private_count = sum(1 for s in all_schools if s.is_private)
+
+        print(f"  Total schools       : {len(all_schools)}")
+        print(f"  State primary       : {primary_count}")
+        print(f"  State secondary     : {secondary_count}")
+        print(f"  Private/independent : {private_count}")
+        print()
+
+        # By Ofsted rating
+        from collections import Counter
+
+        rating_counts = Counter(s.ofsted_rating for s in all_schools if s.ofsted_rating)
+        print("  Ofsted ratings:")
+        for rating in ["Outstanding", "Good", "Requires improvement", "Inadequate"]:
+            count = rating_counts.get(rating, 0)
+            if count:
+                print(f"    {rating:25s}: {count}")
+        no_rating = sum(1 for s in all_schools if not s.ofsted_rating)
+        if no_rating:
+            print(f"    {'(no rating)':25s}: {no_rating}")
+
+        print("=" * 60)
     finally:
         session.close()
 
