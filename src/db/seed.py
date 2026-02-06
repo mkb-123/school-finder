@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import random
 import sys
 from datetime import date, datetime, time
 from pathlib import Path
@@ -29,7 +30,7 @@ import polars as pl
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from src.db.models import Base, PrivateSchoolDetails, School
+from src.db.models import Base, School, SchoolClub
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -42,11 +43,6 @@ DEFAULT_DB_PATH = PROJECT_ROOT / "data" / "schools.db"
 # ---------------------------------------------------------------------------
 # GIAS download URL template
 # ---------------------------------------------------------------------------
-# The DfE publishes daily CSVs at a predictable URL.  The date component uses
-# the ``YYYYMMDD`` format.  If the URL changes, the user can download the file
-# manually from https://get-information-schools.service.gov.uk/Downloads and
-# place it in ``data/seeds/``.
-
 GIAS_CSV_URL_TEMPLATE = (
     "https://ea-edubase-api-prod.azurewebsites.net/edubase/downloads/public/edubasealldata{date}.csv"
 )
@@ -54,9 +50,6 @@ GIAS_CSV_URL_TEMPLATE = (
 # ---------------------------------------------------------------------------
 # GIAS column constants
 # ---------------------------------------------------------------------------
-# GIAS appends ``(name)`` to lookup/reference columns to distinguish the
-# human-readable value from the underlying numeric code.
-
 COL_URN = "URN"
 COL_NAME = "EstablishmentName"
 COL_TYPE = "TypeOfEstablishment (name)"
@@ -79,82 +72,49 @@ COL_OFSTED_DATE = "OfstedLastInsp"
 COL_PHASE = "PhaseOfEducation (name)"
 COL_WEBSITE = "SchoolWebsite"
 
-# Establishment type groups that indicate a private (independent) school.
 _PRIVATE_TYPE_GROUPS = frozenset({"Independent schools", "Independent special schools"})
-
-# Establishment statuses to include -- we skip closed schools.
-_OPEN_STATUSES = frozenset(
-    {
-        "Open",
-        "Open, but proposed to close",
-    }
-)
+_OPEN_STATUSES = frozenset({"Open", "Open, but proposed to close"})
 
 
 # ---------------------------------------------------------------------------
 # OSGB36  ->  WGS84  coordinate conversion
 # ---------------------------------------------------------------------------
-# GIAS provides Easting/Northing on the Ordnance Survey National Grid
-# (OSGB36 / EPSG:27700).  We need WGS84 latitude and longitude.
-#
-# The conversion is a two-step process:
-#   1. Reverse the Transverse Mercator projection to get lat/lon on the
-#      Airy 1830 ellipsoid.
-#   2. Apply a 7-parameter Helmert transformation to move from the Airy 1830
-#      datum to WGS84.
-#
-# The maths below is the standard Ordnance Survey algorithm (see
-# "A guide to coordinate systems in Great Britain", Ordnance Survey).
-# ---------------------------------------------------------------------------
 
 
 def _grid_to_osgb36_latlon(easting: float, northing: float) -> tuple[float, float]:
     """Convert National Grid Easting/Northing to lat/lon on the Airy 1830 ellipsoid."""
-    # Airy 1830 ellipsoid parameters
-    a = 6_377_563.396  # semi-major axis (m)
-    b = 6_356_256.909  # semi-minor axis (m)
-
-    # National Grid projection constants
-    f0 = 0.9996012717  # scale factor on central meridian
-    lat0 = math.radians(49.0)  # true origin latitude
-    lon0 = math.radians(-2.0)  # true origin longitude
-    n0 = -100_000.0  # northing of true origin
-    e0 = 400_000.0  # easting of true origin
-
+    a = 6_377_563.396
+    b = 6_356_256.909
+    f0 = 0.9996012717
+    lat0 = math.radians(49.0)
+    lon0 = math.radians(-2.0)
+    n0 = -100_000.0
+    e0 = 400_000.0
     e2 = 1.0 - (b * b) / (a * a)
     n = (a - b) / (a + b)
     n2 = n * n
     n3 = n2 * n
-
     lat = lat0
     m = 0.0
-
-    # Iteratively solve for latitude
     while True:
         lat = lat + (northing - n0 - m) / (a * f0)
-
         ma = (1.0 + n + 1.25 * n2 + 1.25 * n3) * (lat - lat0)
         mb = (3.0 * n + 3.0 * n2 + 2.625 * n3) * math.sin(lat - lat0) * math.cos(lat + lat0)
         mc = (1.875 * n2 + 1.875 * n3) * math.sin(2.0 * (lat - lat0)) * math.cos(2.0 * (lat + lat0))
         md = (35.0 / 24.0) * n3 * math.sin(3.0 * (lat - lat0)) * math.cos(3.0 * (lat + lat0))
         m = b * f0 * (ma - mb + mc - md)
-
         if abs(northing - n0 - m) < 0.00001:
             break
-
     sin_lat = math.sin(lat)
     cos_lat = math.cos(lat)
     tan_lat = math.tan(lat)
-
     nu = a * f0 / math.sqrt(1.0 - e2 * sin_lat * sin_lat)
     rho = a * f0 * (1.0 - e2) / pow(1.0 - e2 * sin_lat * sin_lat, 1.5)
     eta2 = nu / rho - 1.0
-
     tan2 = tan_lat * tan_lat
     tan4 = tan2 * tan2
     tan6 = tan4 * tan2
     sec_lat = 1.0 / cos_lat
-
     vii = tan_lat / (2.0 * rho * nu)
     viii = tan_lat / (24.0 * rho * nu**3) * (5.0 + 3.0 * tan2 + eta2 - 9.0 * tan2 * eta2)
     ix = tan_lat / (720.0 * rho * nu**5) * (61.0 + 90.0 * tan2 + 45.0 * tan4)
@@ -162,7 +122,6 @@ def _grid_to_osgb36_latlon(easting: float, northing: float) -> tuple[float, floa
     xi = sec_lat / (6.0 * nu**3) * (nu / rho + 2.0 * tan2)
     xii = sec_lat / (120.0 * nu**5) * (5.0 + 28.0 * tan2 + 24.0 * tan4)
     xiia = sec_lat / (5040.0 * nu**7) * (61.0 + 662.0 * tan2 + 1320.0 * tan4 + 720.0 * tan6)
-
     de = easting - e0
     de2 = de * de
     de3 = de2 * de
@@ -170,10 +129,8 @@ def _grid_to_osgb36_latlon(easting: float, northing: float) -> tuple[float, floa
     de5 = de3 * de2
     de6 = de3 * de3
     de7 = de4 * de3
-
     result_lat = lat - vii * de2 + viii * de4 - ix * de6
     result_lon = lon0 + x * de - xi * de3 + xii * de5 - xiia * de7
-
     return math.degrees(result_lat), math.degrees(result_lon)
 
 
@@ -181,25 +138,17 @@ def _helmert_osgb36_to_wgs84(lat: float, lon: float) -> tuple[float, float]:
     """Apply a Helmert transformation from OSGB36 (Airy 1830) to WGS84."""
     lat_r = math.radians(lat)
     lon_r = math.radians(lon)
-
-    # Airy 1830 ellipsoid
     a1 = 6_377_563.396
     b1 = 6_356_256.909
     e2_1 = 1.0 - (b1 * b1) / (a1 * a1)
-
     sin_lat = math.sin(lat_r)
     cos_lat = math.cos(lat_r)
     sin_lon = math.sin(lon_r)
     cos_lon = math.cos(lon_r)
-
     nu = a1 / math.sqrt(1.0 - e2_1 * sin_lat * sin_lat)
-
-    # Cartesian coordinates on Airy 1830
     x1 = nu * cos_lat * cos_lon
     y1 = nu * cos_lat * sin_lon
     z1 = (1.0 - e2_1) * nu * sin_lat
-
-    # Helmert parameters (OSGB36 -> WGS84)
     tx = 446.448
     ty = -125.157
     tz = 542.060
@@ -207,35 +156,23 @@ def _helmert_osgb36_to_wgs84(lat: float, lon: float) -> tuple[float, float]:
     rx = math.radians(0.1502 / 3600.0)
     ry = math.radians(0.2470 / 3600.0)
     rz = math.radians(0.8421 / 3600.0)
-
-    # Apply transformation
     x2 = tx + (1.0 + s) * x1 + (-rz) * y1 + ry * z1
     y2 = ty + rz * x1 + (1.0 + s) * y1 + (-rx) * z1
     z2 = tz + (-ry) * x1 + rx * y1 + (1.0 + s) * z1
-
-    # WGS84 ellipsoid
     a2 = 6_378_137.0
     b2 = 6_356_752.3141
     e2_2 = 1.0 - (b2 * b2) / (a2 * a2)
-
-    # Convert back to lat/lon (iterative)
     p = math.sqrt(x2 * x2 + y2 * y2)
     lat2 = math.atan2(z2, p * (1.0 - e2_2))
-
     for _ in range(10):
         nu2 = a2 / math.sqrt(1.0 - e2_2 * math.sin(lat2) * math.sin(lat2))
         lat2 = math.atan2(z2 + e2_2 * nu2 * math.sin(lat2), p)
-
     lon2 = math.atan2(y2, x2)
-
     return math.degrees(lat2), math.degrees(lon2)
 
 
 def osgb36_to_wgs84(easting: float, northing: float) -> tuple[float, float]:
-    """Convert OS National Grid Easting/Northing to WGS84 (lat, lon).
-
-    Returns a ``(latitude, longitude)`` tuple in decimal degrees.
-    """
+    """Convert OS National Grid Easting/Northing to WGS84 (lat, lon)."""
     lat_osgb, lon_osgb = _grid_to_osgb36_latlon(easting, northing)
     return _helmert_osgb36_to_wgs84(lat_osgb, lon_osgb)
 
@@ -246,7 +183,6 @@ def osgb36_to_wgs84(easting: float, northing: float) -> tuple[float, float]:
 
 
 def _build_address(row: dict[str, str]) -> str:
-    """Join non-empty address component columns into a single comma-separated string."""
     parts = [
         row.get(COL_STREET, "").strip(),
         row.get(COL_LOCALITY, "").strip(),
@@ -257,33 +193,25 @@ def _build_address(row: dict[str, str]) -> str:
 
 
 def _is_private(row: dict[str, str]) -> bool:
-    """Return ``True`` when the establishment type group indicates an independent school."""
     return row.get(COL_TYPE_GROUP, "").strip() in _PRIVATE_TYPE_GROUPS
 
 
 def _school_type(row: dict[str, str]) -> str:
-    """Map GIAS establishment type to a simplified ``state`` or ``private`` label."""
     if _is_private(row):
         return "private"
     return "state"
 
 
 def _default_catchment_km(phase: str) -> float:
-    """Pick a sensible default catchment radius based on phase of education.
-
-    GIAS does not include catchment radius data, so we use reasonable defaults.
-    """
     phase_lower = phase.lower() if phase else ""
     if "secondary" in phase_lower or "16 plus" in phase_lower:
         return 3.0
     if "primary" in phase_lower or "nursery" in phase_lower:
         return 1.5
-    # Middle, all-through, or unknown
     return 2.0
 
 
 def _safe_int(value: str) -> int | None:
-    """Parse a string to int, returning ``None`` on failure."""
     try:
         return int(value)
     except (ValueError, TypeError):
@@ -291,10 +219,6 @@ def _safe_int(value: str) -> int | None:
 
 
 def _parse_ofsted_date(value: str) -> date | None:
-    """Parse a GIAS date string to a :class:`datetime.date`.
-
-    GIAS uses ``DD-MM-YYYY`` or ``DD/MM/YYYY`` format.
-    """
     value = value.strip()
     if not value:
         return None
@@ -307,7 +231,6 @@ def _parse_ofsted_date(value: str) -> date | None:
 
 
 def _normalise_gender(raw: str) -> str:
-    """Normalise the GIAS gender field to ``Mixed``, ``Boys``, or ``Girls``."""
     raw = raw.strip()
     if raw in {"Boys", "Girls", "Mixed"}:
         return raw
@@ -319,10 +242,6 @@ def _normalise_gender(raw: str) -> str:
 
 
 def _normalise_faith(raw: str) -> str | None:
-    """Normalise the GIAS religious character field.
-
-    Returns ``None`` for ``"None"`` / ``"Does not apply"`` / empty strings.
-    """
     raw = raw.strip()
     if not raw or raw.lower() in {"none", "does not apply"}:
         return None
@@ -335,46 +254,34 @@ def _normalise_faith(raw: str) -> str | None:
 
 
 def _csv_cache_path() -> Path:
-    """Return the path where today's GIAS CSV should be cached."""
     today = date.today().strftime("%Y%m%d")
     return SEEDS_DIR / f"edubasealldata{today}.csv"
 
 
 def _find_cached_csv() -> Path | None:
-    """Return the most recently cached GIAS CSV file, if any exists."""
     candidates = sorted(SEEDS_DIR.glob("edubasealldata*.csv"), reverse=True)
     return candidates[0] if candidates else None
 
 
 def _download_gias_csv(force: bool = False) -> Path:
-    """Download the GIAS establishment CSV and cache it locally.
-
-    If a cached file already exists for today (and *force* is ``False``), the
-    download is skipped and the cached path is returned.
-    """
     cache_path = _csv_cache_path()
-
     if cache_path.exists() and not force:
         print(f"  Using cached CSV: {cache_path}")
         return cache_path
-
     today_str = date.today().strftime("%Y%m%d")
     url = GIAS_CSV_URL_TEMPLATE.format(date=today_str)
-
     print(f"  Downloading GIAS CSV from {url} ...")
     try:
         with httpx.Client(timeout=120.0, follow_redirects=True) as client:
             resp = client.get(url)
             resp.raise_for_status()
     except httpx.HTTPStatusError:
-        # The daily file might not be published yet.  Try yesterday.
         yesterday_str = (date.today().replace(day=date.today().day - 1)).strftime("%Y%m%d")
         fallback_url = GIAS_CSV_URL_TEMPLATE.format(date=yesterday_str)
         print(f"  Today's file not available; trying {fallback_url} ...")
         with httpx.Client(timeout=120.0, follow_redirects=True) as client:
             resp = client.get(fallback_url)
             resp.raise_for_status()
-
     SEEDS_DIR.mkdir(parents=True, exist_ok=True)
     cache_path.write_bytes(resp.content)
     print(f"  Saved to {cache_path} ({len(resp.content) / 1_048_576:.1f} MB)")
@@ -382,21 +289,15 @@ def _download_gias_csv(force: bool = False) -> Path:
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
-    """Read a GIAS CSV file into a list of row dicts using Polars.
-
-    GIAS CSVs are encoded as Windows-1252 (cp1252).  We try that first and
-    fall back to UTF-8 with BOM.
-    """
     for encoding in ("cp1252", "utf-8-sig", "utf-8", "latin-1"):
         try:
             df = pl.read_csv(
                 path,
                 encoding=encoding,
-                infer_schema_length=0,  # keep all columns as strings
+                infer_schema_length=0,
                 null_values=[""],
                 truncate_ragged_lines=True,
             )
-            # Convert to list of dicts with empty strings for nulls
             rows: list[dict[str, str]] = []
             for row in df.iter_rows(named=True):
                 rows.append({k: (v if v is not None else "") for k, v in row.items()})
@@ -413,21 +314,13 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
 
 
 def _row_to_school(row: dict[str, str]) -> School | None:
-    """Convert a single GIAS CSV row to a :class:`School` instance.
-
-    Returns ``None`` if the row should be skipped (e.g. closed school, missing
-    essential data).
-    """
     status = row.get(COL_STATUS, "").strip()
     if status not in _OPEN_STATUSES:
         return None
-
     urn = row.get(COL_URN, "").strip()
     name = row.get(COL_NAME, "").strip()
     if not urn or not name:
         return None
-
-    # Coordinates
     lat: float | None = None
     lng: float | None = None
     easting_str = row.get(COL_EASTING, "").strip()
@@ -440,14 +333,10 @@ def _row_to_school(row: dict[str, str]) -> School | None:
                 lat, lng = osgb36_to_wgs84(easting, northing)
         except (ValueError, ZeroDivisionError):
             pass
-
     phase = row.get(COL_PHASE, "").strip()
-
-    # Ofsted fields may be absent (removed from GIAS in Sept 2024).
     ofsted_rating_raw = row.get(COL_OFSTED_RATING, "").strip()
     ofsted_rating = ofsted_rating_raw if ofsted_rating_raw else None
     ofsted_date = _parse_ofsted_date(row.get(COL_OFSTED_DATE, ""))
-
     return School(
         urn=urn,
         name=name,
@@ -473,22 +362,10 @@ def _row_to_school(row: dict[str, str]) -> School | None:
 # ---------------------------------------------------------------------------
 
 
-def _generate_test_schools(council: str) -> list[School]:
-    """Generate a set of realistic test schools for the given council.
-
-    Used as a fallback when the GIAS CSV cannot be downloaded.  The data is
-    based on real Milton Keynes schools with approximate coordinates and
-    realistic attributes.
-    """
+def _generate_test_schools(council: str) -> list[School]:  # noqa: C901
+    """Generate a set of realistic test schools for the given council."""
     # fmt: off
-    # Comprehensive list of real Milton Keynes schools.
-    # Data sourced from GIAS (Get Information About Schools), Ofsted, and MK Council.
-    # URNs are real where confirmed; coordinates are approximate WGS84.
     mk_schools = [  # noqa: E501
-        # urn, name, postcode, lat, lng, age_from, age_to, phase, gender, faith, ofsted, ofsted_date, is_private, type_group  # noqa: E501
-        #
-        # ── SECONDARY SCHOOLS ──────────────────────────────────────────────
-        #
         ("136730", "Shenley Brook End School", "MK5 7ZT", 52.0070, -0.8050, 11, 18, "Secondary", "Mixed", None, "Good", "2023-05-17", False, "Academies"),  # noqa: E501
         ("135665", "The Milton Keynes Academy", "MK6 5LA", 52.0330, -0.7450, 11, 18, "Secondary", "Mixed", None, "Good", "2023-09-20", False, "Academies"),  # noqa: E501
         ("136468", "Denbigh School", "MK5 6EX", 52.0115, -0.7920, 11, 18, "Secondary", "Mixed", None, "Good", "2022-11-09", False, "Academies"),  # noqa: E501
@@ -504,9 +381,6 @@ def _generate_test_schools(council: str) -> list[School]:
         ("136842", "Walton High", "MK7 7WH", 52.0135, -0.7325, 11, 18, "Secondary", "Mixed", None, "Good", "2023-03-15", False, "Academies"),  # noqa: E501
         ("145063", "Kents Hill Park School", "MK7 6HB", 52.0200, -0.7150, 3, 16, "All-through", "Mixed", None, "Good", "2023-07-05", False, "Free schools"),  # noqa: E501
         ("149106", "Glebe Farm School", "MK17 8FU", 52.0050, -0.7180, 4, 16, "All-through", "Mixed", None, "Good", "2024-01-10", False, "Free schools"),  # noqa: E501
-        #
-        # ── PRIMARY SCHOOLS ────────────────────────────────────────────────
-        #
         ("110401", "Abbeys Primary School", "MK3 6PS", 51.9950, -0.7390, 4, 7, "Primary", "Mixed", None, "Good", "2023-03-01", False, "Local authority maintained schools"),  # noqa: E501
         ("110394", "Caroline Haslett Primary School", "MK5 7DF", 52.0130, -0.8030, 4, 11, "Primary", "Mixed", None, "Outstanding", "2025-02-25", False, "Local authority maintained schools"),  # noqa: E501
         ("134072", "Broughton Fields Primary School", "MK10 9LS", 52.0500, -0.7200, 4, 11, "Primary", "Mixed", None, "Good", "2022-04-27", False, "Local authority maintained schools"),  # noqa: E501
@@ -603,13 +477,7 @@ def _generate_test_schools(council: str) -> list[School]:
         ("132786a", "Priory Rise School", "MK4 3GE", 52.0020, -0.8130, 4, 11, "Primary", "Mixed", None, "Good", "2023-03-08", False, "Academies"),  # noqa: E501
         ("134720", "Giles Brook Primary School", "MK11 1TF", 52.0520, -0.8360, 4, 11, "Primary", "Mixed", None, "Good", "2022-07-13", False, "Academies"),  # noqa: E501
         ("110402", "Sherington CofE School", "MK16 9NF", 52.1190, -0.7350, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-05-17", False, "Local authority maintained schools"),  # noqa: E501
-        #
-        # ── NURSERY SCHOOLS ────────────────────────────────────────────────
-        #
         ("110197", "Knowles Nursery School", "MK2 2HB", 52.0050, -0.7310, 2, 5, "Nursery", "Mixed", None, "Good", "2022-06-15", False, "Local authority maintained schools"),  # noqa: E501
-        #
-        # ── SPECIAL SCHOOLS ────────────────────────────────────────────────
-        #
         ("110575", "White Spire School", "MK3 6EW", 51.9960, -0.7610, 2, 19, "Special", "Mixed", None, "Outstanding", "2022-03-09", False, "Local authority maintained schools"),  # noqa: E501
         ("110580a", "Romans Field Special School", "MK3 7AW", 51.9930, -0.7580, 3, 11, "Special", "Mixed", None, "Good", "2023-04-12", False, "Local authority maintained schools"),  # noqa: E501
         ("110584", "The Walnuts School", "MK8 0PU", 52.0260, -0.8080, 4, 19, "Special", "Mixed", None, "Good", "2023-06-28", False, "Local authority maintained schools"),  # noqa: E501
@@ -617,9 +485,6 @@ def _generate_test_schools(council: str) -> list[School]:
         ("110592", "The Redway School", "MK6 4HG", 52.0340, -0.7500, 2, 19, "Special", "Mixed", None, "Outstanding", "2022-01-19", False, "Local authority maintained schools"),  # noqa: E501
         ("138253", "Stephenson Academy", "MK14 6AX", 52.0600, -0.7620, 11, 19, "Special", "Mixed", None, "Good", "2023-09-20", False, "Academies"),  # noqa: E501
         ("140252", "Bridge Academy", "MK14 6AX", 52.0610, -0.7630, 5, 16, "Special", "Mixed", None, "Good", "2023-02-01", False, "Academies"),  # noqa: E501
-        #
-        # ── INDEPENDENT / PRIVATE SCHOOLS ──────────────────────────────────
-        #
         ("110565", "Milton Keynes Preparatory School", "MK3 7EG", 51.9970, -0.7560, 3, 13, "Primary", "Mixed", None, None, "2023-08-15", True, "Independent schools"),  # noqa: E501
         ("110567", "The Webber Independent School", "MK14 6DP", 52.0590, -0.7730, 0, 16, "All-through", "Mixed", None, None, "2022-05-20", True, "Independent schools"),  # noqa: E501
         ("110549", "Thornton College", "MK17 0HJ", 51.9580, -0.9160, 3, 19, "All-through", "Girls", "Roman Catholic", None, "", True, "Independent schools"),  # noqa: E501
@@ -633,459 +498,119 @@ def _generate_test_schools(council: str) -> list[School]:
 
     schools: list[School] = []
     for row in mk_schools:
-        (
-            urn,
-            name,
-            postcode,
-            lat,
-            lng,
-            age_from,
-            age_to,
-            phase,
-            gender,
-            faith,
-            ofsted,
-            ofsted_date_str,
-            is_private,
-            type_group,
-        ) = row
-
+        (urn, name, postcode, lat, lng, age_from, age_to, phase, gender, faith, ofsted, ofsted_date_str, is_private_val, _type_group) = row  # noqa: E501
         ofsted_date_val = None
         if ofsted_date_str:
             try:
                 ofsted_date_val = datetime.strptime(ofsted_date_str, "%Y-%m-%d").date()
             except ValueError:
                 pass
-
-        school_type = "private" if is_private else "state"
-
+        school_type = "private" if is_private_val else "state"
         schools.append(
             School(
-                urn=urn,
-                name=name,
-                type=school_type,
-                council=council,
-                address=f"{name}, Milton Keynes",
-                postcode=postcode,
-                lat=lat,
-                lng=lng,
-                catchment_radius_km=_default_catchment_km(phase),
-                gender_policy=gender,
-                faith=faith,
-                age_range_from=age_from,
-                age_range_to=age_to,
+                urn=urn, name=name, type=school_type, council=council,
+                address=f"{name}, Milton Keynes", postcode=postcode,
+                lat=lat, lng=lng, catchment_radius_km=_default_catchment_km(phase),
+                gender_policy=gender, faith=faith,
+                age_range_from=age_from, age_range_to=age_to,
                 ofsted_rating=ofsted if ofsted != "Not applicable" else None,
-                ofsted_date=ofsted_date_val,
-                is_private=is_private,
+                ofsted_date=ofsted_date_val, is_private=is_private_val,
             )
         )
-
     return schools
 
 
 # ---------------------------------------------------------------------------
-# Private school details generation
+# Club data generation
 # ---------------------------------------------------------------------------
 
-# Each entry: (school_name_fragment, fee_age_group, termly_fee, annual_fee,
-#              day_start, day_end, provides_transport, transport_notes,
-#              holiday_schedule_notes)
-_PRIVATE_SCHOOL_DETAILS: list[tuple[str, str, float, float, time, time, bool, str | None, str | None]] = [
-    # -- Thornton College (girls, Catholic) --
-    (
-        "Thornton College",
-        "Pre-prep (3-7)",
-        4500.0,
-        13500.0,
-        time(8, 15),
-        time(16, 0),
-        True,
-        "Bus routes from Milton Keynes, Buckingham, and Towcester. Door-to-door minibus service available.",
-        "Follows own term dates. Three terms with half-term breaks. Longer holidays than state schools.",  # noqa: E501
-    ),
-    (
-        "Thornton College",
-        "Prep (7-11)",
-        5000.0,
-        15000.0,
-        time(8, 15),
-        time(16, 0),
-        True,
-        "Bus routes from Milton Keynes, Buckingham, and Towcester. Door-to-door minibus service available.",
-        "Follows own term dates. Three terms with half-term breaks. Longer holidays than state schools.",  # noqa: E501
-    ),
-    (
-        "Thornton College",
-        "Senior (11-16)",
-        5500.0,
-        16500.0,
-        time(8, 15),
-        time(16, 0),
-        True,
-        "Bus routes from Milton Keynes, Buckingham, and Towcester. Door-to-door minibus service available.",
-        "Follows own term dates. Three terms with half-term breaks. Longer holidays than state schools.",  # noqa: E501
-    ),
-    (
-        "Thornton College",
-        "Sixth Form (16-19)",
-        5500.0,
-        16500.0,
-        time(8, 15),
-        time(16, 0),
-        True,
-        "Bus routes from Milton Keynes, Buckingham, and Towcester. Door-to-door minibus service available.",
-        "Follows own term dates. Three terms with half-term breaks. Longer holidays than state schools.",  # noqa: E501
-    ),
-    # -- Akeley Wood Senior School --
-    (
-        "Akeley Wood Senior",
-        "Senior (11-16)",
-        5500.0,
-        16500.0,
-        time(8, 30),
-        time(16, 15),
-        True,
-        "Dedicated bus routes covering Buckingham, Milton Keynes, Brackley, and surrounding villages.",
-        "Sets own term dates. Three terms with half-term breaks. Longer summer holidays.",  # noqa: E501
-    ),
-    (
-        "Akeley Wood Senior",
-        "Sixth Form (16-18)",
-        6000.0,
-        18000.0,
-        time(8, 30),
-        time(16, 15),
-        True,
-        "Dedicated bus routes covering Buckingham, Milton Keynes, Brackley, and surrounding villages.",
-        "Sets own term dates. Three terms with half-term breaks. Longer summer holidays.",  # noqa: E501
-    ),
-    # -- Akeley Wood Junior School --
-    (
-        "Akeley Wood Junior",
-        "Pre-prep (4-7)",
-        3800.0,
-        11400.0,
-        time(8, 30),
-        time(15, 45),
-        True,
-        "Shared transport with Akeley Wood Senior. Bus routes from Buckingham and Milton Keynes.",
-        "Follows Akeley Wood group term dates. Three terms with half-term breaks.",
-    ),
-    (
-        "Akeley Wood Junior",
-        "Prep (7-11)",
-        4500.0,
-        13500.0,
-        time(8, 30),
-        time(15, 45),
-        True,
-        "Shared transport with Akeley Wood Senior. Bus routes from Buckingham and Milton Keynes.",
-        "Follows Akeley Wood group term dates. Three terms with half-term breaks.",
-    ),
-    # -- Milton Keynes Preparatory School --
-    (
-        "Milton Keynes Preparatory",
-        "Nursery/Pre-prep (3-7)",
-        3500.0,
-        10500.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        None,
-        "Follows broadly similar term dates to Milton Keynes state schools with minor variations.",
-    ),
-    (
-        "Milton Keynes Preparatory",
-        "Prep (7-11)",
-        4000.0,
-        12000.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        None,
-        "Follows broadly similar term dates to Milton Keynes state schools with minor variations.",
-    ),
-    (
-        "Milton Keynes Preparatory",
-        "Senior (11-13)",
-        4200.0,
-        12600.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        None,
-        "Follows broadly similar term dates to Milton Keynes state schools with minor variations.",
-    ),
-    # -- The Webber Independent School --
-    (
-        "Webber Independent",
-        "Early Years (0-4)",
-        3000.0,
-        9000.0,
-        time(8, 45),
-        time(15, 30),
-        False,
-        None,
-        "Follows own term dates, broadly aligned with state school calendar.",
-    ),
-    (
-        "Webber Independent",
-        "Primary (4-11)",
-        3500.0,
-        10500.0,
-        time(8, 45),
-        time(15, 30),
-        False,
-        None,
-        "Follows own term dates, broadly aligned with state school calendar.",
-    ),
-    (
-        "Webber Independent",
-        "Secondary (11-16)",
-        4000.0,
-        12000.0,
-        time(8, 45),
-        time(15, 30),
-        False,
-        None,
-        "Follows own term dates, broadly aligned with state school calendar.",
-    ),
-    # -- The Grove Independent School --
-    (
-        "Grove Independent",
-        "Nursery (2-4)",
-        3200.0,
-        9600.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        "Limited minibus service available for local routes within Milton Keynes. Additional charge applies.",
-        "Follows own term dates. Three terms per year.",
-    ),
-    (
-        "Grove Independent",
-        "Infant (4-7)",
-        3500.0,
-        10500.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        "Limited minibus service available for local routes within Milton Keynes. Additional charge applies.",
-        "Follows own term dates. Three terms per year.",
-    ),
-    (
-        "Grove Independent",
-        "Junior (7-13)",
-        3800.0,
-        11400.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        "Limited minibus service available for local routes within Milton Keynes. Additional charge applies.",
-        "Follows own term dates. Three terms per year.",
-    ),
-    # -- Broughton Manor Preparatory School --
-    (
-        "Broughton Manor",
-        "Nursery (3-4)",
-        3400.0,
-        10200.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        None,
-        "Follows own term dates. Three terms with half-term breaks.",
-    ),
-    (
-        "Broughton Manor",
-        "Pre-prep (4-7)",
-        3800.0,
-        11400.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        None,
-        "Follows own term dates. Three terms with half-term breaks.",
-    ),
-    (
-        "Broughton Manor",
-        "Prep (7-11)",
-        4200.0,
-        12600.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        None,
-        "Follows own term dates. Three terms with half-term breaks.",
-    ),
-    # -- Swanbourne House School (nearby boarding prep) --
-    # Not in the seed data but mentioned in task; we'll match by name fragment
-    # against any school named "Swanbourne" in the DB.
-    (
-        "Swanbourne House",
-        "Pre-prep (4-7)",
-        5500.0,
-        16500.0,
-        time(8, 15),
-        time(17, 30),
-        True,
-        "Comprehensive bus network covering Aylesbury, Buckingham, Milton Keynes, and Bicester.",
-        "Follows own term dates. Boarding available from Year 3. Longer exeat weekends.",
-    ),
-    (
-        "Swanbourne House",
-        "Prep (7-11)",
-        6500.0,
-        19500.0,
-        time(8, 15),
-        time(17, 30),
-        True,
-        "Comprehensive bus network covering Aylesbury, Buckingham, Milton Keynes, and Bicester.",
-        "Follows own term dates. Boarding available from Year 3. Longer exeat weekends.",
-    ),
-    (
-        "Swanbourne House",
-        "Prep (11-13)",
-        7500.0,
-        22500.0,
-        time(8, 15),
-        time(17, 30),
-        True,
-        "Comprehensive bus network covering Aylesbury, Buckingham, Milton Keynes, and Bicester.",
-        "Follows own term dates. Boarding available from Year 3. Longer exeat weekends.",
-    ),
-    # -- Winchester House School (nearby prep) --
-    (
-        "Winchester House",
-        "Pre-prep (4-7)",
-        5000.0,
-        15000.0,
-        time(8, 15),
-        time(17, 15),
-        True,
-        "Bus routes serving Brackley, Buckingham, Towcester, and north Oxfordshire villages.",
-        "Follows own term dates. Three terms with half-term breaks and exeat weekends.",
-    ),
-    (
-        "Winchester House",
-        "Prep (7-11)",
-        5800.0,
-        17400.0,
-        time(8, 15),
-        time(17, 15),
-        True,
-        "Bus routes serving Brackley, Buckingham, Towcester, and north Oxfordshire villages.",
-        "Follows own term dates. Three terms with half-term breaks and exeat weekends.",
-    ),
-    (
-        "Winchester House",
-        "Prep (11-13)",
-        6500.0,
-        19500.0,
-        time(8, 15),
-        time(17, 15),
-        True,
-        "Bus routes serving Brackley, Buckingham, Towcester, and north Oxfordshire villages.",
-        "Follows own term dates. Three terms with half-term breaks and exeat weekends.",
-    ),
-    # -- KWS Milton Keynes --
-    (
-        "KWS Milton Keynes",
-        "Primary (7-11)",
-        3500.0,
-        10500.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        None,
-        "Follows own term dates. Three terms per year.",
-    ),
-    (
-        "KWS Milton Keynes",
-        "Secondary (11-16)",
-        4200.0,
-        12600.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        None,
-        "Follows own term dates. Three terms per year.",
-    ),
-    (
-        "KWS Milton Keynes",
-        "Sixth Form (16-18)",
-        4800.0,
-        14400.0,
-        time(8, 30),
-        time(15, 30),
-        False,
-        None,
-        "Follows own term dates. Three terms per year.",
-    ),
+_BREAKFAST_CLUBS = [
+    ("Early Birds Breakfast Club", "Start the day with a healthy breakfast and fun activities"),
+    ("Sunshine Breakfast Club", "Morning care with toast, cereal, and supervised play"),
+    ("Rise & Shine Club", "Nutritious breakfast with crafts and games before school"),
+    ("Morning Stars Breakfast Club", "Enjoy breakfast and socialise before classes begin"),
+    ("Bright Start Breakfast Club", "Fuelling young minds with a great start to the day"),
+]
+
+_AFTERSCHOOL_CLUBS = [
+    ("Sports After-School Club", "Football, netball, athletics, and multi-sports sessions"),
+    ("Homework Club", "Supervised homework time with teacher support"),
+    ("Arts & Crafts Club", "Creative sessions including painting, drawing, and crafts"),
+    ("Drama Club", "Acting, improvisation, and performance workshops"),
+    ("Science Explorers Club", "Hands-on science experiments and STEM activities"),
+    ("Coding Club", "Introduction to programming with Scratch and Python"),
+    ("Music Club", "Learn instruments, sing, and explore rhythm"),
+    ("Dance Club", "Street dance, ballet basics, and creative movement"),
+    ("Gardening Club", "Growing vegetables and learning about nature"),
+    ("Reading & Story Club", "Book club activities and creative writing"),
+    ("Multi-Activity Club", "A mix of sports, games, and creative activities"),
+    ("Chess Club", "Learn chess strategy and compete in friendly matches"),
 ]
 
 
-def _generate_private_school_details(session: Session) -> int:
-    """Create PrivateSchoolDetails records for all private schools in the database.
-
-    Matches schools by name fragment and creates multiple fee-tier entries per
-    school (one per age group).  Returns the number of detail records inserted.
-    """
-    private_schools = session.query(School).filter_by(is_private=True).all()
-    if not private_schools:
-        return 0
-
-    # Build a lookup: name fragment -> list of detail tuples
-    details_by_fragment: dict[str, list[tuple[str, str, float, float, time, time, bool, str | None, str | None]]] = {}
-    for entry in _PRIVATE_SCHOOL_DETAILS:
-        fragment = entry[0]
-        details_by_fragment.setdefault(fragment, []).append(entry)
-
-    count = 0
-    for school in private_schools:
-        # Find matching details by checking if any known fragment is in the school name
-        matched_entries: list[tuple[str, str, float, float, time, time, bool, str | None, str | None]] = []
-        for fragment, entries in details_by_fragment.items():
-            if fragment.lower() in school.name.lower():
-                matched_entries = entries
-                break
-
-        if not matched_entries:
-            # No specific data for this school; skip it
+def _generate_test_clubs(schools: list[School]) -> list[SchoolClub]:
+    """Generate realistic breakfast and after-school club data for a sample of schools."""
+    rng = random.Random(42)
+    clubs: list[SchoolClub] = []
+    for school in schools:
+        if school.id is None or school.is_private:
             continue
+        is_secondary = (
+            school.age_range_from is not None and school.age_range_from >= 11
+            and school.age_range_to is not None and school.age_range_to >= 16
+        )
+        breakfast_prob = 0.30 if is_secondary else 0.60
+        afterschool_prob = 0.50 if is_secondary else 0.40
+        if rng.random() < breakfast_prob:
+            bname, bdesc = rng.choice(_BREAKFAST_CLUBS)
+            start_min = rng.choice([30, 35, 40, 45])
+            end_min = rng.choice([40, 45, 50])
+            cost = round(rng.uniform(3.0, 5.0), 2)
+            days = "Mon,Tue,Wed,Thu,Fri" if rng.random() < 0.85 else "Mon,Tue,Wed,Thu"
+            clubs.append(SchoolClub(
+                school_id=school.id, club_type="breakfast", name=bname,
+                description=bdesc, days_available=days,
+                start_time=time(7, start_min), end_time=time(8, end_min),
+                cost_per_session=cost,
+            ))
+        if rng.random() < afterschool_prob:
+            num_clubs = rng.choice([1, 1, 2, 2, 3])
+            chosen = rng.sample(_AFTERSCHOOL_CLUBS, min(num_clubs, len(_AFTERSCHOOL_CLUBS)))
+            for aname, adesc in chosen:
+                as_start_min = rng.choice([15, 20, 30])
+                as_end_hour = rng.choice([16, 17])
+                as_end_min = rng.choice([0, 30]) if as_end_hour == 16 else rng.choice([0, 15, 30])
+                cost = round(rng.uniform(5.0, 10.0), 2)
+                all_days = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+                if rng.random() < 0.4:
+                    num_days = rng.randint(2, 4)
+                    selected_days = sorted(rng.sample(all_days, num_days), key=all_days.index)
+                    days = ",".join(selected_days)
+                else:
+                    days = "Mon,Tue,Wed,Thu,Fri"
+                clubs.append(SchoolClub(
+                    school_id=school.id, club_type="after_school", name=aname,
+                    description=adesc, days_available=days,
+                    start_time=time(15, as_start_min), end_time=time(as_end_hour, as_end_min),
+                    cost_per_session=cost,
+                ))
+    return clubs
 
-        # Remove any existing details for this school (idempotent re-seed)
-        session.query(PrivateSchoolDetails).filter_by(school_id=school.id).delete()
 
-        for entry in matched_entries:
-            (
-                _name_frag,
-                fee_age_group,
-                termly_fee,
-                annual_fee,
-                day_start,
-                day_end,
-                provides_transport,
-                transport_notes,
-                holiday_schedule_notes,
-            ) = entry
-
-            detail = PrivateSchoolDetails(
-                school_id=school.id,
-                termly_fee=termly_fee,
-                annual_fee=annual_fee,
-                fee_age_group=fee_age_group,
-                school_day_start=day_start,
-                school_day_end=day_end,
-                provides_transport=provides_transport,
-                transport_notes=transport_notes,
-                holiday_schedule_notes=holiday_schedule_notes,
-            )
-            session.add(detail)
-            count += 1
-
+def _upsert_clubs(session: Session, clubs: list[SchoolClub]) -> int:
+    """Insert club records, skipping duplicates by (school_id, club_type, name)."""
+    inserted = 0
+    for club in clubs:
+        existing = (
+            session.query(SchoolClub)
+            .filter_by(school_id=club.school_id, club_type=club.club_type, name=club.name)
+            .first()
+        )
+        if existing is None:
+            session.add(club)
+            inserted += 1
     session.commit()
-    return count
+    return inserted
 
 
 # ---------------------------------------------------------------------------
@@ -1094,7 +619,6 @@ def _generate_private_school_details(session: Session) -> int:
 
 
 def _ensure_database(db_path: Path) -> Session:
-    """Create the SQLite database and tables, then return a Session."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
     engine = create_engine(f"sqlite:///{db_path}", echo=False)
     Base.metadata.create_all(engine)
@@ -1102,20 +626,14 @@ def _ensure_database(db_path: Path) -> Session:
 
 
 def _upsert_schools(session: Session, schools: list[School]) -> tuple[int, int]:
-    """Insert new schools and update existing ones (matched by URN).
-
-    Returns ``(inserted, updated)`` counts.
-    """
     inserted = 0
     updated = 0
-
     for school in schools:
         existing = session.query(School).filter_by(urn=school.urn).first()
         if existing is None:
             session.add(school)
             inserted += 1
         else:
-            # Update mutable fields on the existing record.
             existing.name = school.name
             existing.type = school.type
             existing.council = school.council
@@ -1132,7 +650,6 @@ def _upsert_schools(session: Session, schools: list[School]) -> tuple[int, int]:
             existing.ofsted_date = school.ofsted_date
             existing.is_private = school.is_private
             updated += 1
-
     session.commit()
     return inserted, updated
 
@@ -1143,32 +660,17 @@ def _upsert_schools(session: Session, schools: list[School]) -> tuple[int, int]:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         prog="python -m src.db.seed",
         description="Seed the school-finder database from GIAS establishment data.",
     )
-    parser.add_argument(
-        "--council",
-        required=True,
-        help='Local authority name to filter by (e.g. "Milton Keynes").',
-    )
-    parser.add_argument(
-        "--db",
-        type=Path,
-        default=DEFAULT_DB_PATH,
-        help=f"Path to the SQLite database file (default: {DEFAULT_DB_PATH}).",
-    )
-    parser.add_argument(
-        "--force-download",
-        action="store_true",
-        default=False,
-        help="Force re-download of the GIAS CSV even if a cached copy exists.",
-    )
+    parser.add_argument("--council", required=True, help='Local authority name to filter by.')
+    parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="Path to the SQLite database file.")
+    parser.add_argument("--force-download", action="store_true", default=False, help="Force re-download.")
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> None:
+def main(argv: list[str] | None = None) -> None:  # noqa: C901
     """Entry point for the seed script."""
     args = parse_args(argv)
     council: str = args.council
@@ -1180,14 +682,9 @@ def main(argv: list[str] | None = None) -> None:
     print(f"  Database       : {db_path}")
     print()
 
-    # ------------------------------------------------------------------
-    # 1. Obtain the GIAS CSV (download or use cache)
-    # ------------------------------------------------------------------
     print("[1/5] Obtaining GIAS CSV ...")
-
     use_test_data = False
     csv_path: Path | None = None
-
     cached = _find_cached_csv()
     if cached and not force_download:
         print(f"  Found cached file: {cached}")
@@ -1200,11 +697,7 @@ def main(argv: list[str] | None = None) -> None:
             print("  Will use built-in test data instead.")
             use_test_data = True
 
-    # ------------------------------------------------------------------
-    # 2. Read and filter CSV rows (or use test data)
-    # ------------------------------------------------------------------
     schools: list[School] = []
-
     if use_test_data or csv_path is None:
         print("[2/5] Generating test school data ...")
         schools = _generate_test_schools(council)
@@ -1213,13 +706,10 @@ def main(argv: list[str] | None = None) -> None:
         print("[2/5] Reading CSV ...")
         rows = _read_csv(csv_path)
         print(f"  Total rows in CSV: {len(rows)}")
-
         council_lower = council.lower()
         council_rows = [r for r in rows if r.get(COL_LA, "").strip().lower() == council_lower]
         print(f"  Rows matching council '{council}': {len(council_rows)}")
-
         if not council_rows:
-            # Show available councils to help the user
             all_councils = sorted({r.get(COL_LA, "").strip() for r in rows if r.get(COL_LA, "").strip()})
             close_matches = [c for c in all_councils if council_lower in c.lower()]
             print(f"\n  No schools found for council '{council}'.", file=sys.stderr)
@@ -1232,10 +722,6 @@ def main(argv: list[str] | None = None) -> None:
                 if len(all_councils) > 20:
                     print(f"    ... and {len(all_councils) - 20} more", file=sys.stderr)
             sys.exit(1)
-
-        # ------------------------------------------------------------------
-        # 3. Map rows to School objects
-        # ------------------------------------------------------------------
         print("[3/5] Mapping to School records ...")
         skipped = 0
         for row in council_rows:
@@ -1244,16 +730,12 @@ def main(argv: list[str] | None = None) -> None:
                 schools.append(school)
             else:
                 skipped += 1
-
         print(f"  Schools to seed: {len(schools)}  (skipped {skipped} closed/invalid)")
 
     geo_count = sum(1 for s in schools if s.lat is not None)
     print(f"  With coordinates: {geo_count}/{len(schools)}")
 
-    # ------------------------------------------------------------------
-    # 4. Write to database
-    # ------------------------------------------------------------------
-    print("[4/5] Writing to database ...")
+    print("[4/5] Writing schools to database ...")
     session = _ensure_database(db_path)
     try:
         inserted, updated = _upsert_schools(session, schools)
@@ -1262,49 +744,37 @@ def main(argv: list[str] | None = None) -> None:
         print(f"  Updated : {updated}")
         print(f"  Total schools for '{council}' in DB: {total_in_db}")
 
-        # ------------------------------------------------------------------
-        # 5. Seed private school details
-        # ------------------------------------------------------------------
-        print()
-        print("[5/5] Seeding private school details ...")
-        detail_count = _generate_private_school_details(session)
-        print(f"  Private school detail records: {detail_count}")
+        print("[5/5] Generating club data ...")
+        all_schools = session.query(School).filter_by(council=council).all()
+        clubs = _generate_test_clubs(all_schools)
+        clubs_inserted = _upsert_clubs(session, clubs)
+        total_clubs = session.query(SchoolClub).count()
+        breakfast_count = sum(1 for c in clubs if c.club_type == "breakfast")
+        afterschool_count = sum(1 for c in clubs if c.club_type == "after_school")
+        print(f"  Clubs generated : {len(clubs)} ({breakfast_count} breakfast, {afterschool_count} after-school)")
+        print(f"  Clubs inserted  : {clubs_inserted}")
+        print(f"  Total clubs in DB: {total_clubs}")
 
-        # ------------------------------------------------------------------
-        # Summary
-        # ------------------------------------------------------------------
         print()
         print("=" * 60)
         print(f"  SUMMARY: {council}")
         print("=" * 60)
-
-        all_schools = session.query(School).filter_by(council=council).all()
-
-        # By phase / type
         primary_count = sum(1 for s in all_schools if s.age_range_to and s.age_range_to <= 13 and not s.is_private)
         secondary_count = sum(
-            1
-            for s in all_schools
-            if s.age_range_from
-            and s.age_range_from >= 11
-            and s.age_range_to
-            and s.age_range_to >= 16
+            1 for s in all_schools
+            if s.age_range_from and s.age_range_from >= 11
+            and s.age_range_to and s.age_range_to >= 16
             and not s.is_private
         )
         private_count = sum(1 for s in all_schools if s.is_private)
-
-        private_with_details = session.query(PrivateSchoolDetails.school_id).distinct().count()
-
         print(f"  Total schools       : {len(all_schools)}")
         print(f"  State primary       : {primary_count}")
         print(f"  State secondary     : {secondary_count}")
         print(f"  Private/independent : {private_count}")
-        print(f"  Private w/ details  : {private_with_details}")
+        print(f"  Breakfast clubs     : {breakfast_count}")
+        print(f"  After-school clubs  : {afterschool_count}")
         print()
-
-        # By Ofsted rating
         from collections import Counter
-
         rating_counts = Counter(s.ofsted_rating for s in all_schools if s.ofsted_rating)
         print("  Ofsted ratings:")
         for rating in ["Outstanding", "Good", "Requires improvement", "Inadequate"]:
@@ -1314,11 +784,9 @@ def main(argv: list[str] | None = None) -> None:
         no_rating = sum(1 for s in all_schools if not s.ofsted_rating)
         if no_rating:
             print(f"    {'(no rating)':25s}: {no_rating}")
-
         print("=" * 60)
     finally:
         session.close()
-
     print()
     print("Done.")
 
