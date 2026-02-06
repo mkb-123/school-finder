@@ -1,0 +1,52 @@
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from src.api.compare import router as compare_router
+from src.api.councils import router as councils_router
+from src.api.geocode import router as geocode_router
+from src.api.private_schools import router as private_schools_router
+from src.api.schools import router as schools_router
+from src.config import get_settings
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """Ensure the data directory and SQLite database file exist on startup."""
+    settings = get_settings()
+    db_path = Path(settings.SQLITE_PATH)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    if not db_path.exists():
+        db_path.touch()
+    yield
+
+
+app = FastAPI(
+    title="School Finder API",
+    description="API for finding and comparing schools in UK council areas",
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(schools_router)
+app.include_router(private_schools_router)
+app.include_router(geocode_router)
+app.include_router(councils_router)
+app.include_router(compare_router)
+
+if __name__ == "__main__":
+    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)
