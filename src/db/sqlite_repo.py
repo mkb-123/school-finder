@@ -4,7 +4,7 @@ import math
 from typing import Any
 
 from sqlalchemy import event, select, text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from src.db.base import SchoolFilters, SchoolRepository
 from src.db.models import (
@@ -58,6 +58,11 @@ class SQLiteSchoolRepository(SchoolRepository):
         self._session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
             self._engine, expire_on_commit=False
         )
+
+    @property
+    def engine(self) -> AsyncEngine:
+        """Expose the underlying async engine (used by the application lifespan)."""
+        return self._engine
 
     async def init_db(self) -> None:
         """Create all tables if they do not already exist."""

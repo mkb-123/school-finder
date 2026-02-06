@@ -28,7 +28,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     from src.db.sqlite_repo import SQLiteSchoolRepository
 
     repo = SQLiteSchoolRepository(settings.SQLITE_PATH)
-    async with repo.engine.begin() as conn:
+    async with repo._engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     yield
