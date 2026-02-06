@@ -21,6 +21,7 @@ from src.db.models import (
 # Haversine implementation registered as a SQLite custom function
 # ---------------------------------------------------------------------------
 
+
 def _haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     """Return great-circle distance in km between two lat/lng pairs."""
     earth_radius_km = 6371.0
@@ -39,6 +40,7 @@ def _register_haversine(dbapi_connection: Any, _connection_record: Any) -> None:
 # ---------------------------------------------------------------------------
 # Repository
 # ---------------------------------------------------------------------------
+
 
 class SQLiteSchoolRepository(SchoolRepository):
     """SQLite-backed implementation of :class:`SchoolRepository`.
@@ -73,9 +75,7 @@ class SQLiteSchoolRepository(SchoolRepository):
             .where(School.lat.is_not(None))
             .where(School.lng.is_not(None))
             .where(School.catchment_radius_km.is_not(None))
-            .where(
-                text("haversine(schools.lat, schools.lng, :lat, :lng) <= schools.catchment_radius_km")
-            )
+            .where(text("haversine(schools.lat, schools.lng, :lat, :lng) <= schools.catchment_radius_km"))
         )
         async with self._session_factory() as session:
             result = await session.execute(stmt, {"lat": lat, "lng": lng})
@@ -115,9 +115,7 @@ class SQLiteSchoolRepository(SchoolRepository):
             stmt = (
                 stmt.where(School.lat.is_not(None))
                 .where(School.lng.is_not(None))
-                .where(
-                    text("haversine(schools.lat, schools.lng, :lat, :lng) <= :max_dist")
-                )
+                .where(text("haversine(schools.lat, schools.lng, :lat, :lng) <= :max_dist"))
             )
 
         # Club-based filters: use EXISTS sub-queries

@@ -98,9 +98,7 @@ async def validate_postcode(postcode: str) -> bool:
             f"HTTP error while validating postcode '{postcode}': {exc.response.status_code}"
         ) from exc
     except httpx.RequestError as exc:
-        raise GeocodingServiceError(
-            f"Network error while validating postcode '{postcode}': {exc}"
-        ) from exc
+        raise GeocodingServiceError(f"Network error while validating postcode '{postcode}': {exc}") from exc
 
 
 async def get_postcode_info(postcode: str) -> dict:
@@ -154,6 +152,4 @@ async def get_postcode_info(postcode: str) -> dict:
             f"HTTP error while fetching postcode '{postcode}': {exc.response.status_code}"
         ) from exc
     except httpx.RequestError as exc:
-        raise GeocodingServiceError(
-            f"Network error while fetching postcode '{postcode}': {exc}"
-        ) from exc
+        raise GeocodingServiceError(f"Network error while fetching postcode '{postcode}': {exc}") from exc

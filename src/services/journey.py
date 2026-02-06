@@ -37,8 +37,8 @@ class TimeOfDay(enum.Enum):
     * ``GENERIC`` -- no specific time-of-day (average conditions)
     """
 
-    DROPOFF = "dropoff"   # 8:00 - 8:45 AM
-    PICKUP = "pickup"     # 5:00 - 5:30 PM
+    DROPOFF = "dropoff"  # 8:00 - 8:45 AM
+    PICKUP = "pickup"  # 5:00 - 5:30 PM
     GENERIC = "generic"
 
 
@@ -65,8 +65,8 @@ class JourneyResult:
 _AVERAGE_SPEEDS_KMH: dict[TravelMode, float] = {
     TravelMode.WALKING: 5.0,
     TravelMode.CYCLING: 15.0,
-    TravelMode.DRIVING: 30.0,   # urban average
-    TravelMode.TRANSIT: 20.0,   # bus/tram average including stops
+    TravelMode.DRIVING: 30.0,  # urban average
+    TravelMode.TRANSIT: 20.0,  # bus/tram average including stops
 }
 
 # Rough multiplier to convert straight-line distance to road/path distance.
@@ -79,7 +79,7 @@ _TIME_MULTIPLIERS: dict[TimeOfDay, dict[TravelMode, float]] = {
     TimeOfDay.DROPOFF: {
         TravelMode.WALKING: 1.0,
         TravelMode.CYCLING: 1.0,
-        TravelMode.DRIVING: 1.3,   # morning rush-hour penalty
+        TravelMode.DRIVING: 1.3,  # morning rush-hour penalty
         TravelMode.TRANSIT: 1.2,
     },
     TimeOfDay.PICKUP: {

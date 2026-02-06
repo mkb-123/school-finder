@@ -42,9 +42,9 @@ class SchoolFilters:
 
     council: str | None = None
     child_age: int | None = None
-    child_gender: str | None = None          # "male", "female", or None
-    school_type: str | None = None           # e.g. "state", "academy", "free_school", "faith"
-    min_ofsted_rating: int | None = None     # 1 (Outstanding) to 4 (Inadequate)
+    child_gender: str | None = None  # "male", "female", or None
+    school_type: str | None = None  # e.g. "state", "academy", "free_school", "faith"
+    min_ofsted_rating: int | None = None  # 1 (Outstanding) to 4 (Inadequate)
     max_distance_km: float | None = None
     has_breakfast_club: bool | None = None
     has_afterschool_club: bool | None = None
