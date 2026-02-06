@@ -82,6 +82,7 @@ class SQLiteSchoolRepository(SchoolRepository):
             .where(School.lng.is_not(None))
             .where(School.catchment_radius_km.is_not(None))
             .where(text("haversine(schools.lat, schools.lng, :lat, :lng) <= schools.catchment_radius_km"))
+            .order_by(text("haversine(schools.lat, schools.lng, :lat, :lng)"))
         )
         async with self._session_factory() as session:
             result = await session.execute(stmt, {"lat": lat, "lng": lng})
@@ -175,6 +176,12 @@ class SQLiteSchoolRepository(SchoolRepository):
             params["lng"] = filters.lng
         if filters.max_distance_km is not None:
             params["max_dist"] = filters.max_distance_km
+
+        # Sort by nearest when a reference point is provided, otherwise by name
+        if filters.lat is not None and filters.lng is not None:
+            stmt = stmt.order_by(text("haversine(schools.lat, schools.lng, :lat, :lng)"))
+        else:
+            stmt = stmt.order_by(School.name)
 
         # Pagination
         if filters.offset is not None:
