@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface HolidayClub {
   id: number;
   school_id: number;

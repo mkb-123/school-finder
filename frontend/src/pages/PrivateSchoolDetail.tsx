@@ -192,8 +192,6 @@ export default function PrivateSchoolDetail() {
     );
   }
 
-  const badge =
-    RATING_COLORS[school.ofsted_rating ?? ""] ?? "bg-gray-100 text-gray-800";
   const details = school.private_details ?? [];
 
   // Extract shared fields from the first detail entry (hours, transport, etc.)

@@ -1,4 +1,3 @@
-import React from 'react';
 import { TrendingUp, TrendingDown, Minus, AlertCircle, Clock } from 'lucide-react';
 
 interface OfstedInspection {
@@ -12,9 +11,9 @@ interface OfstedInspection {
 
 interface OfstedTrajectoryData {
   trajectory: 'improving' | 'stable' | 'declining' | 'unknown';
-  current_rating?: string;
-  previous_rating?: string;
-  inspection_age_years?: number;
+  current_rating?: string | null;
+  previous_rating?: string | null;
+  inspection_age_years?: number | null;
   is_stale: boolean;
   history: OfstedInspection[];
 }
@@ -106,7 +105,7 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
         </div>
       )}
 
-      {trajectory.inspection_age_years !== null && !trajectory.is_stale && (
+      {trajectory.inspection_age_years !== null && trajectory.inspection_age_years !== undefined && !trajectory.is_stale && (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Clock className="w-4 h-4" />
           <span>
