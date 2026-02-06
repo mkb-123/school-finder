@@ -11,6 +11,16 @@ interface ComponentScores {
   ofsted: number;
   clubs: number;
   fees: number;
+  ofsted_trajectory: number;
+  attendance: number;
+  class_size: number;
+  parking: number;
+  holiday_club: number;
+  uniform: number;
+  diversity: number;
+  sibling_priority: number;
+  school_run_ease: number;
+  homework: number;
 }
 
 interface ScoredSchool {
@@ -89,7 +99,22 @@ function saveShortlist(ids: number[]): void {
 // Component
 // ---------------------------------------------------------------------------
 
-type WeightKey = "distance" | "ofsted" | "clubs" | "fees";
+type WeightKey =
+  | "distance"
+  | "ofsted"
+  | "clubs"
+  | "fees"
+  | "ofsted_trajectory"
+  | "attendance"
+  | "class_size"
+  | "parking"
+  | "holiday_club"
+  | "uniform"
+  | "diversity"
+  | "sibling_priority"
+  | "school_run_ease"
+  | "homework";
+
 type Weights = Record<WeightKey, number>;
 
 const WEIGHT_LABELS: [WeightKey, string][] = [
@@ -97,6 +122,16 @@ const WEIGHT_LABELS: [WeightKey, string][] = [
   ["ofsted", "Ofsted Rating"],
   ["clubs", "Clubs & Wraparound"],
   ["fees", "Fees / Value"],
+  ["ofsted_trajectory", "Ofsted Trajectory"],
+  ["attendance", "Attendance Rate"],
+  ["class_size", "Class Size"],
+  ["parking", "Parking/Drop-off Ease"],
+  ["holiday_club", "Holiday Club On-site"],
+  ["uniform", "Uniform Affordability"],
+  ["diversity", "Demographic Diversity"],
+  ["sibling_priority", "Sibling Priority Strength"],
+  ["school_run_ease", "School Run Ease"],
+  ["homework", "Homework Intensity"],
 ];
 
 const DEFAULT_WEIGHTS: Weights = {
@@ -104,7 +139,37 @@ const DEFAULT_WEIGHTS: Weights = {
   ofsted: 30,
   clubs: 20,
   fees: 20,
+  ofsted_trajectory: 0,
+  attendance: 0,
+  class_size: 0,
+  parking: 0,
+  holiday_club: 0,
+  uniform: 0,
+  diversity: 0,
+  sibling_priority: 0,
+  school_run_ease: 0,
+  homework: 0,
 };
+
+function getWeightDescription(key: WeightKey): string {
+  const descriptions: Record<WeightKey, string> = {
+    distance: "How close the school is to your home",
+    ofsted: "Current Ofsted inspection rating",
+    clubs: "Breakfast and after-school club availability",
+    fees: "Annual fees for private schools (state schools score 100)",
+    ofsted_trajectory: "Whether the school is improving, stable, or declining",
+    attendance: "School attendance rate (higher is better)",
+    class_size: "Average class size (smaller is better)",
+    parking: "Drop-off and pick-up ease (less chaos is better)",
+    holiday_club: "Holiday club provision on-site",
+    uniform: "Total uniform cost (lower is better)",
+    diversity: "Demographic diversity of the school community",
+    sibling_priority: "Likelihood of siblings getting a place",
+    school_run_ease: "Overall school run ease including journey time and safety",
+    homework: "Daily homework hours (lower is better for less homework)",
+  };
+  return descriptions[key] || "";
+}
 
 export default function DecisionSupport() {
   // --- State ---
@@ -338,13 +403,14 @@ export default function DecisionSupport() {
               Adjust sliders to set how important each factor is. They
               auto-normalise.
             </p>
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 max-h-96 space-y-4 overflow-y-auto pr-2">
               {WEIGHT_LABELS.map(([key, label]) => (
                 <div key={key}>
                   <div className="flex justify-between text-sm">
                     <label
                       htmlFor={`w-${key}`}
                       className="font-medium text-gray-700"
+                      title={getWeightDescription(key)}
                     >
                       {label}
                     </label>
@@ -536,13 +602,23 @@ export default function DecisionSupport() {
                       {isExpanded && (
                         <div className="ml-10 mt-3 space-y-3">
                           {/* Component score bars */}
-                          <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-4">
                             {(
                               [
                                 ["distance", "Distance"],
                                 ["ofsted", "Ofsted"],
                                 ["clubs", "Clubs"],
                                 ["fees", "Fees"],
+                                ["ofsted_trajectory", "Trajectory"],
+                                ["attendance", "Attendance"],
+                                ["class_size", "Class Size"],
+                                ["parking", "Parking"],
+                                ["holiday_club", "Holiday Club"],
+                                ["uniform", "Uniform"],
+                                ["diversity", "Diversity"],
+                                ["sibling_priority", "Sibling"],
+                                ["school_run_ease", "School Run"],
+                                ["homework", "Homework"],
                               ] as [keyof ComponentScores, string][]
                             ).map(([key, label]) => (
                               <div key={key}>
