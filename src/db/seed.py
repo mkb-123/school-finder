@@ -30,7 +30,7 @@ import polars as pl
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from src.db.models import Base, PrivateSchoolDetails, School, SchoolClub, SchoolTermDate
+from src.db.models import Base, PrivateSchoolDetails, School, SchoolClub, SchoolPerformance, SchoolTermDate
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -983,6 +983,124 @@ def _generate_private_school_details(session: Session) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Performance data generation
+# ---------------------------------------------------------------------------
+
+
+def _generate_test_performance(schools: list[School], session: Session) -> int:
+    """Generate realistic SchoolPerformance records for seeded schools.
+
+    Creates SATs data for primary schools and GCSE / Progress8 / Attainment8
+    data for secondary schools, across two academic years for trend analysis.
+    Returns the number of records inserted.
+    """
+    rng = random.Random(42)
+    academic_years = [2023, 2024]  # representing 2022/2023 and 2023/2024
+    count = 0
+
+    for school in schools:
+        if school.id is None or school.is_private:
+            continue
+
+        is_secondary = (
+            school.age_range_from is not None
+            and school.age_range_from >= 11
+            and school.age_range_to is not None
+            and school.age_range_to >= 16
+        )
+        is_primary = (
+            school.age_range_from is not None
+            and school.age_range_from < 11
+            and school.age_range_to is not None
+            and school.age_range_to <= 13
+        )
+
+        # Skip schools that don't clearly fit primary or secondary
+        if not is_primary and not is_secondary:
+            continue
+
+        for year in academic_years:
+            # Small year-on-year variation
+            year_drift = rng.uniform(-3.0, 3.0)
+
+            if is_primary:
+                # SATs results: expected standard %
+                base_expected = rng.uniform(55.0, 85.0)
+                expected_pct = round(max(40.0, min(95.0, base_expected + year_drift)), 0)
+                # Higher standard %
+                base_higher = rng.uniform(5.0, 25.0)
+                higher_pct = round(max(2.0, min(40.0, base_higher + year_drift * 0.5)), 0)
+
+                session.add(
+                    SchoolPerformance(
+                        school_id=school.id,
+                        metric_type="SATs",
+                        metric_value=f"Expected standard: {int(expected_pct)}%",
+                        year=year,
+                        source_url="https://www.find-school-performance-data.service.gov.uk/",
+                    )
+                )
+                count += 1
+                session.add(
+                    SchoolPerformance(
+                        school_id=school.id,
+                        metric_type="SATs_Higher",
+                        metric_value=f"Higher standard: {int(higher_pct)}%",
+                        year=year,
+                        source_url="https://www.find-school-performance-data.service.gov.uk/",
+                    )
+                )
+                count += 1
+
+            elif is_secondary:
+                # GCSE results: 5+ GCSEs at grade 9-4 %
+                base_gcse = rng.uniform(50.0, 85.0)
+                gcse_pct = round(max(30.0, min(98.0, base_gcse + year_drift)), 0)
+                session.add(
+                    SchoolPerformance(
+                        school_id=school.id,
+                        metric_type="GCSE",
+                        metric_value=f"5+ GCSEs 9-4: {int(gcse_pct)}%",
+                        year=year,
+                        source_url="https://www.find-school-performance-data.service.gov.uk/",
+                    )
+                )
+                count += 1
+
+                # Progress 8 score (typically -1.5 to +1.5)
+                base_p8 = rng.uniform(-0.8, 0.8)
+                p8_score = round(base_p8 + year_drift * 0.02, 2)
+                p8_score = max(-1.5, min(1.5, p8_score))
+                session.add(
+                    SchoolPerformance(
+                        school_id=school.id,
+                        metric_type="Progress8",
+                        metric_value=f"{p8_score:+.2f}",
+                        year=year,
+                        source_url="https://www.find-school-performance-data.service.gov.uk/",
+                    )
+                )
+                count += 1
+
+                # Attainment 8 score (typically 30-70)
+                base_a8 = rng.uniform(35.0, 60.0)
+                a8_score = round(max(25.0, min(70.0, base_a8 + year_drift)), 1)
+                session.add(
+                    SchoolPerformance(
+                        school_id=school.id,
+                        metric_type="Attainment8",
+                        metric_value=str(a8_score),
+                        year=year,
+                        source_url="https://www.find-school-performance-data.service.gov.uk/",
+                    )
+                )
+                count += 1
+
+    session.commit()
+    return count
+
+
+# ---------------------------------------------------------------------------
 # Term date seed data
 # ---------------------------------------------------------------------------
 
@@ -1158,7 +1276,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     print(f"  Database       : {db_path}")
     print()
 
-    print("[1/7] Obtaining GIAS CSV ...")
+    print("[1/8] Obtaining GIAS CSV ...")
     use_test_data = False
     csv_path: Path | None = None
     cached = _find_cached_csv()
@@ -1175,11 +1293,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
 
     schools: list[School] = []
     if use_test_data or csv_path is None:
-        print("[2/7] Generating test school data ...")
+        print("[2/8] Generating test school data ...")
         schools = _generate_test_schools(council)
         print(f"  Generated {len(schools)} test schools for '{council}'")
     else:
-        print("[2/7] Reading CSV ...")
+        print("[2/8] Reading CSV ...")
         rows = _read_csv(csv_path)
         print(f"  Total rows in CSV: {len(rows)}")
         council_lower = council.lower()
@@ -1198,7 +1316,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
                 if len(all_councils) > 20:
                     print(f"    ... and {len(all_councils) - 20} more", file=sys.stderr)
             sys.exit(1)
-        print("[3/7] Mapping to School records ...")
+        print("[3/8] Mapping to School records ...")
         skipped = 0
         for row in council_rows:
             school = _row_to_school(row)
@@ -1211,7 +1329,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     geo_count = sum(1 for s in schools if s.lat is not None)
     print(f"  With coordinates: {geo_count}/{len(schools)}")
 
-    print("[4/7] Writing schools to database ...")
+    print("[4/8] Writing schools to database ...")
     session = _ensure_database(db_path)
     try:
         inserted, updated = _upsert_schools(session, schools)
