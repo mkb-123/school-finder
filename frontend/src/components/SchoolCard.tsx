@@ -52,18 +52,20 @@ export default function SchoolCard({
             <p className="mt-1 text-sm italic text-gray-600">{ethos}</p>
           )}
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeColor}`}
-          >
-            {ofstedRating}
-          </span>
-          {ofstedDate && (
-            <span className="text-xs text-gray-400">
-              Inspected: {ofstedDate}
+        {!isPrivate && (
+          <div className="flex flex-col items-end gap-1">
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeColor}`}
+            >
+              {ofstedRating}
             </span>
-          )}
-        </div>
+            {ofstedDate && (
+              <span className="text-xs text-gray-400">
+                Inspected: {ofstedDate}
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
         <span className="flex items-center">

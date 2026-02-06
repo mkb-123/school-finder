@@ -242,13 +242,6 @@ export default function PrivateSchoolDetail() {
             <p className="mt-2 text-sm italic text-gray-700">"{school.ethos}"</p>
           )}
         </div>
-        {school.ofsted_rating && (
-          <span
-            className={`rounded-full px-3 py-1 text-sm font-medium ${badge}`}
-          >
-            {school.ofsted_rating}
-          </span>
-        )}
       </div>
 
       {/* Quick facts */}
@@ -569,14 +562,6 @@ export default function PrivateSchoolDetail() {
               <dt className="text-gray-500">Council</dt>
               <dd className="font-medium text-gray-900">{school.council}</dd>
             </div>
-            {school.ofsted_date && (
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Last Inspection</dt>
-                <dd className="font-medium text-gray-900">
-                  {school.ofsted_date}
-                </dd>
-              </div>
-            )}
           </dl>
         </section>
 
