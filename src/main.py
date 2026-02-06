@@ -18,12 +18,19 @@ from src.config import get_settings
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """Ensure the data directory and SQLite database file exist on startup."""
+    """Ensure the data directory, SQLite database, and tables exist on startup."""
     settings = get_settings()
     db_path = Path(settings.SQLITE_PATH)
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    if not db_path.exists():
-        db_path.touch()
+
+    # Create all tables if they don't exist
+    from src.db.models import Base
+    from src.db.sqlite_repo import SQLiteSchoolRepository
+
+    repo = SQLiteSchoolRepository(settings.SQLITE_PATH)
+    async with repo.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     yield
 
 
