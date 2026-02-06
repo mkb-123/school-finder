@@ -7,6 +7,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from src.api.compare import router as compare_router
 from src.api.councils import router as councils_router
@@ -16,6 +17,8 @@ from src.api.journey import router as journey_router
 from src.api.private_schools import router as private_schools_router
 from src.api.schools import router as schools_router
 from src.config import get_settings
+
+FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 
 @asynccontextmanager
@@ -58,6 +61,10 @@ app.include_router(councils_router)
 app.include_router(compare_router)
 app.include_router(decision_router)
 app.include_router(journey_router)
+
+# Serve frontend build (production). The SPA catch-all must come AFTER API routes.
+if FRONTEND_DIST.is_dir():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIST), html=True), name="frontend")
 
 if __name__ == "__main__":
     uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)
