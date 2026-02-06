@@ -23,8 +23,9 @@ RUN uv sync --frozen --no-dev
 # Copy frontend build from stage 1
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-# Create data directory for SQLite
-RUN mkdir -p /app/data
+# Create data directory and copy pre-seeded database to /app/seed
+RUN mkdir -p /app/data /app/seed
+COPY data/schools.db /app/seed/schools.db
 
 # Copy entrypoint (seeds DB on first boot if volume is empty)
 COPY entrypoint.sh ./

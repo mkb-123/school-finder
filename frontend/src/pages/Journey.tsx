@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Map, { type School } from "../components/Map";
 import JourneyCard, { type SchoolJourney } from "../components/JourneyCard";
+import BusRouteCard, { type BusRoute, type NearbyBusStop } from "../components/BusRouteCard";
 import { get } from "../api/client";
 
 /** Transport mode options displayed to the user. */
@@ -20,7 +21,7 @@ interface CompareJourneysResponse {
 
 export default function Journey() {
   const [postcode, setPostcode] = useState("");
-  const [mode, setMode] = useState("walking");
+  const [mode, setMode] = useState("driving");
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchoolIds, setSelectedSchoolIds] = useState<number[]>([]);
   const [journeys, setJourneys] = useState<SchoolJourney[]>([]);
@@ -28,6 +29,9 @@ export default function Journey() {
   const [loadingSchools, setLoadingSchools] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [busRoutes, setBusRoutes] = useState<Record<number, BusRoute[]>>({});
+  const [nearbyBusStops, setNearbyBusStops] = useState<NearbyBusStop[]>([]);
+  const [loadingBusData, setLoadingBusData] = useState(false);
 
   // Load all Milton Keynes schools for the selector
   useEffect(() => {
@@ -56,6 +60,8 @@ export default function Journey() {
     setLoading(true);
     setError(null);
     setJourneys([]);
+    setBusRoutes({});
+    setNearbyBusStops([]);
 
     try {
       const data = await get<CompareJourneysResponse>("/journey/compare", {
@@ -70,6 +76,42 @@ export default function Journey() {
         postcode: postcode.trim(),
       });
       setUserLocation([geo.lat, geo.lng]);
+
+      // Fetch bus routes for each school and nearby stops
+      setLoadingBusData(true);
+      try {
+        // Fetch bus routes for each selected school
+        const routePromises = selectedSchoolIds.map(async (schoolId) => {
+          try {
+            const routeData = await get<{ school_id: number; school_name: string; routes: BusRoute[] }>(
+              `/schools/${schoolId}/bus-routes`
+            );
+            return { schoolId, routes: routeData.routes };
+          } catch {
+            return { schoolId, routes: [] };
+          }
+        });
+        const routeResults = await Promise.all(routePromises);
+        const routesMap: Record<number, BusRoute[]> = {};
+        for (const { schoolId, routes } of routeResults) {
+          routesMap[schoolId] = routes;
+        }
+        setBusRoutes(routesMap);
+
+        // Fetch nearby bus stops
+        try {
+          const nearbyData = await get<NearbyBusStop[]>("/bus-routes/nearby", {
+            lat: geo.lat,
+            lng: geo.lng,
+            max_distance_km: 0.5,
+          });
+          setNearbyBusStops(nearbyData);
+        } catch {
+          setNearbyBusStops([]);
+        }
+      } finally {
+        setLoadingBusData(false);
+      }
     } catch (err: unknown) {
       const apiErr = err as { detail?: string };
       setError(apiErr.detail ?? "Failed to calculate journeys");
@@ -95,6 +137,20 @@ export default function Journey() {
   }, [journeys]);
 
   const mapCenter = userLocation ?? ([52.0406, -0.7594] as [number, number]);
+
+  // Format bus stops for the map
+  const busStopsForMap = useMemo(() => {
+    return nearbyBusStops
+      .filter((ns) => ns.stop.lat !== null && ns.stop.lng !== null)
+      .map((ns) => ({
+        id: ns.stop.id,
+        name: ns.stop.stop_name,
+        lat: ns.stop.lat!,
+        lng: ns.stop.lng!,
+        pickupTime: ns.stop.morning_pickup_time,
+        schoolName: ns.school_name,
+      }));
+  }, [nearbyBusStops]);
 
   // School search filter
   const [schoolSearch, setSchoolSearch] = useState("");
@@ -277,6 +333,42 @@ export default function Journey() {
             </div>
           )}
 
+          {/* Bus Routes Section */}
+          {journeys.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold text-gray-900">
+                School Bus Routes
+              </h2>
+              {loadingBusData && (
+                <p className="text-sm text-gray-500">Loading bus route information...</p>
+              )}
+              {!loadingBusData && Object.keys(busRoutes).length === 0 && (
+                <p className="text-sm text-gray-500">
+                  No bus routes available for selected schools.
+                </p>
+              )}
+              {!loadingBusData && Object.entries(busRoutes).map(([schoolIdStr, routes]) => {
+                const schoolId = parseInt(schoolIdStr, 10);
+                const school = schools.find((s) => s.id === schoolId);
+                if (!school || routes.length === 0) return null;
+                return (
+                  <div key={schoolId} className="space-y-2">
+                    <h3 className="text-base font-semibold text-gray-800">
+                      {school.name}
+                    </h3>
+                    {routes.map((route) => (
+                      <BusRouteCard
+                        key={route.id}
+                        route={route}
+                        nearbyStops={nearbyBusStops}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Empty state */}
           {journeys.length === 0 && !loading && !error && (
             <div className="rounded-lg border border-gray-200 bg-white p-4">
@@ -300,6 +392,7 @@ export default function Journey() {
           <Map
             center={mapCenter}
             schools={mapSchools}
+            busStops={busStopsForMap}
           />
         </section>
       </div>

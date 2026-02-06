@@ -31,13 +31,20 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from src.db.models import (
+    AdmissionsCriteria,
     AdmissionsHistory,
     Base,
+    BusRoute,
+    BusStop,
+    OfstedHistory,
+    ParkingRating,
     PrivateSchoolDetails,
     School,
+    SchoolClassSize,
     SchoolClub,
     SchoolPerformance,
     SchoolTermDate,
+    SchoolUniform,
 )
 
 # ---------------------------------------------------------------------------
@@ -238,6 +245,22 @@ def _parse_ofsted_date(value: str) -> date | None:
     return None
 
 
+def _generate_prospectus_url(website: str, school_name: str) -> str | None:
+    """Generate a prospectus URL from school website or fallback to search."""
+    if not website or website.strip() == "":
+        return None
+
+    website = website.strip()
+    # Ensure it has a scheme
+    if not website.startswith(("http://", "https://")):
+        website = f"https://{website}"
+
+    # Common prospectus URL patterns - try to construct a likely URL
+    # Most schools have prospectus on /prospectus, /about, /admissions, or /information
+    # For now, return website/prospectus as a reasonable guess
+    return f"{website.rstrip('/')}/prospectus"
+
+
 def _normalise_gender(raw: str) -> str:
     raw = raw.strip()
     if raw in {"Boys", "Girls", "Mixed"}:
@@ -254,6 +277,51 @@ def _normalise_faith(raw: str) -> str | None:
     if not raw or raw.lower() in {"none", "does not apply"}:
         return None
     return raw
+
+
+def _generate_ethos(school_name: str, phase: str, faith: str | None, ofsted_rating: str | None) -> str:
+    """Generate a realistic ethos one-liner for a school."""
+    ethos_examples_primary = [
+        "Nurturing creativity and independence in every child",
+        "Where every child matters and excellence is celebrated",
+        "Inspiring curious minds through play-based learning",
+        "Building confident, caring learners for life",
+        "A warm, inclusive community fostering lifelong learning",
+        "Empowering children to reach their full potential",
+        "Traditional values with a focus on academic excellence",
+        "Creating happy, confident learners in a safe environment",
+        "Celebrating diversity and developing well-rounded individuals",
+        "Fostering a love of learning through creative teaching",
+    ]
+    ethos_examples_secondary = [
+        "Ambitious for every student, preparing for success",
+        "High expectations, outstanding outcomes, bright futures",
+        "Inspiring excellence, integrity, and innovation",
+        "Where achievement, respect, and opportunity thrive",
+        "Developing confident, articulate, and ambitious young people",
+        "A culture of aspiration, achievement, and care",
+        "Traditional values with high academic expectations",
+        "Empowering students to excel academically and personally",
+        "Building character, confidence, and academic success",
+        "Nurturing talent, celebrating success, inspiring futures",
+    ]
+    ethos_examples_faith = [
+        "Christ-centred values guiding every aspect of learning",
+        "Faith, learning, and service at the heart of our community",
+        "Academic excellence rooted in Christian values",
+        "Spiritual growth and academic achievement together",
+        "Where faith inspires compassion, respect, and excellence",
+    ]
+
+    # Choose based on school characteristics
+    phase_lower = phase.lower() if phase else ""
+
+    if faith:
+        return random.choice(ethos_examples_faith)
+    elif "secondary" in phase_lower or "16 plus" in phase_lower:
+        return random.choice(ethos_examples_secondary)
+    else:
+        return random.choice(ethos_examples_primary)
 
 
 # ---------------------------------------------------------------------------
@@ -345,6 +413,10 @@ def _row_to_school(row: dict[str, str]) -> School | None:
     ofsted_rating_raw = row.get(COL_OFSTED_RATING, "").strip()
     ofsted_rating = ofsted_rating_raw if ofsted_rating_raw else None
     ofsted_date = _parse_ofsted_date(row.get(COL_OFSTED_DATE, ""))
+    website = row.get(COL_WEBSITE, "").strip()
+    prospectus_url = _generate_prospectus_url(website, name)
+    faith = _normalise_faith(row.get(COL_RELIGION, ""))
+    ethos = _generate_ethos(name, phase, faith, ofsted_rating)
     return School(
         urn=urn,
         name=name,
@@ -356,12 +428,15 @@ def _row_to_school(row: dict[str, str]) -> School | None:
         lng=lng,
         catchment_radius_km=_default_catchment_km(phase),
         gender_policy=_normalise_gender(row.get(COL_GENDER, "")),
-        faith=_normalise_faith(row.get(COL_RELIGION, "")),
+        faith=faith,
         age_range_from=_safe_int(row.get(COL_LOW_AGE, "")),
         age_range_to=_safe_int(row.get(COL_HIGH_AGE, "")),
         ofsted_rating=ofsted_rating,
         ofsted_date=ofsted_date,
         is_private=_is_private(row),
+        prospectus_url=prospectus_url,
+        website=website if website else None,
+        ethos=ethos,
     )
 
 
@@ -529,6 +604,11 @@ def _generate_test_schools(council: str) -> list[School]:  # noqa: C901
             except ValueError:
                 pass
         school_type = "private" if is_private_val else "state"
+        # Generate a sample prospectus URL for seed data
+        website = f"https://www.{name.lower().replace(' ', '')}.org.uk"
+        prospectus_url = _generate_prospectus_url(website, name)
+        ofsted_rating_val = ofsted if ofsted != "Not applicable" else None
+        ethos = _generate_ethos(name, phase, faith, ofsted_rating_val)
         schools.append(
             School(
                 urn=urn,
@@ -544,9 +624,12 @@ def _generate_test_schools(council: str) -> list[School]:  # noqa: C901
                 faith=faith,
                 age_range_from=age_from,
                 age_range_to=age_to,
-                ofsted_rating=ofsted if ofsted != "Not applicable" else None,
+                ofsted_rating=ofsted_rating_val,
                 ofsted_date=ofsted_date_val,
                 is_private=is_private_val,
+                prospectus_url=prospectus_url,
+                website=website,
+                ethos=ethos,
             )
         )
     return schools
@@ -1339,6 +1422,200 @@ def _generate_test_admissions(schools: list[School], session: Session) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Class size trends seed data
+# ---------------------------------------------------------------------------
+
+
+def _generate_test_class_sizes(schools: list[School], session: Session) -> int:
+    """Generate realistic class size data showing enrollment trends over time.
+
+    Creates 4 years of class size data per school, tracking year group sizes
+    and showing growth/decline trends. Uses a deterministic RNG seeded with
+    42 for reproducibility.
+
+    Returns the number of records inserted.
+    """
+    rng = random.Random(42)
+    count = 0
+
+    # Year groups by school phase
+    PRIMARY_YEAR_GROUPS = ["Reception", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6"]
+    SECONDARY_YEAR_GROUPS = ["Year 7", "Year 8", "Year 9", "Year 10", "Year 11", "Year 12", "Year 13"]
+
+    for school in schools:
+        if school.id is None:
+            continue
+
+        # Determine school phase and year groups
+        is_secondary = (
+            school.age_range_from is not None
+            and school.age_range_from >= 11
+            and school.age_range_to is not None
+            and school.age_range_to >= 16
+        )
+        is_all_through = (
+            school.age_range_from is not None
+            and school.age_range_from <= 6
+            and school.age_range_to is not None
+            and school.age_range_to >= 16
+        )
+
+        if is_all_through:
+            year_groups = PRIMARY_YEAR_GROUPS + SECONDARY_YEAR_GROUPS
+        elif is_secondary:
+            year_groups = SECONDARY_YEAR_GROUPS[: school.age_range_to - 10 if school.age_range_to else 7]
+        else:
+            # Primary - include only relevant year groups
+            year_groups = PRIMARY_YEAR_GROUPS
+
+        # Determine trend: growing, stable, or shrinking
+        # Outstanding/Good schools more likely to be growing
+        # Requires Improvement/Inadequate schools more likely shrinking
+        if school.ofsted_rating == "Outstanding":
+            trend_type = rng.choices(["growing", "stable", "shrinking"], weights=[0.6, 0.35, 0.05])[0]
+        elif school.ofsted_rating == "Good":
+            trend_type = rng.choices(["growing", "stable", "shrinking"], weights=[0.4, 0.5, 0.1])[0]
+        elif school.ofsted_rating == "Requires Improvement":
+            trend_type = rng.choices(["growing", "stable", "shrinking"], weights=[0.1, 0.3, 0.6])[0]
+        else:
+            trend_type = rng.choices(["growing", "stable", "shrinking"], weights=[0.05, 0.25, 0.7])[0]
+
+        # Base class size
+        if is_secondary:
+            base_pupils_per_year = rng.choice([150, 180, 210, 240])
+            classes_per_year = rng.choice([5, 6, 7, 8])
+        else:
+            base_pupils_per_year = rng.choice([30, 45, 60, 90])
+            classes_per_year = rng.choice([1, 2, 3])
+
+        # Trend factor per year
+        if trend_type == "growing":
+            year_change_pct = rng.uniform(0.03, 0.08)  # 3-8% growth per year
+        elif trend_type == "shrinking":
+            year_change_pct = -rng.uniform(0.04, 0.10)  # 4-10% decline per year
+        else:
+            year_change_pct = rng.uniform(-0.02, 0.02)  # Stable with slight variation
+
+        # Delete existing records for idempotent re-seed
+        session.query(SchoolClassSize).filter_by(school_id=school.id).delete()
+
+        for i, year in enumerate(_ACADEMIC_YEARS):
+            for year_group in year_groups:
+                # Apply trend over years
+                year_factor = 1.0 + (i * year_change_pct)
+
+                # Add some randomness per year group
+                group_variance = rng.uniform(0.9, 1.1)
+
+                num_pupils = int(base_pupils_per_year * year_factor * group_variance)
+                num_pupils = max(10, num_pupils)  # At least 10 pupils per year group
+
+                # Classes adjusts based on pupil numbers
+                # Aim for class sizes between 20-30 for primary, 25-32 for secondary
+                target_class_size = 30 if is_secondary else 28
+                num_classes = max(1, round(num_pupils / target_class_size))
+
+                avg_class_size = round(num_pupils / num_classes, 1)
+
+                session.add(
+                    SchoolClassSize(
+                        school_id=school.id,
+                        academic_year=year,
+                        year_group=year_group,
+                        num_pupils=num_pupils,
+                        num_classes=num_classes,
+                        avg_class_size=avg_class_size,
+                    )
+                )
+                count += 1
+
+    session.commit()
+    return count
+
+
+def _generate_test_ofsted_history(schools: list[School], session: Session) -> int:
+    """Generate realistic Ofsted inspection history for schools."""
+    count = 0
+    ratings = ["Outstanding", "Good", "Requires Improvement", "Inadequate"]
+
+    for school in schools:
+        # Delete existing history for this school
+        session.query(OfstedHistory).filter_by(school_id=school.id).delete()
+
+        # Use current Ofsted rating or default to "Good"
+        current_rating = school.ofsted_rating if school.ofsted_rating in ratings else "Good"
+        current_date = school.ofsted_date or date(2023, 3, 15)
+        current_idx = ratings.index(current_rating)
+
+        # Current inspection
+        session.add(
+            OfstedHistory(
+                school_id=school.id,
+                inspection_date=current_date,
+                rating=current_rating,
+                report_url=f"https://reports.ofsted.gov.uk/provider/21/{school.id}",
+                strengths_quote=random.choice([
+                    "Pupils are safe, happy and make good progress.",
+                    "The quality of education is high and leadership is strong.",
+                    "Children are enthusiastic learners who enjoy coming to school.",
+                    "Teaching is consistently good across all subjects.",
+                ]),
+                improvements_quote=random.choice([
+                    "The school should ensure that all pupils read widely and often.",
+                    "Leaders should develop the curriculum to ensure full coverage.",
+                    "More needs to be done to support pupils with SEND.",
+                    "Attendance rates need to improve, especially for disadvantaged pupils.",
+                ]),
+                is_current=True
+            )
+        )
+        count += 1
+
+        # Add 1-3 previous inspections
+        num_previous = random.randint(1, 3)
+        previous_date = current_date
+
+        for _ in range(num_previous):
+            years_back = random.uniform(3.0, 5.0)
+            previous_date = previous_date - timedelta(days=int(years_back * 365))
+
+            # Previous rating tends to be similar or slightly worse
+            if random.random() < 0.6:
+                prev_idx = min(current_idx + random.choice([0, 1]), len(ratings) - 1)
+            else:
+                prev_idx = max(current_idx - 1, 0)
+
+            prev_rating = ratings[prev_idx]
+
+            session.add(
+                OfstedHistory(
+                    school_id=school.id,
+                    inspection_date=previous_date,
+                    rating=prev_rating,
+                    report_url=f"https://reports.ofsted.gov.uk/provider/21/{school.id}/archive",
+                    strengths_quote=random.choice([
+                        "Pupils make satisfactory progress in most subjects.",
+                        "The school provides a safe and caring environment.",
+                        "Leadership has improved since the last inspection.",
+                        "Teaching quality is variable but improving.",
+                    ]),
+                    improvements_quote=random.choice([
+                        "The school should improve outcomes in mathematics.",
+                        "More needs to be done to develop the curriculum.",
+                        "Governance needs strengthening.",
+                        "Safeguarding procedures need updating.",
+                    ]),
+                    is_current=False
+                )
+            )
+            count += 1
+            current_idx = prev_idx
+
+    session.commit()
+    return count
+
+
+# ---------------------------------------------------------------------------
 # Database operations
 # ---------------------------------------------------------------------------
 
@@ -1380,6 +1657,537 @@ def _upsert_schools(session: Session, schools: list[School]) -> tuple[int, int]:
 
 
 # ---------------------------------------------------------------------------
+# Uniform data generation
+# ---------------------------------------------------------------------------
+
+_UNIFORM_STYLES = [
+    ("Smart casual", ["Navy", "Grey", "White"]),
+    ("Traditional blazer", ["Navy", "Burgundy", "Gold"]),
+    ("Polo shirt and jumper", ["Navy", "Grey", "White"]),
+    ("Smart shirt and tie", ["Navy", "Black", "White"]),
+]
+
+_UNIFORM_SUPPLIERS = [
+    ("Tesco", "https://www.tesco.com/uniform", False),
+    ("Asda", "https://george.com/schoolwear", False),
+    ("M&S", "https://www.marksandspencer.com/school", False),
+    ("Schoolblazer", "https://www.schoolblazer.com", True),
+    ("YourSchoolUniform", "https://www.yourschooluniform.com", True),
+    ("PriceSchoolwear", "https://www.priceschoolwear.co.uk", True),
+]
+
+
+def _generate_test_uniforms(schools: list[School], session: Session) -> int:
+    """Generate realistic uniform data for schools."""
+    rng = random.Random(44)
+    count = 0
+
+    for school in schools:
+        if school.id is None:
+            continue
+
+        # Skip some schools (not all have uniform data yet)
+        if rng.random() < 0.25:
+            continue
+
+        # Choose uniform style and colors
+        style, colors = rng.choice(_UNIFORM_STYLES)
+        color_str = ", ".join(colors)
+
+        # Decide if specific supplier is required (more likely for secondary schools)
+        is_secondary = (
+            school.age_range_from is not None
+            and school.age_range_from >= 11
+            and school.age_range_to is not None
+            and school.age_range_to >= 16
+        )
+        requires_specific = rng.random() < (0.4 if is_secondary else 0.15)
+
+        supplier_name = None
+        supplier_website = None
+        is_expensive = False
+
+        if requires_specific:
+            # Specific branded supplier (expensive)
+            supplier_name, supplier_website, _ = rng.choice([s for s in _UNIFORM_SUPPLIERS if s[2]])
+            is_expensive = True
+            # Branded costs are higher
+            polo_cost = round(rng.uniform(10, 15), 2)
+            jumper_cost = round(rng.uniform(18, 28), 2)
+            trousers_cost = round(rng.uniform(15, 22), 2)
+            pe_kit_cost = round(rng.uniform(20, 35), 2)
+            bag_cost = round(rng.uniform(15, 25), 2)
+            coat_cost = round(rng.uniform(35, 55), 2) if is_secondary else None
+            other_cost = round(rng.uniform(10, 20), 2) if is_secondary else None
+            other_desc = "Tie, blazer" if is_secondary else None
+        else:
+            # Supermarket alternatives acceptable (affordable)
+            supplier_name, supplier_website, _ = rng.choice([s for s in _UNIFORM_SUPPLIERS if not s[2]])
+            is_expensive = False
+            # Supermarket costs are lower
+            polo_cost = round(rng.uniform(3, 6), 2)
+            jumper_cost = round(rng.uniform(6, 12), 2)
+            trousers_cost = round(rng.uniform(5, 10), 2)
+            pe_kit_cost = round(rng.uniform(8, 15), 2)
+            bag_cost = round(rng.uniform(5, 12), 2)
+            coat_cost = round(rng.uniform(15, 30), 2) if is_secondary else None
+            other_cost = None
+            other_desc = None
+
+        # Calculate total cost (2 shirts, 2 jumpers, 2 trousers/skirts, 1 PE kit, 1 bag, 1 coat)
+        total = (polo_cost * 2) + (jumper_cost * 2) + (trousers_cost * 2) + pe_kit_cost + bag_cost
+        if coat_cost:
+            total += coat_cost
+        if other_cost:
+            total += other_cost
+
+        description = f"{style} in {color_str.lower()}: polo shirts, jumper, trousers/skirt, PE kit"
+        notes = (
+            "Supermarket alternatives acceptable"
+            if not requires_specific
+            else "Must be purchased from designated supplier"
+        )
+
+        uniform = SchoolUniform(
+            school_id=school.id,
+            description=description,
+            style=style,
+            colors=color_str,
+            requires_specific_supplier=requires_specific,
+            supplier_name=supplier_name,
+            supplier_website=supplier_website,
+            polo_shirts_cost=polo_cost,
+            jumper_cost=jumper_cost,
+            trousers_skirt_cost=trousers_cost,
+            pe_kit_cost=pe_kit_cost,
+            bag_cost=bag_cost,
+            coat_cost=coat_cost,
+            other_items_cost=other_cost,
+            other_items_description=other_desc,
+            total_cost_estimate=round(total, 2),
+            is_expensive=is_expensive,
+            notes=notes,
+        )
+
+        session.add(uniform)
+        count += 1
+
+    session.commit()
+    return count
+
+
+def _generate_test_parking_ratings(all_schools: list[School], session: Session) -> int:
+    """Generate realistic test parking chaos ratings for schools.
+
+    Generates 2-8 parent ratings per school with realistic patterns:
+    - Secondary schools tend to have higher chaos scores
+    - Urban/busy schools have more parking issues
+    - Some schools have very few ratings (realistic)
+    """
+    count = 0
+    rng = random.Random(42)  # Deterministic seed for reproducibility
+
+    # Delete existing parking ratings for idempotent re-seed
+    school_ids = [s.id for s in all_schools]
+    if school_ids:
+        session.query(ParkingRating).filter(ParkingRating.school_id.in_(school_ids)).delete(synchronize_session=False)
+        session.flush()
+
+    for school in all_schools:
+        # Determine number of ratings (some schools have none, some have many)
+        rating_count_prob = rng.random()
+        if rating_count_prob < 0.15:
+            num_ratings = 0  # 15% have no ratings yet
+        elif rating_count_prob < 0.40:
+            num_ratings = rng.randint(1, 3)  # 25% have 1-3 ratings
+        elif rating_count_prob < 0.75:
+            num_ratings = rng.randint(4, 6)  # 35% have 4-6 ratings
+        else:
+            num_ratings = rng.randint(7, 10)  # 25% have 7-10 ratings
+
+        # Determine base chaos level for this school
+        is_secondary = school.age_range_to and school.age_range_to >= 16
+        base_chaos = rng.uniform(2.5, 4.5) if is_secondary else rng.uniform(1.8, 3.8)
+
+        for _ in range(num_ratings):
+            # Add variation to each rating dimension
+            dropoff = max(1, min(5, int(base_chaos + rng.uniform(-0.8, 0.8))))
+            pickup = max(1, min(5, int(base_chaos + rng.uniform(-0.5, 1.0))))  # Pickup often worse
+            parking = max(1, min(5, int(base_chaos + rng.uniform(-1.0, 0.5))))
+            congestion = max(1, min(5, int(base_chaos + rng.uniform(-0.7, 0.7))))
+            restrictions = max(1, min(5, int(base_chaos + rng.uniform(-1.2, 0.8))))
+
+            # Some ratings have comments
+            comments = None
+            if rng.random() < 0.30:
+                comment_templates = [
+                    "Very busy at drop-off time, best to arrive early.",
+                    "Parking is limited nearby, recommend walking if possible.",
+                    "Double yellow lines make it tricky. School has requested parents use side streets.",
+                    "Much better since they introduced staggered start times.",
+                    "Traffic calming measures help but it's still chaotic at 3pm.",
+                    "School run can take 20+ minutes just to get out of the car park.",
+                    "Relatively calm if you arrive 10-15 minutes early.",
+                    "Narrow streets make it difficult when there are multiple cars.",
+                    "The school gate is directly on a busy road, can be stressful.",
+                    "Local residents complain about parking, be considerate.",
+                ]
+                comments = rng.choice(comment_templates)
+
+            # Random submission date within last 6 months
+            days_ago = rng.randint(1, 180)
+            submitted_at = datetime.utcnow() - timedelta(days=days_ago)
+
+            # Rarely include email (most parents submit anonymously)
+            parent_email = None
+            if rng.random() < 0.10:
+                parent_email = f"parent{rng.randint(1, 999)}@example.com"
+
+            rating = ParkingRating(
+                school_id=school.id,
+                dropoff_chaos=dropoff if rng.random() > 0.05 else None,  # 95% rate this
+                pickup_chaos=pickup if rng.random() > 0.10 else None,  # 90% rate this
+                parking_availability=parking if rng.random() > 0.15 else None,  # 85% rate this
+                road_congestion=congestion if rng.random() > 0.20 else None,  # 80% rate this
+                restrictions_hazards=restrictions if rng.random() > 0.30 else None,  # 70% rate this
+                comments=comments,
+                submitted_at=submitted_at,
+                parent_email=parent_email,
+            )
+
+            session.add(rating)
+            count += 1
+
+    session.commit()
+    return count
+
+
+def _generate_test_admissions_criteria(all_schools: list[School], session: Session) -> int:
+    """Generate realistic admissions criteria priority breakdowns for schools.
+
+    Standard criteria for state schools:
+    1. Looked-after children and previously looked-after children
+    2. Siblings at the school
+    3. Distance from the school
+
+    Faith schools add religious practice criteria.
+    Some schools require supplementary information forms (SIF).
+    """
+    count = 0
+    rng = random.Random(42)  # Deterministic seed
+
+    # Delete existing criteria for idempotent re-seed
+    school_ids = [s.id for s in all_schools]
+    if school_ids:
+        session.query(AdmissionsCriteria).filter(AdmissionsCriteria.school_id.in_(school_ids)).delete(
+            synchronize_session=False
+        )
+        session.flush()
+
+    for school in all_schools:
+        is_faith = school.faith is not None and school.faith.strip() != ""
+        is_private = school.is_private
+
+        # Private schools have different criteria (fees, assessment, etc.)
+        if is_private:
+            criteria_list = [
+                (
+                    1,
+                    "Registration and assessment",
+                    "Places offered based on registration date and assessment outcome",
+                    None,
+                    False,
+                ),
+                (
+                    2,
+                    "Siblings",
+                    "Priority given to applicants with siblings currently at the school",
+                    None,
+                    False,
+                ),
+                (
+                    3,
+                    "School fit",
+                    "Parents' alignment with school ethos and child's suitability for the school environment",
+                    None,
+                    False,
+                ),
+            ]
+        elif is_faith:
+            # Faith schools have religious practice criteria
+            faith_name = school.faith
+            requires_sif = rng.random() < 0.7  # 70% of faith schools require SIF
+
+            if "Catholic" in faith_name or "Church of England" in faith_name:
+                religious_req = (
+                    "Baptism certificate and regular church attendance (minimum monthly attendance for 2+ years). "
+                    "Priest's reference required."
+                )
+            elif "Jewish" in faith_name:
+                religious_req = "Evidence of Jewish faith and regular synagogue attendance. Rabbi's reference required."
+            elif "Muslim" in faith_name or "Islamic" in faith_name:
+                religious_req = "Evidence of Islamic faith and regular mosque attendance. Imam's reference required."
+            else:
+                religious_req = f"Evidence of {faith_name} faith and regular attendance at place of worship."
+
+            criteria_list = [
+                (
+                    1,
+                    "Looked-after children",
+                    "Children in care or previously in care (adopted from care or subject to special guardianship or child arrangements order)",
+                    None,
+                    False,
+                ),
+                (
+                    2,
+                    f"{faith_name} faith criteria",
+                    f"Children whose parents are committed members of the {faith_name} faith community",
+                    religious_req,
+                    requires_sif,
+                ),
+                (
+                    3,
+                    "Siblings",
+                    "Children with a brother or sister attending the school at the time of admission",
+                    None,
+                    False,
+                ),
+                (
+                    4,
+                    "Other faith backgrounds",
+                    "Children whose parents are members of other Christian denominations or faith communities (with letter from faith leader)",
+                    None,
+                    requires_sif,
+                ),
+                (
+                    5,
+                    "Distance",
+                    "All other applicants, ranked by straight-line distance from home to school (nearest first)",
+                    None,
+                    False,
+                ),
+            ]
+        else:
+            # Standard state school criteria
+            has_medical_criterion = rng.random() < 0.25  # 25% have medical/social criterion
+
+            criteria_list = [
+                (
+                    1,
+                    "Looked-after children",
+                    "Children in care or previously in care (adopted from care or subject to special guardianship or child arrangements order)",
+                    None,
+                    False,
+                ),
+            ]
+
+            if has_medical_criterion:
+                criteria_list.append(
+                    (
+                        2,
+                        "Medical or social need",
+                        "Children with an exceptional medical or social need for the school (must be supported by written evidence from a doctor, social worker, or other professional)",
+                        None,
+                        True,  # Requires supporting documentation
+                    )
+                )
+                sibling_rank = 3
+                distance_rank = 4
+            else:
+                sibling_rank = 2
+                distance_rank = 3
+
+            criteria_list.append(
+                (
+                    sibling_rank,
+                    "Siblings",
+                    "Children with a brother or sister attending the school at the time of admission",
+                    None,
+                    False,
+                )
+            )
+
+            criteria_list.append(
+                (
+                    distance_rank,
+                    "Distance",
+                    "All other applicants, ranked by straight-line distance from home to school (nearest first)",
+                    None,
+                    False,
+                )
+            )
+
+        # Insert criteria for this school
+        for rank, category, description, religious_req, requires_sif in criteria_list:
+            notes = None
+            if category == "Distance" and not is_private:
+                # Add notes about tiebreakers
+                notes = "In the event of a tie (same distance), places are allocated by random ballot."
+
+            criterion = AdmissionsCriteria(
+                school_id=school.id,
+                priority_rank=rank,
+                category=category,
+                description=description,
+                religious_requirement=religious_req,
+                requires_sif=requires_sif,
+                notes=notes,
+            )
+            session.add(criterion)
+            count += 1
+
+    session.commit()
+    return count
+
+
+def _generate_test_bus_routes(all_schools: list[School], session: Session) -> int:
+    """Generate bus route and stop data for schools.
+
+    Simulates:
+    - State primary/secondary schools: council-run routes with 2+ / 3+ km eligibility, free
+    - Private schools: paid private coach services
+    - Bus stops distributed around school catchment areas
+    """
+    count = 0
+
+    for school in all_schools:
+        # Skip if no coordinates
+        if school.lat is None or school.lng is None:
+            continue
+
+        # Determine if school needs bus routes
+        is_secondary = school.age_range_from and school.age_range_from >= 11
+        is_primary = school.age_range_to and school.age_range_to <= 13 and not is_secondary
+
+        # 60% of state secondary schools have bus routes, 30% of state primary
+        # 80% of private schools have coach services
+        if school.is_private:
+            has_routes = random.random() < 0.8
+            num_routes = random.randint(1, 3) if has_routes else 0
+        elif is_secondary:
+            has_routes = random.random() < 0.6
+            num_routes = random.randint(1, 4) if has_routes else 0
+        elif is_primary:
+            has_routes = random.random() < 0.3
+            num_routes = random.randint(1, 2) if has_routes else 0
+        else:
+            has_routes = False
+            num_routes = 0
+
+        if not has_routes:
+            continue
+
+        for route_idx in range(num_routes):
+            # Route name
+            route_name = f"Route {chr(65 + route_idx)}" if route_idx < 26 else f"Route {route_idx + 1}"
+
+            if school.is_private:
+                # Private coach service
+                provider = random.choice(["School Transport Ltd", "Amber Coaches", "School Run Express"])
+                route_type = "private_coach"
+                is_free = False
+                cost_per_term = round(random.uniform(200, 600), 2)
+                cost_per_year = round(cost_per_term * 3, 2)
+                cost_notes = "Payment required per term"
+                distance_eligibility_km = None
+                year_groups_eligible = None
+                eligibility_notes = "Available to all enrolled pupils"
+            else:
+                # Council bus route
+                provider = f"{school.council} Council"
+                route_type = "dedicated"
+                is_free = True
+                cost_per_term = None
+                cost_per_year = None
+                distance_eligibility_km = 3.0 if is_secondary else 2.0
+                year_groups_eligible = "Year 7-11" if is_secondary else "Reception-Year 6"
+                cost_notes = f"Free for pupils living {distance_eligibility_km}+ km from school"
+                eligibility_notes = None
+
+            # Schedule
+            operates_days = "Mon-Fri"
+            morning_departure_time = time(7, random.randint(0, 30))
+            afternoon_departure_time = time(15, random.randint(0, 45))
+
+            route = BusRoute(
+                school_id=school.id,
+                route_name=route_name,
+                provider=provider,
+                route_type=route_type,
+                distance_eligibility_km=distance_eligibility_km,
+                year_groups_eligible=year_groups_eligible,
+                eligibility_notes=eligibility_notes,
+                is_free=is_free,
+                cost_per_term=cost_per_term,
+                cost_per_year=cost_per_year,
+                cost_notes=cost_notes,
+                operates_days=operates_days,
+                morning_departure_time=morning_departure_time,
+                afternoon_departure_time=afternoon_departure_time,
+                notes=None,
+            )
+            session.add(route)
+            session.flush()  # Get route ID
+
+            # Generate bus stops for this route
+            num_stops = random.randint(3, 8)
+            for stop_idx in range(num_stops):
+                # Generate stop location around the school within a radius
+                # Use simple offset in lat/lng (rough approximation)
+                radius_km = random.uniform(1.5, 5.0)
+                angle = random.uniform(0, 2 * 3.14159)
+                lat_offset = (radius_km / 111.0) * math.cos(angle)  # 111 km per degree lat
+                lng_offset = (radius_km / (111.0 * math.cos(math.radians(school.lat)))) * math.sin(angle)
+
+                stop_lat = school.lat + lat_offset
+                stop_lng = school.lng + lng_offset
+
+                # Stop name
+                stop_name = random.choice(
+                    [
+                        "High Street",
+                        "Main Road",
+                        "Station Road",
+                        "Church Lane",
+                        "Park Avenue",
+                        "Mill End",
+                        "Green Lane",
+                        "Brook Street",
+                        "The Square",
+                        "Village Hall",
+                    ]
+                )
+                if stop_idx > 0:
+                    stop_name = f"{stop_name} ({chr(65 + stop_idx)})"
+
+                # Pick-up times - earlier stops have earlier times
+                minutes_before_departure = (num_stops - stop_idx) * random.randint(3, 7)
+                morning_pickup = datetime.combine(date.today(), morning_departure_time) - timedelta(
+                    minutes=minutes_before_departure
+                )
+                afternoon_dropoff = datetime.combine(date.today(), afternoon_departure_time) + timedelta(
+                    minutes=minutes_before_departure
+                )
+
+                stop = BusStop(
+                    route_id=route.id,
+                    stop_name=stop_name,
+                    stop_location=f"{stop_name}, {school.council}",
+                    lat=stop_lat,
+                    lng=stop_lng,
+                    morning_pickup_time=morning_pickup.time(),
+                    afternoon_dropoff_time=afternoon_dropoff.time(),
+                    stop_order=stop_idx,
+                )
+                session.add(stop)
+
+            count += 1
+
+    session.commit()
+    return count
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -1407,7 +2215,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     print(f"  Database       : {db_path}")
     print()
 
-    print("[1/9] Obtaining GIAS CSV ...")
+    print("[1/14] Obtaining GIAS CSV ...")
     use_test_data = False
     csv_path: Path | None = None
     cached = _find_cached_csv()
@@ -1424,11 +2232,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
 
     schools: list[School] = []
     if use_test_data or csv_path is None:
-        print("[2/9] Generating test school data ...")
+        print("[2/14] Generating test school data ...")
         schools = _generate_test_schools(council)
         print(f"  Generated {len(schools)} test schools for '{council}'")
     else:
-        print("[2/9] Reading CSV ...")
+        print("[2/14] Reading CSV ...")
         rows = _read_csv(csv_path)
         print(f"  Total rows in CSV: {len(rows)}")
         council_lower = council.lower()
@@ -1447,7 +2255,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
                 if len(all_councils) > 20:
                     print(f"    ... and {len(all_councils) - 20} more", file=sys.stderr)
             sys.exit(1)
-        print("[3/9] Mapping to School records ...")
+        print("[3/14] Mapping to School records ...")
         skipped = 0
         for row in council_rows:
             school = _row_to_school(row)
@@ -1460,7 +2268,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     geo_count = sum(1 for s in schools if s.lat is not None)
     print(f"  With coordinates: {geo_count}/{len(schools)}")
 
-    print("[4/9] Writing schools to database ...")
+    print("[4/14] Writing schools to database ...")
     session = _ensure_database(db_path)
     try:
         inserted, updated = _upsert_schools(session, schools)
@@ -1469,11 +2277,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  Updated : {updated}")
         print(f"  Total schools for '{council}' in DB: {total_in_db}")
 
-        print("[5/9] Seeding term dates ...")
+        print("[5/13] Seeding term dates ...")
         term_count = _seed_term_dates(session, council)
         print(f"  Term date records created: {term_count}")
 
-        print("[6/9] Generating club data ...")
+        print("[6/13] Generating club data ...")
         all_schools = session.query(School).filter_by(council=council).all()
         clubs = _generate_test_clubs(all_schools)
         clubs_inserted = _upsert_clubs(session, clubs)
@@ -1484,11 +2292,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  Clubs inserted  : {clubs_inserted}")
         print(f"  Total clubs in DB: {total_clubs}")
 
-        print("[7/9] Generating private school details ...")
+        print("[7/13] Generating private school details ...")
         pvt_count = _generate_private_school_details(session)
         print(f"  Private school detail tiers: {pvt_count}")
 
-        print("[8/9] Generating performance data ...")
+        print("[8/13] Generating performance data ...")
         # Clear existing performance data for idempotent re-seed
         school_ids = [s.id for s in all_schools]
         if school_ids:
@@ -1499,9 +2307,33 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         perf_count = _generate_test_performance(all_schools, session)
         print(f"  Performance records created: {perf_count}")
 
-        print("[9/9] Generating admissions history ...")
+        print("[9/13] Generating admissions history ...")
         admissions_count = _generate_test_admissions(all_schools, session)
         print(f"  Admissions history records created: {admissions_count}")
+
+        print("[10/15] Generating class size trends ...")
+        class_size_count = _generate_test_class_sizes(all_schools, session)
+        print(f"  Class size records created: {class_size_count}")
+
+        print("[11/15] Generating Ofsted inspection history ...")
+        ofsted_history_count = _generate_test_ofsted_history(all_schools, session)
+        print(f"  Ofsted history records created: {ofsted_history_count}")
+
+        print("[12/15] Generating uniform information ...")
+        uniform_count = _generate_test_uniforms(all_schools, session)
+        print(f"  Uniform records created: {uniform_count}")
+
+        print("[13/15] Generating parking chaos ratings ...")
+        parking_count = _generate_test_parking_ratings(all_schools, session)
+        print(f"  Parking rating records created: {parking_count}")
+
+        print("[14/15] Generating admissions criteria ...")
+        criteria_count = _generate_test_admissions_criteria(all_schools, session)
+        print(f"  Admissions criteria records created: {criteria_count}")
+
+        print("[15/15] Generating bus routes ...")
+        bus_route_count = _generate_test_bus_routes(all_schools, session)
+        print(f"  Bus route records created: {bus_route_count}")
 
         print()
         print("=" * 60)
@@ -1525,8 +2357,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  Term date records   : {term_count}")
         print(f"  Performance records : {perf_count}")
         print(f"  Admissions records  : {admissions_count}")
+        print(f"  Admissions criteria : {criteria_count}")
         print(f"  Breakfast clubs     : {breakfast_count}")
         print(f"  After-school clubs  : {afterschool_count}")
+        print(f"  Parking ratings     : {parking_count}")
+        print(f"  Bus routes          : {bus_route_count}")
         print()
         from collections import Counter
 

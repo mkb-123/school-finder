@@ -31,6 +31,17 @@ export interface School {
   ofsted_date: string | null;
   is_private: boolean;
   catchment_radius_km: number;
+  prospectus_url: string | null;
+  ethos: string | null;
+}
+
+export interface BusStopMarker {
+  id: number;
+  name: string;
+  lat: number;
+  lng: number;
+  pickupTime?: string | null;
+  schoolName: string;
 }
 
 interface MapProps {
@@ -40,6 +51,8 @@ interface MapProps {
   /** ID of the school whose catchment to highlight. */
   selectedSchoolId?: number | null;
   onSchoolSelect?: (id: number) => void;
+  /** Bus stops to display on the map. */
+  busStops?: BusStopMarker[];
 }
 
 const MILTON_KEYNES: LatLngExpression = [52.0406, -0.7594];
@@ -156,6 +169,7 @@ export default function Map({
   schools = [],
   selectedSchoolId = null,
   onSchoolSelect,
+  busStops = [],
 }: MapProps) {
   const [currentZoom, setCurrentZoom] = useState(zoom);
   const flyToRef = useRef<((lat: number, lng: number) => void) | null>(null);
@@ -334,6 +348,33 @@ export default function Map({
             </CircleMarker>
           );
         })}
+
+        {/* Bus stop markers */}
+        {busStops.map((stop) => (
+          <CircleMarker
+            key={`bus-stop-${stop.id}`}
+            center={[stop.lat, stop.lng]}
+            radius={6}
+            pathOptions={{
+              color: "#f59e0b",
+              fillColor: "#fbbf24",
+              fillOpacity: 0.8,
+              weight: 2,
+            }}
+          >
+            <Popup>
+              <div className="min-w-[140px]">
+                <p className="font-semibold text-gray-900">{stop.name}</p>
+                <p className="text-xs text-gray-600">{stop.schoolName}</p>
+                {stop.pickupTime && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Pick-up: {stop.pickupTime}
+                  </p>
+                )}
+              </div>
+            </Popup>
+          </CircleMarker>
+        ))}
       </MapContainer>
     </div>
   );

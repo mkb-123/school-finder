@@ -345,3 +345,30 @@ class AbsencePolicyResponse(BaseModel):
     exceptional_circumstances: str | None = None
     data_year: str | None = None
     source_url: str | None = None
+
+
+class OfstedHistoryResponse(BaseModel):
+    """Ofsted inspection history record."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    inspection_date: str
+    rating: str
+    report_url: str | None = None
+    strengths_quote: str | None = None
+    improvements_quote: str | None = None
+    is_current: bool = False
+
+
+class OfstedTrajectoryResponse(BaseModel):
+    """Ofsted trajectory analysis with inspection history."""
+
+    school_id: int
+    trajectory: str  # "improving", "stable", "declining", "unknown"
+    current_rating: str | None = None
+    previous_rating: str | None = None
+    inspection_age_years: float | None = None
+    is_stale: bool = False
+    history: list[OfstedHistoryResponse] = []

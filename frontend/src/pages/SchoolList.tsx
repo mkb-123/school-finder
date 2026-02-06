@@ -220,6 +220,7 @@ export default function SchoolList() {
                     : s.postcode
                 }
                 isPrivate={s.is_private}
+                ethos={s.ethos}
               />
             </div>
           ))}

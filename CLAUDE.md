@@ -195,6 +195,7 @@ src/agents/
   term_times.py          # Agent 1
   clubs.py               # Agent 2
   reviews_performance.py # Agent 3
+  ethos.py               # Agent 4: School ethos extraction
 ```
 
 All agents:
@@ -227,6 +228,17 @@ All agents:
 
 **Purpose**: Aggregate ratings, academic results, and reviews for each school.
 
+### Agent 4: School Ethos Extraction Agent
+
+**Purpose**: Extract concise ethos/mission statements from school websites.
+
+- Scrapes school homepages and about pages for ethos, mission, vision, or values statements
+- Uses multiple heuristic strategies: meta descriptions, heading keywords, section classes, paragraph scanning
+- Cleans and formats extracted text (removes prefixes, truncates to 500 chars)
+- Falls back to generated ethos statement when extraction fails
+- Stores results in `School.ethos` field
+- Run with: `uv run python -m src.agents.ethos --council "Milton Keynes"`
+
 - Pulls Ofsted inspection data from the Ofsted data downloads
 - Pulls academic performance from DfE school performance tables
 - Scrapes parent review snippets from public review sites
@@ -245,6 +257,8 @@ schools
   - gender_policy (co-ed/boys/girls), faith, age_range_from, age_range_to
   - ofsted_rating, ofsted_date
   - is_private (boolean)
+  - website (string - school website URL)
+  - ethos (string - short ethos/mission statement, max 500 chars)
 
 school_term_dates
   - id (PK), school_id (FK), academic_year

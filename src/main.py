@@ -9,11 +9,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from src.api.bus_routes import router as bus_routes_router
 from src.api.compare import router as compare_router
 from src.api.councils import router as councils_router
 from src.api.decision import router as decision_router
 from src.api.geocode import router as geocode_router
+from src.api.holiday_clubs import router as holiday_clubs_router
 from src.api.journey import router as journey_router
+from src.api.parking import router as parking_router
 from src.api.private_schools import router as private_schools_router
 from src.api.schools import router as schools_router
 from src.config import get_settings
@@ -64,6 +67,9 @@ app.include_router(councils_router)
 app.include_router(compare_router)
 app.include_router(decision_router)
 app.include_router(journey_router)
+app.include_router(parking_router)
+app.include_router(holiday_clubs_router)
+app.include_router(bus_routes_router)
 
 # Serve frontend build (production). The SPA catch-all must come AFTER API routes.
 if FRONTEND_DIST.is_dir():

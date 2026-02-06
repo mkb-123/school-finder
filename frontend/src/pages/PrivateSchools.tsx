@@ -187,6 +187,7 @@ export default function PrivateSchools() {
                     : `Ages ${s.age_range_from}-${s.age_range_to}`
                 }
                 isPrivate={true}
+                ethos={s.ethos}
               />
             </div>
           ))}
