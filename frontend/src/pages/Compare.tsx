@@ -32,6 +32,7 @@ interface CompareSchool {
   is_private: boolean;
   clubs: Club[];
   performance: Performance[];
+  ethos: string | null;
 }
 
 interface CompareResponse {
@@ -168,8 +169,23 @@ export default function Compare() {
                 ))}
               </tr>
 
-              {/* School Type */}
+              {/* Ethos */}
               <tr>
+                <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                  Ethos
+                </td>
+                {schools.map((s) => (
+                  <td
+                    key={s.id}
+                    className="px-4 py-3 text-sm italic text-gray-600"
+                  >
+                    {s.ethos ? `"${s.ethos}"` : "--"}
+                  </td>
+                ))}
+              </tr>
+
+              {/* School Type */}
+              <tr className="bg-gray-50">
                 <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
                   School Type
                 </td>

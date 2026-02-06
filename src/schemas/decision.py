@@ -12,6 +12,16 @@ class SchoolScoreComponentResponse(BaseModel):
     ofsted: float
     clubs: float
     fees: float
+    ofsted_trajectory: float
+    attendance: float
+    class_size: float
+    parking: float
+    holiday_club: float
+    uniform: float
+    diversity: float
+    sibling_priority: float
+    school_run_ease: float
+    homework: float
 
 
 class ScoredSchoolResponse(BaseModel):

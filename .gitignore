@@ -11,3 +11,4 @@ data/cache/
 data/seeds/
 .venv/
 node_modules/
+.claude/settings.local.json

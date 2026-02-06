@@ -187,8 +187,12 @@ class ReviewsPerformanceAgent(BaseAgent):
             return []
 
         # Find rating and date columns
-        rating_col = self._find_column(df, ["Overall effectiveness", "OverallEffectiveness", "Overall Effectiveness", "Rating"])
-        date_col = self._find_column(df, ["Inspection end date", "InspectionEndDate", "Inspection date", "InspectionDate"])
+        rating_col = self._find_column(
+            df, ["Overall effectiveness", "OverallEffectiveness", "Overall Effectiveness", "Rating"]
+        )
+        date_col = self._find_column(
+            df, ["Inspection end date", "InspectionEndDate", "Inspection date", "InspectionDate"]
+        )
         type_col = self._find_column(df, ["Inspection type", "InspectionType", "Type"])
         la_col = self._find_column(df, ["Local authority", "LocalAuthority", "LA", "Local Authority"])
 
@@ -197,9 +201,7 @@ class ReviewsPerformanceAgent(BaseAgent):
             df_filtered = df.filter(pl.col(urn_col).cast(str).is_in(list(urn_map.keys())))
             if la_col and self.council:
                 council_lower = self.council.lower()
-                df_filtered = df_filtered.filter(
-                    pl.col(la_col).str.to_lowercase().str.contains(council_lower)
-                )
+                df_filtered = df_filtered.filter(pl.col(la_col).str.to_lowercase().str.contains(council_lower))
         except Exception as e:
             self._logger.warning("Could not filter CSV: %s", e)
             df_filtered = df
@@ -218,13 +220,15 @@ class ReviewsPerformanceAgent(BaseAgent):
             snippet = row.get(type_col) if type_col else None
             review_date = row.get(date_col) if date_col else None
 
-            records.append({
-                "school_id": school_id,
-                "source": "Ofsted",
-                "rating": rating,
-                "snippet": snippet,
-                "review_date": review_date,
-            })
+            records.append(
+                {
+                    "school_id": school_id,
+                    "source": "Ofsted",
+                    "rating": rating,
+                    "snippet": snippet,
+                    "review_date": review_date,
+                }
+            )
 
         return records
 
@@ -333,53 +337,65 @@ class ReviewsPerformanceAgent(BaseAgent):
 
             # Add all available metrics for this school
             if ks2_reading_col and row.get(ks2_reading_col):
-                records.append({
-                    "school_id": school_id,
-                    "metric_type": "KS2_reading_expected",
-                    "metric_value": str(row.get(ks2_reading_col, "")),
-                    "year": year,
-                    "source_url": _DFE_PERFORMANCE_CSV_URL,
-                })
+                records.append(
+                    {
+                        "school_id": school_id,
+                        "metric_type": "KS2_reading_expected",
+                        "metric_value": str(row.get(ks2_reading_col, "")),
+                        "year": year,
+                        "source_url": _DFE_PERFORMANCE_CSV_URL,
+                    }
+                )
             if ks2_writing_col and row.get(ks2_writing_col):
-                records.append({
-                    "school_id": school_id,
-                    "metric_type": "KS2_writing_expected",
-                    "metric_value": str(row.get(ks2_writing_col, "")),
-                    "year": year,
-                    "source_url": _DFE_PERFORMANCE_CSV_URL,
-                })
+                records.append(
+                    {
+                        "school_id": school_id,
+                        "metric_type": "KS2_writing_expected",
+                        "metric_value": str(row.get(ks2_writing_col, "")),
+                        "year": year,
+                        "source_url": _DFE_PERFORMANCE_CSV_URL,
+                    }
+                )
             if ks2_maths_col and row.get(ks2_maths_col):
-                records.append({
-                    "school_id": school_id,
-                    "metric_type": "KS2_maths_expected",
-                    "metric_value": str(row.get(ks2_maths_col, "")),
-                    "year": year,
-                    "source_url": _DFE_PERFORMANCE_CSV_URL,
-                })
+                records.append(
+                    {
+                        "school_id": school_id,
+                        "metric_type": "KS2_maths_expected",
+                        "metric_value": str(row.get(ks2_maths_col, "")),
+                        "year": year,
+                        "source_url": _DFE_PERFORMANCE_CSV_URL,
+                    }
+                )
             if prog8_col and row.get(prog8_col):
-                records.append({
-                    "school_id": school_id,
-                    "metric_type": "Progress8",
-                    "metric_value": str(row.get(prog8_col, "")),
-                    "year": year,
-                    "source_url": _DFE_PERFORMANCE_CSV_URL,
-                })
+                records.append(
+                    {
+                        "school_id": school_id,
+                        "metric_type": "Progress8",
+                        "metric_value": str(row.get(prog8_col, "")),
+                        "year": year,
+                        "source_url": _DFE_PERFORMANCE_CSV_URL,
+                    }
+                )
             if att8_col and row.get(att8_col):
-                records.append({
-                    "school_id": school_id,
-                    "metric_type": "Attainment8",
-                    "metric_value": str(row.get(att8_col, "")),
-                    "year": year,
-                    "source_url": _DFE_PERFORMANCE_CSV_URL,
-                })
+                records.append(
+                    {
+                        "school_id": school_id,
+                        "metric_type": "Attainment8",
+                        "metric_value": str(row.get(att8_col, "")),
+                        "year": year,
+                        "source_url": _DFE_PERFORMANCE_CSV_URL,
+                    }
+                )
             if ebacc_col and row.get(ebacc_col):
-                records.append({
-                    "school_id": school_id,
-                    "metric_type": "EBacc_APS",
-                    "metric_value": str(row.get(ebacc_col, "")),
-                    "year": year,
-                    "source_url": _DFE_PERFORMANCE_CSV_URL,
-                })
+                records.append(
+                    {
+                        "school_id": school_id,
+                        "metric_type": "EBacc_APS",
+                        "metric_value": str(row.get(ebacc_col, "")),
+                        "year": year,
+                        "source_url": _DFE_PERFORMANCE_CSV_URL,
+                    }
+                )
 
         return records
 

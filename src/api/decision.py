@@ -76,11 +76,29 @@ async def _load_school_data(
         school = await repo.get_school_by_id(sid)
         if school is None:
             continue
+
+        # Load related data for extended metrics
         clubs = await repo.get_clubs_for_school(sid)
+        holiday_clubs = await repo.get_holiday_clubs_for_school(sid)
+        performance = await repo.get_performance_for_school(sid)
+        class_sizes = await repo.get_class_sizes(sid)
+        parking_ratings = await repo.get_parking_ratings_for_school(sid)
+        uniform = await repo.get_uniform_for_school(sid)
+
         distance_km: float | None = None
         if lat is not None and lng is not None and school.lat is not None and school.lng is not None:
             distance_km = haversine_distance(lat, lng, school.lat, school.lng)
-        sd = school_data_from_orm(school, clubs, distance_km=distance_km)
+
+        sd = school_data_from_orm(
+            school,
+            clubs=clubs,
+            distance_km=distance_km,
+            holiday_clubs=holiday_clubs,
+            performance=performance,
+            class_sizes=class_sizes,
+            parking_ratings=parking_ratings,
+            uniform=uniform,
+        )
         school_data_list.append(sd)
     return school_data_list
 

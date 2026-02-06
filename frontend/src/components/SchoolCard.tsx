@@ -10,6 +10,7 @@ interface SchoolCardProps {
   isPrivate?: boolean;
   hasBreakfastClub?: boolean;
   hasAfterSchoolClub?: boolean;
+  ethos?: string | null;
 }
 
 const RATING_COLORS: Record<string, string> = {
@@ -29,6 +30,7 @@ export default function SchoolCard({
   isPrivate = false,
   hasBreakfastClub = false,
   hasAfterSchoolClub = false,
+  ethos,
 }: SchoolCardProps) {
   const badgeColor = RATING_COLORS[ofstedRating] ?? "bg-gray-100 text-gray-800";
   const linkTo = id
@@ -46,6 +48,9 @@ export default function SchoolCard({
         <div>
           <h3 className="font-semibold text-gray-900">{name}</h3>
           <p className="mt-0.5 text-sm text-gray-500">{type}</p>
+          {ethos && (
+            <p className="mt-1 text-sm italic text-gray-600">{ethos}</p>
+          )}
         </div>
         <div className="flex flex-col items-end gap-1">
           <span

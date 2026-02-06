@@ -280,9 +280,7 @@ class OfstedAgent(BaseAgent):
             if la_col:
                 # Further filter by local authority if column exists
                 council_lower = self.council.lower()
-                df_filtered = df_filtered.filter(
-                    pl.col(la_col).str.to_lowercase().str.contains(council_lower)
-                )
+                df_filtered = df_filtered.filter(pl.col(la_col).str.to_lowercase().str.contains(council_lower))
 
             self._logger.info(
                 "Found %d schools matching council '%s' in Ofsted CSV",
@@ -313,11 +311,13 @@ class OfstedAgent(BaseAgent):
                     ofsted_date = self._parse_date(date_str)
 
                 if rating or ofsted_date:
-                    updates.append({
-                        "school_id": school_id,
-                        "ofsted_rating": rating,
-                        "ofsted_date": ofsted_date,
-                    })
+                    updates.append(
+                        {
+                            "school_id": school_id,
+                            "ofsted_rating": rating,
+                            "ofsted_date": ofsted_date,
+                        }
+                    )
 
             self._logger.info("Extracted %d Ofsted updates", len(updates))
             return updates
@@ -422,24 +422,24 @@ class OfstedAgent(BaseAgent):
         soup = self.parse_html(html)
 
         # Look for links containing "Management_information" and ending in .csv
-        for link in soup.find_all('a', href=True):
-            href = link['href']
-            if 'Management_information' in href and href.endswith('.csv'):
+        for link in soup.find_all("a", href=True):
+            href = link["href"]
+            if "Management_information" in href and href.endswith(".csv"):
                 # Handle relative URLs
-                if href.startswith('http'):
+                if href.startswith("http"):
                     return href
-                elif href.startswith('/'):
+                elif href.startswith("/"):
                     return f"https://assets.publishing.service.gov.uk{href}"
                 else:
                     return f"https://assets.publishing.service.gov.uk/{href}"
 
         # Fallback: look for any CSV link with "school" or "inspection" in the URL
-        for link in soup.find_all('a', href=True):
-            href = link['href']
-            if href.endswith('.csv') and ('school' in href.lower() or 'inspection' in href.lower()):
-                if href.startswith('http'):
+        for link in soup.find_all("a", href=True):
+            href = link["href"]
+            if href.endswith(".csv") and ("school" in href.lower() or "inspection" in href.lower()):
+                if href.startswith("http"):
                     return href
-                elif href.startswith('/'):
+                elif href.startswith("/"):
                     return f"https://assets.publishing.service.gov.uk{href}"
 
         return None

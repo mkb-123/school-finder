@@ -9,13 +9,20 @@ from sqlalchemy.orm import selectinload
 
 from src.db.base import SchoolFilters, SchoolRepository
 from src.db.models import (
+    AdmissionsCriteria,
     AdmissionsHistory,
     Base,
+    BusRoute,
+    BusStop,
+    HolidayClub,
+    ParkingRating,
     PrivateSchoolDetails,
     School,
+    SchoolClassSize,
     SchoolClub,
     SchoolPerformance,
     SchoolTermDate,
+    SchoolUniform,
 )
 
 # ---------------------------------------------------------------------------
@@ -221,6 +228,12 @@ class SQLiteSchoolRepository(SchoolRepository):
             result = await session.execute(stmt)
             return list(result.scalars().all())
 
+    async def get_holiday_clubs_for_school(self, school_id: int) -> list[HolidayClub]:
+        stmt = select(HolidayClub).where(HolidayClub.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
     async def get_performance_for_school(self, school_id: int) -> list[SchoolPerformance]:
         stmt = select(SchoolPerformance).where(SchoolPerformance.school_id == school_id)
         async with self._session_factory() as session:
@@ -245,6 +258,45 @@ class SQLiteSchoolRepository(SchoolRepository):
             result = await session.execute(stmt)
             return list(result.scalars().all())
 
+    async def get_class_sizes(self, school_id: int) -> list[SchoolClassSize]:
+        stmt = (
+            select(SchoolClassSize)
+            .where(SchoolClassSize.school_id == school_id)
+            .order_by(SchoolClassSize.academic_year.desc(), SchoolClassSize.year_group)
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_uniform_for_school(self, school_id: int) -> list[SchoolUniform]:
+        stmt = select(SchoolUniform).where(SchoolUniform.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_admissions_criteria_for_school(self, school_id: int) -> list[AdmissionsCriteria]:
+        stmt = (
+            select(AdmissionsCriteria)
+            .where(AdmissionsCriteria.school_id == school_id)
+            .order_by(AdmissionsCriteria.priority_rank)
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_ofsted_history(self, school_id: int) -> list:
+        """Return Ofsted inspection history for a school, ordered by date descending."""
+        from src.db.models import OfstedHistory
+
+        stmt = (
+            select(OfstedHistory)
+            .where(OfstedHistory.school_id == school_id)
+            .order_by(OfstedHistory.inspection_date.desc())
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
     # ------------------------------------------------------------------
     # Reference data
     # ------------------------------------------------------------------
@@ -254,3 +306,60 @@ class SQLiteSchoolRepository(SchoolRepository):
         async with self._session_factory() as session:
             result = await session.execute(stmt)
             return list(result.scalars().all())
+
+    # ------------------------------------------------------------------
+    # Parking ratings
+    # ------------------------------------------------------------------
+
+    async def get_parking_ratings_for_school(self, school_id: int) -> list[ParkingRating]:
+        stmt = (
+            select(ParkingRating)
+            .where(ParkingRating.school_id == school_id)
+            .order_by(ParkingRating.submitted_at.desc())
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def create_parking_rating(self, rating: ParkingRating) -> ParkingRating:
+        async with self._session_factory() as session:
+            session.add(rating)
+            await session.commit()
+            await session.refresh(rating)
+            return rating
+
+    # ------------------------------------------------------------------
+    # Bus routes
+    # ------------------------------------------------------------------
+
+    async def get_bus_routes_for_school(self, school_id: int) -> list[BusRoute]:
+        stmt = select(BusRoute).where(BusRoute.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_bus_stops_for_route(self, route_id: int) -> list[BusStop]:
+        stmt = select(BusStop).where(BusStop.route_id == route_id).order_by(BusStop.stop_order)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def find_nearby_bus_stops(
+        self, lat: float, lng: float, max_distance_km: float = 0.5
+    ) -> list[tuple[BusStop, BusRoute, School, float]]:
+        """Find bus stops within max_distance_km of a location, with route and school info."""
+        # Join BusStop -> BusRoute -> School and calculate distance
+        stmt = (
+            select(BusStop, BusRoute, School, text("haversine(bus_stops.lat, bus_stops.lng, :lat, :lng) AS distance"))
+            .join(BusRoute, BusStop.route_id == BusRoute.id)
+            .join(School, BusRoute.school_id == School.id)
+            .where(BusStop.lat.is_not(None))
+            .where(BusStop.lng.is_not(None))
+            .where(text("haversine(bus_stops.lat, bus_stops.lng, :lat, :lng) <= :max_dist"))
+            .order_by(text("distance"))
+        )
+
+        async with self._session_factory() as session:
+            result = await session.execute(stmt, {"lat": lat, "lng": lng, "max_dist": max_distance_km})
+            rows = result.all()
+            return [(row[0], row[1], row[2], row[3]) for row in rows]

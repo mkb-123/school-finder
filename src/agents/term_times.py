@@ -148,18 +148,17 @@ class TermTimesAgent(BaseAgent):
             List of term date records.
         """
         import re
-        from datetime import date as date_cls
 
         records = []
 
         # Look for tables or structured date information
         # MK Council typically uses tables with term names and dates
-        tables = soup.find_all('table')
+        tables = soup.find_all("table")
 
         for table in tables:
-            rows = table.find_all('tr')
+            rows = table.find_all("tr")
             for row in rows:
-                cells = row.find_all(['td', 'th'])
+                cells = row.find_all(["td", "th"])
                 if len(cells) < 2:
                     continue
 
@@ -167,7 +166,7 @@ class TermTimesAgent(BaseAgent):
                 cell_texts = [cell.get_text(strip=True) for cell in cells]
 
                 # Try to identify term names and dates
-                term_match = re.search(r'(Autumn|Spring|Summer).*?(\d{4}/\d{4})?', ' '.join(cell_texts), re.IGNORECASE)
+                term_match = re.search(r"(Autumn|Spring|Summer).*?(\d{4}/\d{4})?", " ".join(cell_texts), re.IGNORECASE)
                 if not term_match:
                     continue
 
@@ -175,7 +174,7 @@ class TermTimesAgent(BaseAgent):
                 academic_year = term_match.group(2) if term_match.group(2) else "2025/2026"
 
                 # Extract dates (DD/MM/YYYY format common in UK)
-                dates_found = re.findall(r'(\d{1,2}[/-]\d{1,2}[/-]\d{4})', ' '.join(cell_texts))
+                dates_found = re.findall(r"(\d{1,2}[/-]\d{1,2}[/-]\d{4})", " ".join(cell_texts))
 
                 if len(dates_found) >= 2:
                     try:
@@ -188,14 +187,16 @@ class TermTimesAgent(BaseAgent):
                             half_term_start = self._parse_uk_date(dates_found[2])
                             half_term_end = self._parse_uk_date(dates_found[3])
 
-                        records.append({
-                            "academic_year": academic_year,
-                            "term_name": term_name,
-                            "start_date": start_date,
-                            "end_date": end_date,
-                            "half_term_start": half_term_start,
-                            "half_term_end": half_term_end,
-                        })
+                        records.append(
+                            {
+                                "academic_year": academic_year,
+                                "term_name": term_name,
+                                "start_date": start_date,
+                                "end_date": end_date,
+                                "half_term_start": half_term_start,
+                                "half_term_end": half_term_end,
+                            }
+                        )
                     except Exception as e:
                         self._logger.warning("Could not parse dates: %s", e)
                         continue
@@ -205,7 +206,8 @@ class TermTimesAgent(BaseAgent):
     def _parse_uk_date(self, date_str: str) -> date_cls:
         """Parse a UK format date string (DD/MM/YYYY or DD-MM-YYYY)."""
         from datetime import datetime
-        for fmt in ['%d/%m/%Y', '%d-%m-%Y', '%d/%m/%y', '%d-%m-%y']:
+
+        for fmt in ["%d/%m/%Y", "%d-%m-%Y", "%d/%m/%y", "%d-%m-%y"]:
             try:
                 return datetime.strptime(date_str.strip(), fmt).date()
             except ValueError:

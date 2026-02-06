@@ -16,6 +16,29 @@ interface PrivateDetail {
   provides_transport: boolean | null;
   transport_notes: string | null;
   holiday_schedule_notes: string | null;
+
+  // Hidden costs
+  lunches_per_term: number | null;
+  lunches_compulsory: boolean;
+  trips_per_term: number | null;
+  trips_compulsory: boolean;
+  exam_fees_per_year: number | null;
+  exam_fees_compulsory: boolean;
+  textbooks_per_year: number | null;
+  textbooks_compulsory: boolean;
+  music_tuition_per_term: number | null;
+  music_tuition_compulsory: boolean;
+  sports_per_term: number | null;
+  sports_compulsory: boolean;
+  uniform_per_year: number | null;
+  uniform_compulsory: boolean;
+  registration_fee: number | null;
+  deposit_fee: number | null;
+  insurance_per_year: number | null;
+  insurance_compulsory: boolean;
+  building_fund_per_year: number | null;
+  building_fund_compulsory: boolean;
+  hidden_costs_notes: string | null;
 }
 
 /** Extended school response with private details. */
@@ -51,6 +74,83 @@ function formatFee(amount: number | null): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+/** Calculate true annual cost including compulsory hidden costs. */
+function calculateTrueAnnualCost(detail: PrivateDetail): {
+  headline: number;
+  compulsory: number;
+  optional: number;
+  total: number;
+} {
+  const annualFee = detail.annual_fee || (detail.termly_fee ? detail.termly_fee * 3 : 0);
+  let compulsory = 0;
+  let optional = 0;
+
+  // Lunches (3 terms per year)
+  if (detail.lunches_per_term) {
+    const annual = detail.lunches_per_term * 3;
+    if (detail.lunches_compulsory) compulsory += annual;
+    else optional += annual;
+  }
+
+  // Trips (3 terms per year)
+  if (detail.trips_per_term) {
+    const annual = detail.trips_per_term * 3;
+    if (detail.trips_compulsory) compulsory += annual;
+    else optional += annual;
+  }
+
+  // Exam fees (per year)
+  if (detail.exam_fees_per_year) {
+    if (detail.exam_fees_compulsory) compulsory += detail.exam_fees_per_year;
+    else optional += detail.exam_fees_per_year;
+  }
+
+  // Textbooks (per year)
+  if (detail.textbooks_per_year) {
+    if (detail.textbooks_compulsory) compulsory += detail.textbooks_per_year;
+    else optional += detail.textbooks_per_year;
+  }
+
+  // Music tuition (3 terms per year)
+  if (detail.music_tuition_per_term) {
+    const annual = detail.music_tuition_per_term * 3;
+    if (detail.music_tuition_compulsory) compulsory += annual;
+    else optional += annual;
+  }
+
+  // Sports (3 terms per year)
+  if (detail.sports_per_term) {
+    const annual = detail.sports_per_term * 3;
+    if (detail.sports_compulsory) compulsory += annual;
+    else optional += annual;
+  }
+
+  // Uniform (per year)
+  if (detail.uniform_per_year) {
+    if (detail.uniform_compulsory) compulsory += detail.uniform_per_year;
+    else optional += detail.uniform_per_year;
+  }
+
+  // Insurance (per year)
+  if (detail.insurance_per_year) {
+    if (detail.insurance_compulsory) compulsory += detail.insurance_per_year;
+    else optional += detail.insurance_per_year;
+  }
+
+  // Building fund (per year)
+  if (detail.building_fund_per_year) {
+    if (detail.building_fund_compulsory) compulsory += detail.building_fund_per_year;
+    else optional += detail.building_fund_per_year;
+  }
+
+  return {
+    headline: annualFee,
+    compulsory,
+    optional,
+    total: annualFee + compulsory,
+  };
 }
 
 export default function PrivateSchoolDetail() {
@@ -138,6 +238,9 @@ export default function PrivateSchoolDetail() {
           <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{school.name}</h1>
           <p className="mt-1 text-sm text-gray-600 sm:text-base">{school.address}</p>
           <p className="text-xs text-gray-500 sm:text-sm">{school.postcode}</p>
+          {school.ethos && (
+            <p className="mt-2 text-sm italic text-gray-700">"{school.ethos}"</p>
+          )}
         </div>
         {school.ofsted_rating && (
           <span
@@ -223,6 +326,136 @@ export default function PrivateSchoolDetail() {
             </p>
           )}
         </section>
+
+        {/* True Cost Breakdown */}
+        {details.length > 0 && (
+          <section className="rounded-lg border border-orange-200 bg-orange-50 p-6 md:col-span-2">
+            <h2 className="text-xl font-semibold text-gray-900">True Annual Cost</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Headline fees don't tell the whole story. These are the additional costs that aren't included in the advertised fee.
+            </p>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {details.map((detail) => {
+                const costs = calculateTrueAnnualCost(detail);
+                return (
+                  <div
+                    key={detail.id}
+                    className="rounded-lg border border-orange-300 bg-white p-5"
+                  >
+                    <h3 className="font-semibold text-gray-900">
+                      {detail.fee_age_group || "General"}
+                    </h3>
+
+                    {/* Headline cost */}
+                    <div className="mt-4 border-b border-gray-200 pb-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Headline annual fee</span>
+                        <span className="font-medium text-gray-900">
+                          {formatFee(costs.headline)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Compulsory extras */}
+                    <div className="mt-3 border-b border-gray-200 pb-3">
+                      <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="font-medium text-gray-700">Compulsory extras</span>
+                        <span className="font-semibold text-orange-700">
+                          +{formatFee(costs.compulsory)}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 text-xs text-gray-600">
+                        {detail.lunches_compulsory && detail.lunches_per_term && (
+                          <div>• Lunches: {formatFee(detail.lunches_per_term * 3)}/yr</div>
+                        )}
+                        {detail.exam_fees_compulsory && detail.exam_fees_per_year && (
+                          <div>• Exam fees: {formatFee(detail.exam_fees_per_year)}/yr</div>
+                        )}
+                        {detail.textbooks_compulsory && detail.textbooks_per_year && (
+                          <div>• Textbooks: {formatFee(detail.textbooks_per_year)}/yr</div>
+                        )}
+                        {detail.uniform_compulsory && detail.uniform_per_year && (
+                          <div>• Uniform: {formatFee(detail.uniform_per_year)}/yr</div>
+                        )}
+                        {detail.insurance_compulsory && detail.insurance_per_year && (
+                          <div>• Insurance: {formatFee(detail.insurance_per_year)}/yr</div>
+                        )}
+                        {detail.building_fund_compulsory && detail.building_fund_per_year && (
+                          <div>• Building fund: {formatFee(detail.building_fund_per_year)}/yr</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* True annual cost */}
+                    <div className="mt-3 rounded-md bg-orange-100 px-3 py-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-orange-900">True annual cost</span>
+                        <span className="text-lg font-bold text-orange-900">
+                          {formatFee(costs.total)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Optional extras */}
+                    {costs.optional > 0 && (
+                      <div className="mt-3 border-t border-gray-200 pt-3">
+                        <div className="mb-2 flex items-center justify-between text-xs">
+                          <span className="font-medium text-gray-600">Optional extras</span>
+                          <span className="font-medium text-gray-700">
+                            +{formatFee(costs.optional)}
+                          </span>
+                        </div>
+                        <div className="space-y-1 text-xs text-gray-500">
+                          {!detail.lunches_compulsory && detail.lunches_per_term && (
+                            <div>• Lunches: {formatFee(detail.lunches_per_term * 3)}/yr</div>
+                          )}
+                          {detail.trips_per_term && (
+                            <div>• Trips: {formatFee(detail.trips_per_term * 3)}/yr</div>
+                          )}
+                          {detail.music_tuition_per_term && (
+                            <div>• Music tuition: {formatFee(detail.music_tuition_per_term * 3)}/yr</div>
+                          )}
+                          {detail.sports_per_term && (
+                            <div>• Sports: {formatFee(detail.sports_per_term * 3)}/yr</div>
+                          )}
+                          {!detail.insurance_compulsory && detail.insurance_per_year && (
+                            <div>• Insurance: {formatFee(detail.insurance_per_year)}/yr</div>
+                          )}
+                          {!detail.building_fund_compulsory && detail.building_fund_per_year && (
+                            <div>• Building fund: {formatFee(detail.building_fund_per_year)}/yr</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* One-time costs */}
+                    {(detail.registration_fee || detail.deposit_fee) && (
+                      <div className="mt-3 border-t border-gray-200 pt-3">
+                        <div className="text-xs font-medium text-gray-600">One-time costs (first year):</div>
+                        <div className="mt-1 space-y-1 text-xs text-gray-500">
+                          {detail.registration_fee && (
+                            <div>• Registration: {formatFee(detail.registration_fee)}</div>
+                          )}
+                          {detail.deposit_fee && (
+                            <div>• Deposit (often refundable): {formatFee(detail.deposit_fee)}</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {firstDetail?.hidden_costs_notes && (
+              <p className="mt-4 text-xs text-gray-600 italic">
+                {firstDetail.hidden_costs_notes}
+              </p>
+            )}
+          </section>
+        )}
 
         {/* School Hours */}
         <section className="rounded-lg border border-gray-200 bg-white p-6">

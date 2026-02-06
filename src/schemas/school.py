@@ -4,6 +4,8 @@ import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from src.schemas.holiday_club import HolidayClubResponse
+
 
 class ClubResponse(BaseModel):
     """A breakfast or after-school club offered by a school."""
@@ -79,6 +81,29 @@ class PrivateSchoolDetailsResponse(BaseModel):
     transport_notes: str | None = None
     holiday_schedule_notes: str | None = None
 
+    # Hidden costs breakdown
+    lunches_per_term: float | None = None
+    lunches_compulsory: bool = False
+    trips_per_term: float | None = None
+    trips_compulsory: bool = False
+    exam_fees_per_year: float | None = None
+    exam_fees_compulsory: bool = True
+    textbooks_per_year: float | None = None
+    textbooks_compulsory: bool = True
+    music_tuition_per_term: float | None = None
+    music_tuition_compulsory: bool = False
+    sports_per_term: float | None = None
+    sports_compulsory: bool = False
+    uniform_per_year: float | None = None
+    uniform_compulsory: bool = True
+    registration_fee: float | None = None
+    deposit_fee: float | None = None
+    insurance_per_year: float | None = None
+    insurance_compulsory: bool = False
+    building_fund_per_year: float | None = None
+    building_fund_compulsory: bool = False
+    hidden_costs_notes: str | None = None
+
 
 class AdmissionsHistoryResponse(BaseModel):
     """Historical admissions data for waiting-list estimation."""
@@ -94,6 +119,20 @@ class AdmissionsHistoryResponse(BaseModel):
     waiting_list_offers: int | None = None
     appeals_heard: int | None = None
     appeals_upheld: int | None = None
+
+
+class ClassSizeResponse(BaseModel):
+    """Historical class size data for a year group."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    academic_year: str
+    year_group: str
+    num_pupils: int | None = None
+    num_classes: int | None = None
+    avg_class_size: float | None = None
 
 
 class SchoolResponse(BaseModel):
@@ -119,16 +158,24 @@ class SchoolResponse(BaseModel):
     ofsted_date: datetime.date | None = None
     is_private: bool = False
     catchment_radius_km: float | None = None
+    prospectus_url: str | None = None
+    ethos: str | None = None
 
 
 class SchoolDetailResponse(SchoolResponse):
     """Full school detail including related data."""
 
     clubs: list[ClubResponse] = []
+    holiday_clubs: list[HolidayClubResponse] = []
     performance: list[PerformanceResponse] = []
     term_dates: list[TermDateResponse] = []
     admissions_history: list[AdmissionsHistoryResponse] = []
+    admissions_criteria: list[AdmissionsCriteriaResponse] = []
     private_details: list[PrivateSchoolDetailsResponse] = []
+    class_sizes: list[ClassSizeResponse] = []
+    parking_summary: ParkingRatingSummary | None = None
+    uniform: list[UniformResponse] = []
+    absence_policy: list[AbsencePolicyResponse] = []
 
 
 class CompareResponse(BaseModel):
@@ -150,9 +197,178 @@ class AdmissionsEstimateResponse(BaseModel):
     years_of_data: int = 0
 
 
+class AdmissionsCriteriaResponse(BaseModel):
+    """Admissions criteria priority tier breakdown."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    priority_rank: int
+    category: str
+    description: str
+    religious_requirement: str | None = None
+    requires_sif: bool = False
+    notes: str | None = None
+
+
 class GeocodeResponse(BaseModel):
     """Geocoding result from postcode lookup."""
 
     postcode: str
     lat: float
     lng: float
+
+
+class UniformResponse(BaseModel):
+    """School uniform information including costs and supplier requirements."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    description: str | None = None
+    style: str | None = None
+    colors: str | None = None
+    requires_specific_supplier: bool = False
+    supplier_name: str | None = None
+    supplier_website: str | None = None
+    polo_shirts_cost: float | None = None
+    jumper_cost: float | None = None
+    trousers_skirt_cost: float | None = None
+    pe_kit_cost: float | None = None
+    bag_cost: float | None = None
+    coat_cost: float | None = None
+    other_items_cost: float | None = None
+    other_items_description: str | None = None
+    total_cost_estimate: float | None = None
+    is_expensive: bool = False
+    notes: str | None = None
+
+
+class ParkingRatingResponse(BaseModel):
+    """Parent-submitted parking chaos rating."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    dropoff_chaos: int | None = None
+    pickup_chaos: int | None = None
+    parking_availability: int | None = None
+    road_congestion: int | None = None
+    restrictions_hazards: int | None = None
+    comments: str | None = None
+    submitted_at: datetime.datetime
+    parent_email: str | None = None
+
+
+class ParkingRatingSubmitRequest(BaseModel):
+    """Request body for submitting a parking rating."""
+
+    school_id: int
+    dropoff_chaos: int | None = None
+    pickup_chaos: int | None = None
+    parking_availability: int | None = None
+    road_congestion: int | None = None
+    restrictions_hazards: int | None = None
+    comments: str | None = None
+    parent_email: str | None = None
+
+
+class ParkingRatingSummary(BaseModel):
+    """Aggregated parking rating statistics for a school."""
+
+    school_id: int
+    total_ratings: int
+    avg_dropoff_chaos: float | None = None
+    avg_pickup_chaos: float | None = None
+    avg_parking_availability: float | None = None
+    avg_road_congestion: float | None = None
+    avg_restrictions_hazards: float | None = None
+    overall_chaos_score: float | None = None  # Average of all rating dimensions
+
+
+class HiddenCostItem(BaseModel):
+    """Individual hidden cost item with amount and compulsory flag."""
+
+    name: str
+    amount: float
+    frequency: str  # "per term", "per year", "one-time"
+    compulsory: bool
+
+
+class TrueAnnualCostResponse(BaseModel):
+    """True annual cost breakdown for a private school including all hidden costs."""
+
+    school_id: int
+    school_name: str
+    fee_age_group: str | None = None
+
+    # Headline costs
+    termly_fee: float | None = None
+    annual_fee: float | None = None
+
+    # Breakdown of hidden costs
+    hidden_cost_items: list[HiddenCostItem] = []
+
+    # Calculated totals
+    compulsory_hidden_costs_per_year: float = 0.0
+    optional_hidden_costs_per_year: float = 0.0
+    one_time_costs: float = 0.0
+
+    # True annual cost (headline + compulsory extras)
+    true_annual_cost: float = 0.0
+
+    # Total if all optional extras are included
+    total_with_optional: float = 0.0
+
+    notes: str | None = None
+
+
+class AbsencePolicyResponse(BaseModel):
+    """Term-time absence policy for a school."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    strictness_level: str | None = None
+    issues_fines: bool = False
+    fining_threshold_days: int | None = None
+    fine_amount: float | None = None
+    term_time_holiday_policy: str | None = None
+    authorises_holidays: bool = False
+    unauthorised_absence_rate: float | None = None
+    overall_absence_rate: float | None = None
+    policy_text: str | None = None
+    exceptional_circumstances: str | None = None
+    data_year: str | None = None
+    source_url: str | None = None
+
+
+class OfstedHistoryResponse(BaseModel):
+    """Ofsted inspection history record."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    inspection_date: str
+    rating: str
+    report_url: str | None = None
+    strengths_quote: str | None = None
+    improvements_quote: str | None = None
+    is_current: bool = False
+
+
+class OfstedTrajectoryResponse(BaseModel):
+    """Ofsted trajectory analysis with inspection history."""
+
+    school_id: int
+    trajectory: str  # "improving", "stable", "declining", "unknown"
+    current_rating: str | None = None
+    previous_rating: str | None = None
+    inspection_age_years: float | None = None
+    is_stale: bool = False
+    history: list[OfstedHistoryResponse] = []
