@@ -194,27 +194,65 @@ class ClubsAgent(BaseAgent):
             ``days_available``, ``start_time``, ``end_time``,
             ``cost_per_session``.
         """
-        # TODO: implement per-school HTML parsing for club details.
-        # The structure varies widely across school websites so this will
-        # need heuristic or site-specific parsing strategies.
-        #
-        # Expected return format:
-        #
-        #   [
-        #       {
-        #           "school_id": 42,
-        #           "club_type": "breakfast",
-        #           "name": "Breakfast Club",
-        #           "description": "...",
-        #           "days_available": "Mon,Tue,Wed,Thu,Fri",
-        #           "start_time": datetime.time(7, 45),
-        #           "end_time": datetime.time(8, 45),
-        #           "cost_per_session": 5.00,
-        #       },
-        #       ...
-        #   ]
-        self._logger.info("TODO: implement club parsing for school_id=%d", school_id)
-        return []
+        # Use heuristic parsing to extract club information
+        clubs = []
+        import re
+
+        # Get all text content
+        text = soup.get_text(separator="\n", strip=True)
+        sections = text.split('\n')
+
+        for i, line in enumerate(sections):
+            line_lower = line.lower()
+
+            # Detect club type
+            club_type = None
+            club_name = None
+
+            if any(kw in line_lower for kw in ['breakfast club', 'breakfast']):
+                club_type = 'breakfast'
+                club_name = 'Breakfast Club'
+            elif any(kw in line_lower for kw in ['after school', 'after-school', 'wraparound']):
+                club_type = 'after-school'
+                club_name = 'After School Club'
+
+            if not club_type:
+                continue
+
+            # Try to extract details from surrounding lines
+            context = ' '.join(sections[max(0, i-2):min(len(sections), i+5)])
+
+            # Extract times (HH:MM format)
+            times = re.findall(r'(\d{1,2}):(\d{2})\s*(am|pm)?', context, re.IGNORECASE)
+            start_time = None
+            end_time = None
+            if len(times) >= 2:
+                h1, m1, _ = times[0]
+                h2, m2, _ = times[1]
+                start_time = f"{h1.zfill(2)}:{m1}"
+                end_time = f"{h2.zfill(2)}:{m2}"
+
+            # Extract cost (£X.XX format)
+            costs = re.findall(r'£(\d+\.?\d*)', context)
+            cost = float(costs[0]) if costs else None
+
+            # Default days
+            days = 'Mon,Tue,Wed,Thu,Fri'
+
+            # Create club record
+            clubs.append({
+                "school_id": school_id,
+                "club_type": club_type,
+                "name": club_name,
+                "description": line[:200] if line else None,
+                "days_available": days,
+                "start_time": start_time,
+                "end_time": end_time,
+                "cost_per_session": cost,
+            })
+
+        self._logger.info("Extracted %d clubs for school_id=%d", len(clubs), school_id)
+        return clubs
 
     # ------------------------------------------------------------------
     # Database persistence

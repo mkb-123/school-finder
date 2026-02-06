@@ -172,10 +172,7 @@ class ReviewsPerformanceAgent(BaseAgent):
         list[dict[str, object]]
             Dicts with keys matching :class:`~src.db.models.SchoolReview` columns.
         """
-        # TODO: implement real Ofsted CSV parsing once the actual file
-        # format is determined.  The skeleton below demonstrates the Polars
-        # read pattern that will be used.
-        self._logger.info("TODO: implement Ofsted CSV parsing for %s", self.council)
+        self._logger.info("Parsing Ofsted CSV for %s", self.council)
         try:
             df = pl.read_csv(csv_path, ignore_errors=True, truncate_ragged_lines=True)
             self._logger.info("Ofsted CSV shape: %s, columns: %s", df.shape, df.columns)
@@ -183,24 +180,60 @@ class ReviewsPerformanceAgent(BaseAgent):
             self._logger.exception("Could not read Ofsted CSV at %s", csv_path)
             return []
 
-        # Expected processing once columns are known:
-        #
-        #   df = df.filter(pl.col("URN").is_in(list(urn_map.keys())))
-        #   records = []
-        #   for row in df.iter_rows(named=True):
-        #       school_id = urn_map.get(str(row["URN"]))
-        #       if school_id is None:
-        #           continue
-        #       records.append({
-        #           "school_id": school_id,
-        #           "source": "Ofsted",
-        #           "rating": row.get("Overall effectiveness"),
-        #           "snippet": row.get("Inspection type"),
-        #           "review_date": row.get("Inspection end date"),
-        #       })
-        #   return records
+        # Find the URN column (flexible matching)
+        urn_col = self._find_column(df, ["URN", "urn", "Urn", "LAESTAB"])
+        if not urn_col:
+            self._logger.error("Could not find URN column in Ofsted CSV")
+            return []
 
-        return []
+        # Find rating and date columns
+        rating_col = self._find_column(df, ["Overall effectiveness", "OverallEffectiveness", "Overall Effectiveness", "Rating"])
+        date_col = self._find_column(df, ["Inspection end date", "InspectionEndDate", "Inspection date", "InspectionDate"])
+        type_col = self._find_column(df, ["Inspection type", "InspectionType", "Type"])
+        la_col = self._find_column(df, ["Local authority", "LocalAuthority", "LA", "Local Authority"])
+
+        # Filter to our URNs and council if possible
+        try:
+            df_filtered = df.filter(pl.col(urn_col).cast(str).is_in(list(urn_map.keys())))
+            if la_col and self.council:
+                council_lower = self.council.lower()
+                df_filtered = df_filtered.filter(
+                    pl.col(la_col).str.to_lowercase().str.contains(council_lower)
+                )
+        except Exception as e:
+            self._logger.warning("Could not filter CSV: %s", e)
+            df_filtered = df
+
+        self._logger.info("Found %d matching schools in Ofsted CSV", len(df_filtered))
+
+        # Extract records
+        records = []
+        for row in df_filtered.iter_rows(named=True):
+            urn_str = str(row.get(urn_col, "")).strip()
+            school_id = urn_map.get(urn_str)
+            if school_id is None:
+                continue
+
+            rating = row.get(rating_col) if rating_col else None
+            snippet = row.get(type_col) if type_col else None
+            review_date = row.get(date_col) if date_col else None
+
+            records.append({
+                "school_id": school_id,
+                "source": "Ofsted",
+                "rating": rating,
+                "snippet": snippet,
+                "review_date": review_date,
+            })
+
+        return records
+
+    def _find_column(self, df: pl.DataFrame, candidates: list[str]) -> str | None:
+        """Find the first matching column name from a list of candidates."""
+        for candidate in candidates:
+            if candidate in df.columns:
+                return candidate
+        return None
 
     # ------------------------------------------------------------------
     # DfE performance processing
@@ -252,9 +285,7 @@ class ReviewsPerformanceAgent(BaseAgent):
             Dicts with keys matching :class:`~src.db.models.SchoolPerformance`
             columns.
         """
-        # TODO: implement real DfE performance CSV parsing once the actual
-        # file format is determined.
-        self._logger.info("TODO: implement DfE performance CSV parsing for %s", self.council)
+        self._logger.info("Parsing DfE performance CSV for %s", self.council)
         try:
             df = pl.read_csv(csv_path, ignore_errors=True, truncate_ragged_lines=True)
             self._logger.info("DfE CSV shape: %s, columns: %s", df.shape, df.columns)
@@ -262,24 +293,95 @@ class ReviewsPerformanceAgent(BaseAgent):
             self._logger.exception("Could not read DfE CSV at %s", csv_path)
             return []
 
-        # Expected processing once columns are known:
-        #
-        #   df = df.filter(pl.col("URN").cast(str).is_in(list(urn_map.keys())))
-        #   records = []
-        #   for row in df.iter_rows(named=True):
-        #       school_id = urn_map.get(str(row["URN"]))
-        #       if school_id is None:
-        #           continue
-        #       records.append({
-        #           "school_id": school_id,
-        #           "metric_type": "Progress8",
-        #           "metric_value": str(row.get("PROG8SCORE", "")),
-        #           "year": row.get("YEAR", 0),
-        #           "source_url": _DFE_PERFORMANCE_CSV_URL,
-        #       })
-        #   return records
+        # Find the URN column
+        urn_col = self._find_column(df, ["URN", "urn", "Urn", "LAESTAB"])
+        if not urn_col:
+            self._logger.error("Could not find URN column in DfE CSV")
+            return []
 
-        return []
+        # Find performance metric columns (primary and secondary)
+        year_col = self._find_column(df, ["YEAR", "Year", "year", "Academic year"])
+
+        # Primary school metrics (KS2)
+        ks2_reading_col = self._find_column(df, ["KS2_reading_expected", "KS2READINGEXP", "Reading expected"])
+        ks2_writing_col = self._find_column(df, ["KS2_writing_expected", "KS2WRITINGEXP", "Writing expected"])
+        ks2_maths_col = self._find_column(df, ["KS2_maths_expected", "KS2MATHSEXP", "Maths expected"])
+
+        # Secondary school metrics (KS4)
+        prog8_col = self._find_column(df, ["PROG8SCORE", "Progress 8", "Progress8"])
+        att8_col = self._find_column(df, ["ATT8SCORE", "Attainment 8", "Attainment8"])
+        ebacc_col = self._find_column(df, ["EBACCAPS", "EBacc APS", "EBaccAPS"])
+
+        # Filter to our URNs
+        try:
+            df_filtered = df.filter(pl.col(urn_col).cast(str).is_in(list(urn_map.keys())))
+        except Exception as e:
+            self._logger.warning("Could not filter CSV: %s", e)
+            df_filtered = df
+
+        self._logger.info("Found %d matching schools in DfE CSV", len(df_filtered))
+
+        # Extract records
+        records = []
+        for row in df_filtered.iter_rows(named=True):
+            urn_str = str(row.get(urn_col, "")).strip()
+            school_id = urn_map.get(urn_str)
+            if school_id is None:
+                continue
+
+            year = int(row.get(year_col, 0)) if year_col else 0
+
+            # Add all available metrics for this school
+            if ks2_reading_col and row.get(ks2_reading_col):
+                records.append({
+                    "school_id": school_id,
+                    "metric_type": "KS2_reading_expected",
+                    "metric_value": str(row.get(ks2_reading_col, "")),
+                    "year": year,
+                    "source_url": _DFE_PERFORMANCE_CSV_URL,
+                })
+            if ks2_writing_col and row.get(ks2_writing_col):
+                records.append({
+                    "school_id": school_id,
+                    "metric_type": "KS2_writing_expected",
+                    "metric_value": str(row.get(ks2_writing_col, "")),
+                    "year": year,
+                    "source_url": _DFE_PERFORMANCE_CSV_URL,
+                })
+            if ks2_maths_col and row.get(ks2_maths_col):
+                records.append({
+                    "school_id": school_id,
+                    "metric_type": "KS2_maths_expected",
+                    "metric_value": str(row.get(ks2_maths_col, "")),
+                    "year": year,
+                    "source_url": _DFE_PERFORMANCE_CSV_URL,
+                })
+            if prog8_col and row.get(prog8_col):
+                records.append({
+                    "school_id": school_id,
+                    "metric_type": "Progress8",
+                    "metric_value": str(row.get(prog8_col, "")),
+                    "year": year,
+                    "source_url": _DFE_PERFORMANCE_CSV_URL,
+                })
+            if att8_col and row.get(att8_col):
+                records.append({
+                    "school_id": school_id,
+                    "metric_type": "Attainment8",
+                    "metric_value": str(row.get(att8_col, "")),
+                    "year": year,
+                    "source_url": _DFE_PERFORMANCE_CSV_URL,
+                })
+            if ebacc_col and row.get(ebacc_col):
+                records.append({
+                    "school_id": school_id,
+                    "metric_type": "EBacc_APS",
+                    "metric_value": str(row.get(ebacc_col, "")),
+                    "year": year,
+                    "source_url": _DFE_PERFORMANCE_CSV_URL,
+                })
+
+        return records
 
     # ------------------------------------------------------------------
     # Database persistence

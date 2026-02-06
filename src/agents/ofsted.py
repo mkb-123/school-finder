@@ -180,10 +180,15 @@ class OfstedAgent(BaseAgent):
                 self._logger.info("Attempting to scrape landing page for download link...")
                 try:
                     landing_html = await self.fetch_page(_OFSTED_MI_LANDING_URL)
-                    # TODO: Parse landing_html to extract the actual CSV download URL
-                    # For now, we'll just fail gracefully
-                    self._logger.error("Landing page scraping not yet implemented")
-                    return []
+                    csv_url = self._extract_csv_url_from_landing_page(landing_html)
+                    if csv_url:
+                        self._logger.info("Found CSV URL: %s", csv_url)
+                        content = await self.fetch_page(csv_url)
+                        csv_path.write_text(content, encoding="utf-8")
+                        self._logger.info("Downloaded Ofsted CSV from landing page link")
+                    else:
+                        self._logger.error("Could not find CSV download link in landing page")
+                        return []
                 except Exception as landing_exc:
                     self._logger.error("Failed to fetch landing page: %s", landing_exc)
                     return []
@@ -399,6 +404,44 @@ class OfstedAgent(BaseAgent):
                 continue
 
         self._logger.warning("Could not parse date: %r", date_str)
+        return None
+
+    def _extract_csv_url_from_landing_page(self, html: str) -> str | None:
+        """Extract the CSV download URL from the Ofsted MI landing page.
+
+        Parameters
+        ----------
+        html:
+            HTML content of the landing page.
+
+        Returns
+        -------
+        str | None:
+            The CSV download URL, or None if not found.
+        """
+        soup = self.parse_html(html)
+
+        # Look for links containing "Management_information" and ending in .csv
+        for link in soup.find_all('a', href=True):
+            href = link['href']
+            if 'Management_information' in href and href.endswith('.csv'):
+                # Handle relative URLs
+                if href.startswith('http'):
+                    return href
+                elif href.startswith('/'):
+                    return f"https://assets.publishing.service.gov.uk{href}"
+                else:
+                    return f"https://assets.publishing.service.gov.uk/{href}"
+
+        # Fallback: look for any CSV link with "school" or "inspection" in the URL
+        for link in soup.find_all('a', href=True):
+            href = link['href']
+            if href.endswith('.csv') and ('school' in href.lower() or 'inspection' in href.lower()):
+                if href.startswith('http'):
+                    return href
+                elif href.startswith('/'):
+                    return f"https://assets.publishing.service.gov.uk{href}"
+
         return None
 
     # ------------------------------------------------------------------
