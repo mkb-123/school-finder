@@ -610,3 +610,4 @@ These are Claude Code subagents used during development to parallelise work acro
 - Frontend: use client components only for interactive elements (map, filters)
 - Repository pattern: every new query goes through the abstract interface, never directly against a specific DB
 - SEND features are behind a toggle; never show SEND data unless explicitly enabled
+- **Prefer Polars over pandas** for all data manipulation (CSV parsing, GIAS data processing, agent data normalisation, seed scripts). Polars is faster and more memory-efficient. Only use pandas if a third-party library requires it
