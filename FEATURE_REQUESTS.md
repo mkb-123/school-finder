@@ -19,3 +19,11 @@ How strict each school is about authorising absences during term time. Show whet
 ## Admissions Criteria Breakdown
 
 Visualise each school's admissions priority order so parents can see exactly where they stand before applying. Show the oversubscription criteria in ranked order — looked-after children, siblings already at the school, distance, faith requirements, catchment zone, staff children, etc. Include the last distance offered for previous years so parents can gauge whether they're realistically in range. For faith schools, surface what level of religious practice is expected (regular attendance, baptism certificate, priest's reference). Flag any schools with supplementary information forms or additional steps beyond the standard council application.
+
+## Uniform Cost & Appearance
+
+Give parents an idea of what the uniform looks like and how much it costs. Show images or a description of the required uniform (colours, style, whether a blazer or tie is needed). Indicate whether items must be bought from a specific supplier (often more expensive) or if supermarket/generic equivalents are acceptable. Include approximate costs for a full set — polo shirts, jumpers, trousers/skirts, PE kit, school bag, coat. Flag schools with expensive branded requirements versus those with a simple, affordable dress code.
+
+## Link to Prospectus
+
+Provide a direct link to each school's prospectus or welcome pack on the school detail page. Many schools publish a PDF prospectus on their website covering ethos, curriculum, facilities, and photos — surface this so parents can access it in one click rather than hunting through the school's website. Where no prospectus is available, link to the school's "About Us" or admissions page as a fallback.
