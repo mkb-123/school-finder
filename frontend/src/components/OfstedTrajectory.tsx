@@ -4,9 +4,9 @@ interface OfstedInspection {
   id: number;
   inspection_date: string;
   rating: string;
-  strengths_quote?: string;
-  improvements_quote?: string;
-  report_url?: string;
+  strengths_quote?: string | null;
+  improvements_quote?: string | null;
+  report_url?: string | null;
 }
 
 interface OfstedTrajectoryData {

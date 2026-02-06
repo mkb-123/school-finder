@@ -46,13 +46,6 @@ interface PrivateSchoolResponse extends School {
   private_details: PrivateDetail[];
 }
 
-const RATING_COLORS: Record<string, string> = {
-  Outstanding: "bg-green-100 text-green-800",
-  Good: "bg-blue-100 text-blue-800",
-  "Requires improvement": "bg-amber-100 text-amber-800",
-  Inadequate: "bg-red-100 text-red-800",
-};
-
 /** Format a time string like "08:15:00" to "8:15 AM". */
 function formatTime(timeStr: string | null): string {
   if (!timeStr) return "--";
