@@ -8,6 +8,7 @@ from src.db.base import SchoolFilters, SchoolRepository
 from src.db.factory import get_school_repository
 from src.schemas.filters import SchoolFilterParams
 from src.schemas.school import (
+    AdmissionsEstimateResponse,
     AdmissionsHistoryResponse,
     ClubResponse,
     PerformanceResponse,
@@ -15,6 +16,7 @@ from src.schemas.school import (
     SchoolResponse,
     TermDateResponse,
 )
+from src.services.admissions import estimate_full
 
 router = APIRouter(tags=["schools"])
 
@@ -112,3 +114,29 @@ async def get_school_admissions(
     """Get historical admissions data for waiting-list estimation."""
     admissions = await repo.get_admissions_history(school_id)
     return admissions
+
+
+@router.get("/api/schools/{school_id}/admissions/estimate", response_model=AdmissionsEstimateResponse)
+async def get_admissions_estimate(
+    school_id: int,
+    distance_km: float,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> AdmissionsEstimateResponse:
+    """Estimate likelihood of getting a place based on user's distance from school."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    admissions = await repo.get_admissions_history(school_id)
+    result = estimate_full(school_id, distance_km, admissions)
+
+    return AdmissionsEstimateResponse(
+        likelihood=result.likelihood,
+        trend=result.trend,
+        avg_last_distance_km=result.avg_last_distance_km,
+        min_last_distance_km=result.min_last_distance_km,
+        max_last_distance_km=result.max_last_distance_km,
+        latest_last_distance_km=result.latest_last_distance_km,
+        avg_oversubscription_ratio=result.avg_oversubscription_ratio,
+        years_of_data=result.years_of_data,
+    )

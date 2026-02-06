@@ -10,7 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.compare import router as compare_router
 from src.api.councils import router as councils_router
+from src.api.decision import router as decision_router
 from src.api.geocode import router as geocode_router
+from src.api.journey import router as journey_router
 from src.api.private_schools import router as private_schools_router
 from src.api.schools import router as schools_router
 from src.config import get_settings
@@ -54,6 +56,8 @@ app.include_router(private_schools_router)
 app.include_router(geocode_router)
 app.include_router(councils_router)
 app.include_router(compare_router)
+app.include_router(decision_router)
+app.include_router(journey_router)
 
 if __name__ == "__main__":
     uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)

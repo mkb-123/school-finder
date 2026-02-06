@@ -30,7 +30,15 @@ import polars as pl
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from src.db.models import Base, PrivateSchoolDetails, School, SchoolClub, SchoolPerformance, SchoolTermDate
+from src.db.models import (
+    AdmissionsHistory,
+    Base,
+    PrivateSchoolDetails,
+    School,
+    SchoolClub,
+    SchoolPerformance,
+    SchoolTermDate,
+)
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -1208,6 +1216,127 @@ def _seed_term_dates(session: Session, council: str) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Admissions history seed data
+# ---------------------------------------------------------------------------
+
+_ACADEMIC_YEARS = ["2021/2022", "2022/2023", "2023/2024", "2024/2025"]
+
+
+def _generate_test_admissions(schools: list[School], session: Session) -> int:
+    """Generate realistic historical admissions data for state schools.
+
+    Creates 4 years of admissions history per state school with realistic
+    data including places offered, applications received, last distance
+    offered, waiting list offers, and appeals data.  Uses a deterministic
+    RNG seeded with 42 for reproducibility.
+
+    Returns the number of records inserted.
+    """
+    rng = random.Random(42)
+    count = 0
+
+    for school in schools:
+        if school.id is None or school.is_private:
+            continue
+
+        # Determine school size category based on age range
+        is_secondary = (
+            school.age_range_from is not None
+            and school.age_range_from >= 11
+            and school.age_range_to is not None
+            and school.age_range_to >= 16
+        )
+
+        # Base places offered: secondary schools are larger
+        if is_secondary:
+            base_places = rng.choice([150, 180, 210, 240])
+        else:
+            base_places = rng.choice([30, 45, 60, 90])
+
+        # Popularity factor: Outstanding schools are more popular
+        if school.ofsted_rating == "Outstanding":
+            popularity = rng.uniform(2.0, 3.0)
+        elif school.ofsted_rating == "Good":
+            popularity = rng.uniform(1.2, 2.2)
+        elif school.ofsted_rating == "Requires improvement":
+            popularity = rng.uniform(0.8, 1.3)
+        else:
+            popularity = rng.uniform(1.0, 1.8)
+
+        # Base last distance offered (km) - more popular = smaller catchment
+        if popularity > 2.0:
+            base_distance = rng.uniform(0.5, 1.5)
+        elif popularity > 1.5:
+            base_distance = rng.uniform(1.0, 2.5)
+        else:
+            base_distance = rng.uniform(2.0, 5.0)
+
+        # Trend: popular schools shrink catchment over time
+        is_shrinking = popularity > 1.5 and rng.random() < 0.65
+        is_growing = popularity < 1.2 and rng.random() < 0.40
+
+        # Delete existing records for idempotent re-seed
+        session.query(AdmissionsHistory).filter_by(school_id=school.id).delete()
+
+        for i, year in enumerate(_ACADEMIC_YEARS):
+            # Places offered stays fairly constant (slight variation)
+            places = base_places + rng.randint(-5, 5)
+            places = max(15, places)
+
+            # Applications received based on popularity
+            apps = int(places * popularity) + rng.randint(-10, 20)
+            apps = max(places, apps)  # at least as many as places
+
+            # Last distance offered trends over years
+            if is_shrinking:
+                year_factor = 1.0 - (i * rng.uniform(0.05, 0.12))
+            elif is_growing:
+                year_factor = 1.0 + (i * rng.uniform(0.03, 0.08))
+            else:
+                year_factor = 1.0 + rng.uniform(-0.05, 0.05)
+
+            last_dist = round(base_distance * year_factor, 2)
+            last_dist = max(0.2, min(8.0, last_dist))
+
+            # Waiting list offers: more oversubscribed = more movement
+            oversubscription = apps / places if places > 0 else 1.0
+            if oversubscription > 2.0:
+                wl_offers = rng.randint(8, 20)
+            elif oversubscription > 1.5:
+                wl_offers = rng.randint(5, 15)
+            else:
+                wl_offers = rng.randint(2, 8)
+
+            # Appeals: proportional to oversubscription
+            if oversubscription > 2.0:
+                appeals_heard = rng.randint(5, 15)
+            elif oversubscription > 1.5:
+                appeals_heard = rng.randint(3, 10)
+            else:
+                appeals_heard = rng.randint(1, 5)
+
+            # Appeals upheld: typically 20-40% success rate
+            appeals_upheld = min(appeals_heard, rng.randint(1, max(1, int(appeals_heard * 0.45))))
+
+            session.add(
+                AdmissionsHistory(
+                    school_id=school.id,
+                    academic_year=year,
+                    places_offered=places,
+                    applications_received=apps,
+                    last_distance_offered_km=last_dist,
+                    waiting_list_offers=wl_offers,
+                    appeals_heard=appeals_heard,
+                    appeals_upheld=appeals_upheld,
+                )
+            )
+            count += 1
+
+    session.commit()
+    return count
+
+
+# ---------------------------------------------------------------------------
 # Database operations
 # ---------------------------------------------------------------------------
 
@@ -1276,7 +1405,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     print(f"  Database       : {db_path}")
     print()
 
-    print("[1/8] Obtaining GIAS CSV ...")
+    print("[1/9] Obtaining GIAS CSV ...")
     use_test_data = False
     csv_path: Path | None = None
     cached = _find_cached_csv()
@@ -1293,11 +1422,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
 
     schools: list[School] = []
     if use_test_data or csv_path is None:
-        print("[2/8] Generating test school data ...")
+        print("[2/9] Generating test school data ...")
         schools = _generate_test_schools(council)
         print(f"  Generated {len(schools)} test schools for '{council}'")
     else:
-        print("[2/8] Reading CSV ...")
+        print("[2/9] Reading CSV ...")
         rows = _read_csv(csv_path)
         print(f"  Total rows in CSV: {len(rows)}")
         council_lower = council.lower()
@@ -1316,7 +1445,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
                 if len(all_councils) > 20:
                     print(f"    ... and {len(all_councils) - 20} more", file=sys.stderr)
             sys.exit(1)
-        print("[3/8] Mapping to School records ...")
+        print("[3/9] Mapping to School records ...")
         skipped = 0
         for row in council_rows:
             school = _row_to_school(row)
@@ -1329,7 +1458,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     geo_count = sum(1 for s in schools if s.lat is not None)
     print(f"  With coordinates: {geo_count}/{len(schools)}")
 
-    print("[4/8] Writing schools to database ...")
+    print("[4/9] Writing schools to database ...")
     session = _ensure_database(db_path)
     try:
         inserted, updated = _upsert_schools(session, schools)
@@ -1338,11 +1467,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  Updated : {updated}")
         print(f"  Total schools for '{council}' in DB: {total_in_db}")
 
-        print("[5/7] Seeding term dates ...")
+        print("[5/9] Seeding term dates ...")
         term_count = _seed_term_dates(session, council)
         print(f"  Term date records created: {term_count}")
 
-        print("[6/7] Generating club data ...")
+        print("[6/9] Generating club data ...")
         all_schools = session.query(School).filter_by(council=council).all()
         clubs = _generate_test_clubs(all_schools)
         clubs_inserted = _upsert_clubs(session, clubs)
@@ -1353,9 +1482,24 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  Clubs inserted  : {clubs_inserted}")
         print(f"  Total clubs in DB: {total_clubs}")
 
-        print("[7/7] Generating private school details ...")
+        print("[7/9] Generating private school details ...")
         pvt_count = _generate_private_school_details(session)
         print(f"  Private school detail tiers: {pvt_count}")
+
+        print("[8/9] Generating performance data ...")
+        # Clear existing performance data for idempotent re-seed
+        school_ids = [s.id for s in all_schools]
+        if school_ids:
+            session.query(SchoolPerformance).filter(SchoolPerformance.school_id.in_(school_ids)).delete(
+                synchronize_session=False
+            )
+            session.flush()
+        perf_count = _generate_test_performance(all_schools, session)
+        print(f"  Performance records created: {perf_count}")
+
+        print("[9/9] Generating admissions history ...")
+        admissions_count = _generate_test_admissions(all_schools, session)
+        print(f"  Admissions history records created: {admissions_count}")
 
         print()
         print("=" * 60)
@@ -1377,6 +1521,8 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  State secondary     : {secondary_count}")
         print(f"  Private/independent : {private_count}")
         print(f"  Term date records   : {term_count}")
+        print(f"  Performance records : {perf_count}")
+        print(f"  Admissions records  : {admissions_count}")
         print(f"  Breakfast clubs     : {breakfast_count}")
         print(f"  After-school clubs  : {afterschool_count}")
         print()

@@ -137,6 +137,19 @@ class CompareResponse(BaseModel):
     schools: list[SchoolDetailResponse]
 
 
+class AdmissionsEstimateResponse(BaseModel):
+    """Admissions likelihood estimate with supporting data."""
+
+    likelihood: str
+    trend: str
+    avg_last_distance_km: float | None = None
+    min_last_distance_km: float | None = None
+    max_last_distance_km: float | None = None
+    latest_last_distance_km: float | None = None
+    avg_oversubscription_ratio: float | None = None
+    years_of_data: int = 0
+
+
 class GeocodeResponse(BaseModel):
     """Geocoding result from postcode lookup."""
 

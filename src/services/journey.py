@@ -43,7 +43,7 @@ class TimeOfDay(enum.Enum):
 
 
 # ---------------------------------------------------------------------------
-# Result dataclass
+# Result dataclasses
 # ---------------------------------------------------------------------------
 
 
@@ -55,7 +55,20 @@ class JourneyResult:
     duration_minutes: float
     mode: TravelMode
     time_of_day: TimeOfDay
+    is_rush_hour: bool = False
     route_polyline: str | None = None
+
+
+@dataclass(frozen=True)
+class SchoolJourneyResult:
+    """Journey results for a single school, with both drop-off and pick-up estimates."""
+
+    school_id: int
+    school_name: str
+    distance_km: float
+    dropoff: JourneyResult
+    pickup: JourneyResult
+    off_peak: JourneyResult
 
 
 # ---------------------------------------------------------------------------
@@ -69,23 +82,27 @@ _AVERAGE_SPEEDS_KMH: dict[TravelMode, float] = {
     TravelMode.TRANSIT: 20.0,  # bus/tram average including stops
 }
 
-# Rough multiplier to convert straight-line distance to road/path distance.
-# Real-world routes are typically 20-40 % longer than the crow-flies distance.
-_DETOUR_FACTOR = 1.3
+# Route factor to convert straight-line distance to realistic road/path distance.
+# Walking/cycling tend to follow more direct paths; driving uses roads.
+_ROUTE_FACTORS: dict[TravelMode, float] = {
+    TravelMode.WALKING: 1.3,
+    TravelMode.CYCLING: 1.3,
+    TravelMode.DRIVING: 1.4,
+    TravelMode.TRANSIT: 1.4,
+}
 
 # Time-of-day multipliers to approximate congestion effects.
-# These are very rough placeholders.
 _TIME_MULTIPLIERS: dict[TimeOfDay, dict[TravelMode, float]] = {
     TimeOfDay.DROPOFF: {
         TravelMode.WALKING: 1.0,
         TravelMode.CYCLING: 1.0,
-        TravelMode.DRIVING: 1.3,  # morning rush-hour penalty
+        TravelMode.DRIVING: 1.3,  # morning rush-hour penalty (8-9am)
         TravelMode.TRANSIT: 1.2,
     },
     TimeOfDay.PICKUP: {
         TravelMode.WALKING: 1.0,
         TravelMode.CYCLING: 1.0,
-        TravelMode.DRIVING: 1.25,  # evening rush-hour penalty
+        TravelMode.DRIVING: 1.3,  # evening rush-hour penalty (5-5:30pm)
         TravelMode.TRANSIT: 1.15,
     },
     TimeOfDay.GENERIC: {
@@ -132,11 +149,10 @@ async def calculate_journey(
 ) -> JourneyResult:
     """Calculate a journey between two geographic points.
 
-    .. note::
-        **Placeholder implementation** -- uses straight-line (Haversine) distance
-        with a detour factor and rough speed estimates.  Replace with a real
-        routing API (e.g. OSRM, GraphHopper, or Google Directions) for
-        production use.
+    Uses straight-line (Haversine) distance with a route factor and rough
+    speed estimates.  The route factor varies by mode (1.3 for walking/cycling,
+    1.4 for driving/transit).  Rush-hour multipliers are applied for drop-off
+    (08:00-08:45) and pick-up (17:00-17:30) windows.
 
     Parameters
     ----------
@@ -152,14 +168,11 @@ async def calculate_journey(
     Returns
     -------
     JourneyResult
-        Estimated distance (km) and duration (minutes).
+        Estimated distance (km), duration (minutes), and rush-hour flag.
     """
-    # TODO: Replace this placeholder with a real routing API call (OSRM or similar)
-    # that returns actual road/path distances, turn-by-turn directions, and
-    # time-of-day traffic data.
-
     straight_line_km = _haversine_distance(from_lat, from_lng, to_lat, to_lng)
-    estimated_road_km = straight_line_km * _DETOUR_FACTOR
+    route_factor = _ROUTE_FACTORS[mode]
+    estimated_road_km = straight_line_km * route_factor
 
     speed_kmh = _AVERAGE_SPEEDS_KMH[mode]
     base_duration_hours = estimated_road_km / speed_kmh if speed_kmh > 0 else 0.0
@@ -167,10 +180,79 @@ async def calculate_journey(
     time_multiplier = _TIME_MULTIPLIERS[time_of_day][mode]
     duration_minutes = base_duration_hours * 60.0 * time_multiplier
 
+    is_rush_hour = time_of_day in (TimeOfDay.DROPOFF, TimeOfDay.PICKUP)
+
     return JourneyResult(
         distance_km=round(estimated_road_km, 2),
         duration_minutes=round(duration_minutes, 1),
         mode=mode,
         time_of_day=time_of_day,
-        route_polyline=None,  # No polyline available from the placeholder implementation
+        is_rush_hour=is_rush_hour,
+        route_polyline=None,
     )
+
+
+@dataclass
+class _SchoolInfo:
+    """Minimal school info needed for journey comparison."""
+
+    id: int
+    name: str
+    lat: float
+    lng: float
+
+
+async def compare_journeys(
+    from_lat: float,
+    from_lng: float,
+    schools: list[_SchoolInfo],
+    mode: TravelMode = TravelMode.WALKING,
+) -> list[SchoolJourneyResult]:
+    """Compare journey times from an origin to multiple schools.
+
+    For each school, calculates three journey estimates:
+    - Drop-off: 8:00-8:45am (rush hour for driving)
+    - Pick-up: 5:00-5:30pm (rush hour for driving -- user works until 5:30)
+    - Off-peak: generic non-rush-hour time
+
+    Results are sorted by drop-off duration (shortest first).
+
+    Parameters
+    ----------
+    from_lat, from_lng:
+        Origin coordinates (decimal degrees).
+    schools:
+        List of schools with id, name, lat, lng.
+    mode:
+        Travel mode to use for all calculations.
+
+    Returns
+    -------
+    list[SchoolJourneyResult]
+        Journey results for each school, sorted by drop-off time.
+    """
+    results: list[SchoolJourneyResult] = []
+
+    for school in schools:
+        straight_line_km = _haversine_distance(from_lat, from_lng, school.lat, school.lng)
+        route_factor = _ROUTE_FACTORS[mode]
+        distance_km = round(straight_line_km * route_factor, 2)
+
+        dropoff = await calculate_journey(from_lat, from_lng, school.lat, school.lng, mode, TimeOfDay.DROPOFF)
+        pickup = await calculate_journey(from_lat, from_lng, school.lat, school.lng, mode, TimeOfDay.PICKUP)
+        off_peak = await calculate_journey(from_lat, from_lng, school.lat, school.lng, mode, TimeOfDay.GENERIC)
+
+        results.append(
+            SchoolJourneyResult(
+                school_id=school.id,
+                school_name=school.name,
+                distance_km=distance_km,
+                dropoff=dropoff,
+                pickup=pickup,
+                off_peak=off_peak,
+            )
+        )
+
+    # Sort by drop-off duration (quickest first)
+    results.sort(key=lambda r: r.dropoff.duration_minutes)
+    return results

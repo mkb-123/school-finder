@@ -5,6 +5,7 @@ interface SchoolCardProps {
   name: string;
   type: string;
   ofstedRating: string;
+  ofstedDate?: string | null;
   distance: string;
   isPrivate?: boolean;
   hasBreakfastClub?: boolean;
@@ -23,6 +24,7 @@ export default function SchoolCard({
   name,
   type,
   ofstedRating,
+  ofstedDate,
   distance,
   isPrivate = false,
   hasBreakfastClub = false,
@@ -45,11 +47,18 @@ export default function SchoolCard({
           <h3 className="font-semibold text-gray-900">{name}</h3>
           <p className="mt-0.5 text-sm text-gray-500">{type}</p>
         </div>
-        <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeColor}`}
-        >
-          {ofstedRating}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeColor}`}
+          >
+            {ofstedRating}
+          </span>
+          {ofstedDate && (
+            <span className="text-xs text-gray-400">
+              Inspected: {ofstedDate}
+            </span>
+          )}
+        </div>
       </div>
       <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
         <span className="flex items-center">

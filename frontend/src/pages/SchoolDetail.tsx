@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { get } from "../api/client";
 import Map, { type School } from "../components/Map";
+import WaitingListGauge from "../components/WaitingListGauge";
+import type {
+  AdmissionsRecord,
+  AdmissionsEstimate,
+} from "../components/WaitingListGauge";
 
 interface Club {
   id: number;
@@ -15,8 +20,19 @@ interface Club {
   cost_per_session: number | null;
 }
 
-interface SchoolWithClubs extends School {
+interface Performance {
+  id: number;
+  school_id: number;
+  metric_type: string;
+  metric_value: string;
+  year: number;
+  source_url: string | null;
+}
+
+interface SchoolDetail extends School {
   clubs: Club[];
+  performance: Performance[];
+  admissions_history: AdmissionsRecord[];
 }
 
 const TABS = [
@@ -90,6 +106,175 @@ function ClubSection({ title, clubs }: { title: string; clubs: Club[] }) {
   );
 }
 
+/** Determine trend arrow for a metric across years. */
+function TrendArrow({ current, previous }: { current: number; previous: number }) {
+  const diff = current - previous;
+  if (Math.abs(diff) < 0.01) {
+    return <span className="ml-1 text-gray-400" title="No change">&mdash;</span>;
+  }
+  if (diff > 0) {
+    return (
+      <span className="ml-1 text-green-600" title={`Up from ${previous}`}>
+        &#9650;
+      </span>
+    );
+  }
+  return (
+    <span className="ml-1 text-red-600" title={`Down from ${previous}`}>
+      &#9660;
+    </span>
+  );
+}
+
+/** Extract a numeric value from a metric_value string for trend comparison. */
+function extractNumeric(value: string): number | null {
+  // Handle Progress8 values like "+0.30" or "-0.15"
+  const p8Match = value.match(/^[+-]?\d+\.?\d*$/);
+  if (p8Match) return parseFloat(value);
+  // Handle "Expected standard: 65%" or "5+ GCSEs 9-4: 72%"
+  const pctMatch = value.match(/(\d+)%/);
+  if (pctMatch) return parseInt(pctMatch[1], 10);
+  // Handle Attainment8 plain numbers like "48.2"
+  const numMatch = value.match(/^\d+\.?\d*$/);
+  if (numMatch) return parseFloat(value);
+  return null;
+}
+
+/** Format an academic year number into a readable string. */
+function academicYear(year: number): string {
+  return `${year - 1}/${year}`;
+}
+
+function PerformanceTab({ performance }: { performance: Performance[] }) {
+  if (performance.length === 0) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <h2 className="text-xl font-semibold text-gray-900">
+          Performance &amp; Ratings
+        </h2>
+        <p className="mt-2 text-gray-600">No performance data available yet.</p>
+      </div>
+    );
+  }
+
+  // Group by metric_type, then sort by year
+  const grouped: Record<string, Performance[]> = {};
+  for (const p of performance) {
+    if (!grouped[p.metric_type]) grouped[p.metric_type] = [];
+    grouped[p.metric_type].push(p);
+  }
+  for (const key of Object.keys(grouped)) {
+    grouped[key].sort((a, b) => a.year - b.year);
+  }
+
+  // Display order: primary metrics first, then secondary
+  const metricOrder = ["SATs", "SATs_Higher", "GCSE", "Progress8", "Attainment8"];
+  const metricLabels: Record<string, string> = {
+    SATs: "SATs - Expected Standard",
+    SATs_Higher: "SATs - Higher Standard",
+    GCSE: "GCSE Results",
+    Progress8: "Progress 8",
+    Attainment8: "Attainment 8",
+  };
+
+  const orderedKeys = metricOrder.filter((k) => grouped[k]);
+  // Add any remaining metric types not in our predefined order
+  for (const key of Object.keys(grouped)) {
+    if (!orderedKeys.includes(key)) orderedKeys.push(key);
+  }
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-6">
+      <h2 className="text-xl font-semibold text-gray-900">
+        Performance &amp; Ratings
+      </h2>
+      <div className="mt-4 space-y-6">
+        {orderedKeys.map((metricType) => {
+          const entries = grouped[metricType];
+          const label = metricLabels[metricType] ?? metricType;
+          const isProgress8 = metricType === "Progress8";
+
+          return (
+            <div key={metricType}>
+              <h3 className="text-lg font-semibold text-gray-800">{label}</h3>
+              <div className="mt-2 overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        Academic Year
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        Result
+                      </th>
+                      {entries.length > 1 && (
+                        <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Trend
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {entries.map((entry, idx) => {
+                      const numVal = extractNumeric(entry.metric_value);
+                      // Progress8 colour: green if positive, red if negative
+                      let valueClass = "text-gray-900";
+                      if (isProgress8 && numVal !== null) {
+                        if (numVal > 0) valueClass = "text-green-700 font-semibold";
+                        else if (numVal < 0) valueClass = "text-red-700 font-semibold";
+                      }
+
+                      const prevEntry = idx > 0 ? entries[idx - 1] : null;
+                      const prevNum = prevEntry
+                        ? extractNumeric(prevEntry.metric_value)
+                        : null;
+
+                      return (
+                        <tr key={entry.id}>
+                          <td className="whitespace-nowrap px-4 py-2 text-sm text-gray-600">
+                            {academicYear(entry.year)}
+                          </td>
+                          <td
+                            className={`whitespace-nowrap px-4 py-2 text-sm ${valueClass}`}
+                          >
+                            {entry.metric_value}
+                          </td>
+                          {entries.length > 1 && (
+                            <td className="whitespace-nowrap px-4 py-2 text-sm">
+                              {idx > 0 && numVal !== null && prevNum !== null ? (
+                                <TrendArrow current={numVal} previous={prevNum} />
+                              ) : (
+                                <span className="text-gray-300">&mdash;</span>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {entries[0]?.source_url && (
+                <p className="mt-1 text-xs text-gray-400">
+                  Source:{" "}
+                  <a
+                    href={entries[0].source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-gray-600"
+                  >
+                    DfE School Performance Data
+                  </a>
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ClubsTab({ clubs }: { clubs: Club[] }) {
   if (clubs.length === 0) {
     return (
@@ -119,17 +304,38 @@ function ClubsTab({ clubs }: { clubs: Club[] }) {
 export default function SchoolDetail() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
-  const [school, setSchool] = useState<SchoolWithClubs | null>(null);
+  const [school, setSchool] = useState<SchoolDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [admissionsEstimate, setAdmissionsEstimate] =
+    useState<AdmissionsEstimate | null>(null);
+  const [estimateLoaded, setEstimateLoaded] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    get<SchoolWithClubs>(`/schools/${id}`)
+    get<SchoolDetail>(`/schools/${id}`)
       .then(setSchool)
       .catch(() => setSchool(null))
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Fetch admissions estimate when Admissions tab is selected
+  useEffect(() => {
+    if (activeTab !== "Admissions" || !school || estimateLoaded) return;
+    // Use school's distance_km if available, otherwise use catchment_radius_km as a proxy
+    const userDist = school.distance_km ?? school.catchment_radius_km ?? 2.0;
+    get<AdmissionsEstimate>(
+      `/schools/${school.id}/admissions/estimate`,
+      { distance_km: userDist },
+    )
+      .then((est) => {
+        setAdmissionsEstimate(est);
+        setEstimateLoaded(true);
+      })
+      .catch(() => {
+        setEstimateLoaded(true);
+      });
+  }, [activeTab, school, estimateLoaded]);
 
   if (loading) {
     return (
@@ -259,14 +465,7 @@ export default function SchoolDetail() {
         )}
 
         {activeTab === "Performance" && (
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Performance &amp; Ratings
-            </h2>
-            <p className="mt-2 text-gray-600">
-              Academic performance data will be populated by the reviews agent.
-            </p>
-          </div>
+          <PerformanceTab performance={school.performance ?? []} />
         )}
 
         {activeTab === "Term Dates" && (
@@ -279,13 +478,48 @@ export default function SchoolDetail() {
         )}
 
         {activeTab === "Admissions" && (
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Admissions &amp; Waiting List
-            </h2>
-            <p className="mt-2 text-gray-600">
-              Historical admissions data will be populated once available.
-            </p>
+          <div>
+            <WaitingListGauge
+              admissionsHistory={school.admissions_history ?? []}
+              estimate={admissionsEstimate}
+              userDistanceKm={school.distance_km ?? school.catchment_radius_km ?? null}
+            />
+            {/* Historical admissions table */}
+            {(school.admissions_history ?? []).length > 0 && (
+              <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6">
+                <h3 className="text-lg font-semibold text-gray-900">Historical Admissions</h3>
+                <div className="mt-4 overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
+                        <th className="pb-2 pr-4">Year</th>
+                        <th className="pb-2 pr-4">Places</th>
+                        <th className="pb-2 pr-4">Applications</th>
+                        <th className="pb-2 pr-4">Last Distance</th>
+                        <th className="pb-2 pr-4">Off Waiting List</th>
+                        <th className="pb-2 pr-4">Appeals Heard</th>
+                        <th className="pb-2">Appeals Upheld</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...(school.admissions_history ?? [])]
+                        .sort((a, b) => b.academic_year.localeCompare(a.academic_year))
+                        .map((r) => (
+                          <tr key={r.academic_year} className="border-b border-gray-100">
+                            <td className="py-2 pr-4 font-medium">{r.academic_year}</td>
+                            <td className="py-2 pr-4">{r.places_offered ?? "—"}</td>
+                            <td className="py-2 pr-4">{r.applications_received ?? "—"}</td>
+                            <td className="py-2 pr-4">{r.last_distance_offered_km != null ? `${r.last_distance_offered_km.toFixed(2)} km` : "—"}</td>
+                            <td className="py-2 pr-4">{r.waiting_list_offers ?? "—"}</td>
+                            <td className="py-2 pr-4">{r.appeals_heard ?? "—"}</td>
+                            <td className="py-2">{r.appeals_upheld ?? "—"}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
