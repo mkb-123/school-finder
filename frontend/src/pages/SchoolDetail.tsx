@@ -3,6 +3,22 @@ import { useParams } from "react-router-dom";
 import { get } from "../api/client";
 import Map, { type School } from "../components/Map";
 
+interface Club {
+  id: number;
+  school_id: number;
+  club_type: string;
+  name: string;
+  description: string | null;
+  days_available: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  cost_per_session: number | null;
+}
+
+interface SchoolWithClubs extends School {
+  clubs: Club[];
+}
+
 const TABS = [
   "Overview",
   "Clubs",
@@ -19,16 +35,97 @@ const RATING_COLORS: Record<string, string> = {
   Inadequate: "bg-red-100 text-red-800",
 };
 
+function formatTime(t: string | null): string {
+  if (!t) return "";
+  // API may return "HH:MM:SS" or "HH:MM" - display as "HH:MM"
+  return t.slice(0, 5);
+}
+
+function ClubSection({ title, clubs }: { title: string; clubs: Club[] }) {
+  if (clubs.length === 0) return null;
+  return (
+    <div className="mt-4">
+      <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+      <div className="mt-2 space-y-3">
+        {clubs.map((club) => (
+          <div
+            key={club.id}
+            className="rounded-lg border border-gray-100 bg-gray-50 p-4"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="font-medium text-gray-900">{club.name}</p>
+                {club.description && (
+                  <p className="mt-0.5 text-sm text-gray-600">{club.description}</p>
+                )}
+              </div>
+              {club.cost_per_session != null && (
+                <span className="whitespace-nowrap rounded bg-blue-50 px-2 py-1 text-sm font-medium text-blue-700">
+                  &pound;{club.cost_per_session.toFixed(2)}/session
+                </span>
+              )}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-3 text-sm text-gray-500">
+              {club.days_available && (
+                <span className="flex items-center gap-1">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {club.days_available.replace(/,/g, ", ")}
+                </span>
+              )}
+              {(club.start_time || club.end_time) && (
+                <span className="flex items-center gap-1">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {formatTime(club.start_time)} &ndash; {formatTime(club.end_time)}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ClubsTab({ clubs }: { clubs: Club[] }) {
+  if (clubs.length === 0) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <h2 className="text-xl font-semibold text-gray-900">
+          Breakfast &amp; After-School Clubs
+        </h2>
+        <p className="mt-2 text-gray-600">No club data available yet.</p>
+      </div>
+    );
+  }
+
+  const breakfastClubs = clubs.filter((c) => c.club_type === "breakfast");
+  const afterSchoolClubs = clubs.filter((c) => c.club_type === "after_school");
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-6">
+      <h2 className="text-xl font-semibold text-gray-900">
+        Breakfast &amp; After-School Clubs
+      </h2>
+      <ClubSection title="Breakfast Clubs" clubs={breakfastClubs} />
+      <ClubSection title="After-School Clubs" clubs={afterSchoolClubs} />
+    </div>
+  );
+}
+
 export default function SchoolDetail() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
-  const [school, setSchool] = useState<School | null>(null);
+  const [school, setSchool] = useState<SchoolWithClubs | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    get<School>(`/schools/${id}`)
+    get<SchoolWithClubs>(`/schools/${id}`)
       .then(setSchool)
       .catch(() => setSchool(null))
       .finally(() => setLoading(false));
@@ -158,14 +255,7 @@ export default function SchoolDetail() {
         )}
 
         {activeTab === "Clubs" && (
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Breakfast &amp; After-School Clubs
-            </h2>
-            <p className="mt-2 text-gray-600">
-              Club data will be populated by the clubs data-collection agent.
-            </p>
-          </div>
+          <ClubsTab clubs={school.clubs ?? []} />
         )}
 
         {activeTab === "Performance" && (

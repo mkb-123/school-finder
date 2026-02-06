@@ -72,6 +72,7 @@ class PrivateSchoolDetailsResponse(BaseModel):
     termly_fee: float | None = None
     annual_fee: float | None = None
     fee_age_group: str | None = None
+    fee_increase_pct: float | None = None
     school_day_start: datetime.time | None = None
     school_day_end: datetime.time | None = None
     provides_transport: bool | None = None

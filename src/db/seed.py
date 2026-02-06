@@ -22,7 +22,7 @@ import argparse
 import math
 import random
 import sys
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 import httpx
@@ -30,7 +30,7 @@ import polars as pl
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from src.db.models import Base, School, SchoolClub
+from src.db.models import Base, PrivateSchoolDetails, School, SchoolClub, SchoolTermDate
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -498,7 +498,22 @@ def _generate_test_schools(council: str) -> list[School]:  # noqa: C901
 
     schools: list[School] = []
     for row in mk_schools:
-        (urn, name, postcode, lat, lng, age_from, age_to, phase, gender, faith, ofsted, ofsted_date_str, is_private_val, _type_group) = row  # noqa: E501
+        (
+            urn,
+            name,
+            postcode,
+            lat,
+            lng,
+            age_from,
+            age_to,
+            phase,
+            gender,
+            faith,
+            ofsted,
+            ofsted_date_str,
+            is_private_val,
+            _type_group,
+        ) = row  # noqa: E501
         ofsted_date_val = None
         if ofsted_date_str:
             try:
@@ -508,13 +523,22 @@ def _generate_test_schools(council: str) -> list[School]:  # noqa: C901
         school_type = "private" if is_private_val else "state"
         schools.append(
             School(
-                urn=urn, name=name, type=school_type, council=council,
-                address=f"{name}, Milton Keynes", postcode=postcode,
-                lat=lat, lng=lng, catchment_radius_km=_default_catchment_km(phase),
-                gender_policy=gender, faith=faith,
-                age_range_from=age_from, age_range_to=age_to,
+                urn=urn,
+                name=name,
+                type=school_type,
+                council=council,
+                address=f"{name}, Milton Keynes",
+                postcode=postcode,
+                lat=lat,
+                lng=lng,
+                catchment_radius_km=_default_catchment_km(phase),
+                gender_policy=gender,
+                faith=faith,
+                age_range_from=age_from,
+                age_range_to=age_to,
                 ofsted_rating=ofsted if ofsted != "Not applicable" else None,
-                ofsted_date=ofsted_date_val, is_private=is_private_val,
+                ofsted_date=ofsted_date_val,
+                is_private=is_private_val,
             )
         )
     return schools
@@ -556,8 +580,10 @@ def _generate_test_clubs(schools: list[School]) -> list[SchoolClub]:
         if school.id is None or school.is_private:
             continue
         is_secondary = (
-            school.age_range_from is not None and school.age_range_from >= 11
-            and school.age_range_to is not None and school.age_range_to >= 16
+            school.age_range_from is not None
+            and school.age_range_from >= 11
+            and school.age_range_to is not None
+            and school.age_range_to >= 16
         )
         breakfast_prob = 0.30 if is_secondary else 0.60
         afterschool_prob = 0.50 if is_secondary else 0.40
@@ -567,12 +593,18 @@ def _generate_test_clubs(schools: list[School]) -> list[SchoolClub]:
             end_min = rng.choice([40, 45, 50])
             cost = round(rng.uniform(3.0, 5.0), 2)
             days = "Mon,Tue,Wed,Thu,Fri" if rng.random() < 0.85 else "Mon,Tue,Wed,Thu"
-            clubs.append(SchoolClub(
-                school_id=school.id, club_type="breakfast", name=bname,
-                description=bdesc, days_available=days,
-                start_time=time(7, start_min), end_time=time(8, end_min),
-                cost_per_session=cost,
-            ))
+            clubs.append(
+                SchoolClub(
+                    school_id=school.id,
+                    club_type="breakfast",
+                    name=bname,
+                    description=bdesc,
+                    days_available=days,
+                    start_time=time(7, start_min),
+                    end_time=time(8, end_min),
+                    cost_per_session=cost,
+                )
+            )
         if rng.random() < afterschool_prob:
             num_clubs = rng.choice([1, 1, 2, 2, 3])
             chosen = rng.sample(_AFTERSCHOOL_CLUBS, min(num_clubs, len(_AFTERSCHOOL_CLUBS)))
@@ -588,12 +620,18 @@ def _generate_test_clubs(schools: list[School]) -> list[SchoolClub]:
                     days = ",".join(selected_days)
                 else:
                     days = "Mon,Tue,Wed,Thu,Fri"
-                clubs.append(SchoolClub(
-                    school_id=school.id, club_type="after_school", name=aname,
-                    description=adesc, days_available=days,
-                    start_time=time(15, as_start_min), end_time=time(as_end_hour, as_end_min),
-                    cost_per_session=cost,
-                ))
+                clubs.append(
+                    SchoolClub(
+                        school_id=school.id,
+                        club_type="after_school",
+                        name=aname,
+                        description=adesc,
+                        days_available=days,
+                        start_time=time(15, as_start_min),
+                        end_time=time(as_end_hour, as_end_min),
+                        cost_per_session=cost,
+                    )
+                )
     return clubs
 
 
@@ -611,6 +649,444 @@ def _upsert_clubs(session: Session, clubs: list[SchoolClub]) -> int:
             inserted += 1
     session.commit()
     return inserted
+
+
+# ---------------------------------------------------------------------------
+# Private school details (fees, hours, transport)
+# ---------------------------------------------------------------------------
+# Tuples: (school_name_fragment, fee_age_group, termly_fee, annual_fee,
+#          fee_increase_pct, day_start, day_end, provides_transport,
+#          transport_notes, holiday_notes)
+
+_PRIVATE_DETAIL_ROWS: list[tuple[str, str, float, float, float, time, time, bool, str | None, str | None]] = [
+    # Thornton College (Girls boarding/day, Catholic)
+    (
+        "Thornton",
+        "Pre-prep (3-7)",
+        3800.0,
+        11400.0,
+        4.5,
+        time(8, 15),
+        time(16, 0),
+        True,
+        "Bus routes from MK, Buckingham, and Towcester.",
+        "Follows own term dates. Three terms with half-term breaks.",
+    ),
+    (
+        "Thornton",
+        "Prep (7-11)",
+        4500.0,
+        13500.0,
+        4.5,
+        time(8, 15),
+        time(16, 15),
+        True,
+        "Bus routes from MK, Buckingham, and Towcester.",
+        "Follows own term dates. Three terms with half-term breaks.",
+    ),
+    (
+        "Thornton",
+        "Senior (11-16)",
+        5200.0,
+        15600.0,
+        4.2,
+        time(8, 15),
+        time(16, 30),
+        True,
+        "Bus routes from MK, Buckingham, and Towcester.",
+        "Follows own term dates. Three terms with half-term breaks.",
+    ),
+    (
+        "Thornton",
+        "Sixth Form (16-18)",
+        5500.0,
+        16500.0,
+        4.2,
+        time(8, 15),
+        time(16, 30),
+        True,
+        "Bus routes from MK, Buckingham, and Towcester.",
+        "Follows own term dates. Three terms with half-term breaks.",
+    ),
+    # Akeley Wood Senior
+    (
+        "Akeley Wood Senior",
+        "Senior (11-16)",
+        5800.0,
+        17400.0,
+        5.0,
+        time(8, 30),
+        time(16, 15),
+        True,
+        "Dedicated school bus service covering most of North Bucks.",
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "Akeley Wood Senior",
+        "Sixth Form (16-18)",
+        6100.0,
+        18300.0,
+        5.0,
+        time(8, 30),
+        time(16, 15),
+        True,
+        "Dedicated school bus service covering most of North Bucks.",
+        "Follows own term dates. Three terms per year.",
+    ),
+    # Akeley Wood Junior
+    (
+        "Akeley Wood Junior",
+        "Pre-prep (3-7)",
+        3200.0,
+        9600.0,
+        4.8,
+        time(8, 30),
+        time(15, 30),
+        True,
+        "Shared bus service with Senior School.",
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "Akeley Wood Junior",
+        "Prep (7-11)",
+        4200.0,
+        12600.0,
+        4.8,
+        time(8, 30),
+        time(15, 45),
+        True,
+        "Shared bus service with Senior School.",
+        "Follows own term dates. Three terms per year.",
+    ),
+    # MK Prep School
+    (
+        "Milton Keynes Prep",
+        "Reception (4-5)",
+        3500.0,
+        10500.0,
+        3.5,
+        time(8, 20),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "Milton Keynes Prep",
+        "Prep (5-11)",
+        4100.0,
+        12300.0,
+        3.5,
+        time(8, 20),
+        time(15, 45),
+        False,
+        None,
+        "Follows own term dates. Three terms per year.",
+    ),
+    # Webber Independent
+    (
+        "Webber Independent",
+        "Early Years (0-4)",
+        3000.0,
+        9000.0,
+        3.0,
+        time(8, 45),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates, broadly aligned with state calendar.",
+    ),
+    (
+        "Webber Independent",
+        "Primary (4-11)",
+        3500.0,
+        10500.0,
+        3.0,
+        time(8, 45),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates, broadly aligned with state calendar.",
+    ),
+    # Grove Independent
+    (
+        "Grove Independent",
+        "Nursery (2-4)",
+        3200.0,
+        9600.0,
+        3.2,
+        time(8, 30),
+        time(15, 30),
+        False,
+        "Limited minibus for local MK routes. Additional charge.",
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "Grove Independent",
+        "Infant (4-7)",
+        3500.0,
+        10500.0,
+        3.2,
+        time(8, 30),
+        time(15, 30),
+        False,
+        "Limited minibus for local MK routes. Additional charge.",
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "Grove Independent",
+        "Junior (7-13)",
+        3800.0,
+        11400.0,
+        3.2,
+        time(8, 30),
+        time(15, 30),
+        False,
+        "Limited minibus for local MK routes. Additional charge.",
+        "Follows own term dates. Three terms per year.",
+    ),
+    # Broughton Manor Prep
+    (
+        "Broughton Manor",
+        "Nursery (3-4)",
+        3400.0,
+        10200.0,
+        3.8,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms with half-term breaks.",
+    ),
+    (
+        "Broughton Manor",
+        "Pre-prep (4-7)",
+        3800.0,
+        11400.0,
+        3.8,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms with half-term breaks.",
+    ),
+    (
+        "Broughton Manor",
+        "Prep (7-11)",
+        4200.0,
+        12600.0,
+        3.8,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms with half-term breaks.",
+    ),
+    # KWS Milton Keynes
+    (
+        "KWS Milton Keynes",
+        "Primary (7-11)",
+        3500.0,
+        10500.0,
+        4.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "KWS Milton Keynes",
+        "Secondary (11-16)",
+        4200.0,
+        12600.0,
+        4.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "KWS Milton Keynes",
+        "Sixth Form (16-18)",
+        4800.0,
+        14400.0,
+        4.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms per year.",
+    ),
+]
+
+
+def _generate_private_school_details(session: Session) -> int:
+    """Create PrivateSchoolDetails records for all private schools in the database.
+
+    Matches schools by name fragment and creates multiple fee-tier entries per
+    school (one per age group).  Returns the number of detail records inserted.
+    """
+    private_schools = session.query(School).filter_by(is_private=True).all()
+    if not private_schools:
+        return 0
+
+    # Build lookup: name fragment -> list of detail tuples
+    details_by_frag: dict[str, list] = {}
+    for entry in _PRIVATE_DETAIL_ROWS:
+        details_by_frag.setdefault(entry[0], []).append(entry)
+
+    count = 0
+    for school in private_schools:
+        matched: list | None = None
+        for frag, entries in details_by_frag.items():
+            if frag.lower() in school.name.lower():
+                matched = entries
+                break
+        if not matched:
+            continue
+
+        # Remove existing details (idempotent re-seed)
+        session.query(PrivateSchoolDetails).filter_by(school_id=school.id).delete()
+
+        for entry in matched:
+            (
+                _,
+                fee_age_group,
+                termly_fee,
+                annual_fee,
+                fee_increase_pct,
+                day_start,
+                day_end,
+                provides_transport,
+                transport_notes,
+                holiday_notes,
+            ) = entry
+            session.add(
+                PrivateSchoolDetails(
+                    school_id=school.id,
+                    fee_age_group=fee_age_group,
+                    termly_fee=termly_fee,
+                    annual_fee=annual_fee,
+                    fee_increase_pct=fee_increase_pct,
+                    school_day_start=day_start,
+                    school_day_end=day_end,
+                    provides_transport=provides_transport,
+                    transport_notes=transport_notes,
+                    holiday_schedule_notes=holiday_notes,
+                )
+            )
+            count += 1
+    session.commit()
+    return count
+
+
+# ---------------------------------------------------------------------------
+# Term date seed data
+# ---------------------------------------------------------------------------
+
+# Milton Keynes Council standard term dates for 2025-2026.
+_MK_COUNCIL_TERMS_2025_2026 = [
+    {
+        "term_name": "Autumn Term",
+        "start_date": date(2025, 9, 3),
+        "end_date": date(2025, 12, 19),
+        "half_term_start": date(2025, 10, 27),
+        "half_term_end": date(2025, 10, 31),
+    },
+    {
+        "term_name": "Spring Term",
+        "start_date": date(2026, 1, 5),
+        "end_date": date(2026, 3, 27),
+        "half_term_start": date(2026, 2, 16),
+        "half_term_end": date(2026, 2, 20),
+    },
+    {
+        "term_name": "Summer Term",
+        "start_date": date(2026, 4, 13),
+        "end_date": date(2026, 7, 22),
+        "half_term_start": date(2026, 5, 25),
+        "half_term_end": date(2026, 5, 29),
+    },
+]
+
+# Private schools typically have longer holidays (start later, end earlier).
+_PRIVATE_SCHOOL_TERMS_2025_2026 = [
+    {
+        "term_name": "Autumn Term",
+        "start_date": date(2025, 9, 8),
+        "end_date": date(2025, 12, 12),
+        "half_term_start": date(2025, 10, 20),
+        "half_term_end": date(2025, 10, 31),
+    },
+    {
+        "term_name": "Spring Term",
+        "start_date": date(2026, 1, 12),
+        "end_date": date(2026, 3, 20),
+        "half_term_start": date(2026, 2, 16),
+        "half_term_end": date(2026, 2, 20),
+    },
+    {
+        "term_name": "Summer Term",
+        "start_date": date(2026, 4, 20),
+        "end_date": date(2026, 7, 10),
+        "half_term_start": date(2026, 5, 25),
+        "half_term_end": date(2026, 5, 29),
+    },
+]
+
+
+def _generate_test_term_dates(schools: list[School]) -> list[SchoolTermDate]:
+    """Generate realistic term date records for all schools."""
+    rng = random.Random(42)
+    academic_year = "2025/2026"
+    term_dates: list[SchoolTermDate] = []
+    for school in schools:
+        if school.is_private:
+            base_terms = _PRIVATE_SCHOOL_TERMS_2025_2026
+        else:
+            base_terms = _MK_COUNCIL_TERMS_2025_2026
+        varies = not school.is_private and rng.random() < 0.30
+        for term_info in base_terms:
+            if varies:
+                day_offset_start = timedelta(days=rng.randint(-3, 3))
+                day_offset_end = timedelta(days=rng.randint(-3, 3))
+                start = term_info["start_date"] + day_offset_start
+                end = term_info["end_date"] + day_offset_end
+                ht_start = term_info["half_term_start"] + timedelta(days=rng.randint(-1, 1))
+                ht_end = term_info["half_term_end"] + timedelta(days=rng.randint(-1, 1))
+            else:
+                start = term_info["start_date"]
+                end = term_info["end_date"]
+                ht_start = term_info["half_term_start"]
+                ht_end = term_info["half_term_end"]
+            term_dates.append(
+                SchoolTermDate(
+                    school_id=school.id,
+                    academic_year=academic_year,
+                    term_name=term_info["term_name"],
+                    start_date=start,
+                    end_date=end,
+                    half_term_start=ht_start,
+                    half_term_end=ht_end,
+                )
+            )
+    return term_dates
+
+
+def _seed_term_dates(session: Session, council: str) -> int:
+    """Generate and insert term dates for all schools in the given council."""
+    school_ids = [s.id for s in session.query(School).filter_by(council=council).all()]
+    if not school_ids:
+        return 0
+    session.query(SchoolTermDate).filter(SchoolTermDate.school_id.in_(school_ids)).delete(synchronize_session=False)
+    session.flush()
+    schools = session.query(School).filter_by(council=council).all()
+    new_term_dates = _generate_test_term_dates(schools)
+    session.add_all(new_term_dates)
+    session.commit()
+    return len(new_term_dates)
 
 
 # ---------------------------------------------------------------------------
@@ -664,7 +1140,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         prog="python -m src.db.seed",
         description="Seed the school-finder database from GIAS establishment data.",
     )
-    parser.add_argument("--council", required=True, help='Local authority name to filter by.')
+    parser.add_argument("--council", required=True, help="Local authority name to filter by.")
     parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="Path to the SQLite database file.")
     parser.add_argument("--force-download", action="store_true", default=False, help="Force re-download.")
     return parser.parse_args(argv)
@@ -682,7 +1158,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     print(f"  Database       : {db_path}")
     print()
 
-    print("[1/5] Obtaining GIAS CSV ...")
+    print("[1/7] Obtaining GIAS CSV ...")
     use_test_data = False
     csv_path: Path | None = None
     cached = _find_cached_csv()
@@ -699,11 +1175,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
 
     schools: list[School] = []
     if use_test_data or csv_path is None:
-        print("[2/5] Generating test school data ...")
+        print("[2/7] Generating test school data ...")
         schools = _generate_test_schools(council)
         print(f"  Generated {len(schools)} test schools for '{council}'")
     else:
-        print("[2/5] Reading CSV ...")
+        print("[2/7] Reading CSV ...")
         rows = _read_csv(csv_path)
         print(f"  Total rows in CSV: {len(rows)}")
         council_lower = council.lower()
@@ -722,7 +1198,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
                 if len(all_councils) > 20:
                     print(f"    ... and {len(all_councils) - 20} more", file=sys.stderr)
             sys.exit(1)
-        print("[3/5] Mapping to School records ...")
+        print("[3/7] Mapping to School records ...")
         skipped = 0
         for row in council_rows:
             school = _row_to_school(row)
@@ -735,7 +1211,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     geo_count = sum(1 for s in schools if s.lat is not None)
     print(f"  With coordinates: {geo_count}/{len(schools)}")
 
-    print("[4/5] Writing schools to database ...")
+    print("[4/7] Writing schools to database ...")
     session = _ensure_database(db_path)
     try:
         inserted, updated = _upsert_schools(session, schools)
@@ -744,7 +1220,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  Updated : {updated}")
         print(f"  Total schools for '{council}' in DB: {total_in_db}")
 
-        print("[5/5] Generating club data ...")
+        print("[5/7] Seeding term dates ...")
+        term_count = _seed_term_dates(session, council)
+        print(f"  Term date records created: {term_count}")
+
+        print("[6/7] Generating club data ...")
         all_schools = session.query(School).filter_by(council=council).all()
         clubs = _generate_test_clubs(all_schools)
         clubs_inserted = _upsert_clubs(session, clubs)
@@ -755,15 +1235,22 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  Clubs inserted  : {clubs_inserted}")
         print(f"  Total clubs in DB: {total_clubs}")
 
+        print("[7/7] Generating private school details ...")
+        pvt_count = _generate_private_school_details(session)
+        print(f"  Private school detail tiers: {pvt_count}")
+
         print()
         print("=" * 60)
         print(f"  SUMMARY: {council}")
         print("=" * 60)
         primary_count = sum(1 for s in all_schools if s.age_range_to and s.age_range_to <= 13 and not s.is_private)
         secondary_count = sum(
-            1 for s in all_schools
-            if s.age_range_from and s.age_range_from >= 11
-            and s.age_range_to and s.age_range_to >= 16
+            1
+            for s in all_schools
+            if s.age_range_from
+            and s.age_range_from >= 11
+            and s.age_range_to
+            and s.age_range_to >= 16
             and not s.is_private
         )
         private_count = sum(1 for s in all_schools if s.is_private)
@@ -771,10 +1258,12 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  State primary       : {primary_count}")
         print(f"  State secondary     : {secondary_count}")
         print(f"  Private/independent : {private_count}")
+        print(f"  Term date records   : {term_count}")
         print(f"  Breakfast clubs     : {breakfast_count}")
         print(f"  After-school clubs  : {afterschool_count}")
         print()
         from collections import Counter
+
         rating_counts = Counter(s.ofsted_rating for s in all_schools if s.ofsted_rating)
         print("  Ofsted ratings:")
         for rating in ["Outstanding", "Good", "Requires improvement", "Inadequate"]:

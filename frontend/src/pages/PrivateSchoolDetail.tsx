@@ -10,6 +10,7 @@ interface PrivateDetail {
   termly_fee: number | null;
   annual_fee: number | null;
   fee_age_group: string | null;
+  fee_increase_pct: number | null;
   school_day_start: string | null;
   school_day_end: string | null;
   provides_transport: boolean | null;
@@ -101,6 +102,12 @@ export default function PrivateSchoolDetail() {
   const transportNotes = firstDetail?.transport_notes ?? null;
   const holidayNotes = firstDetail?.holiday_schedule_notes ?? null;
 
+  // Fee range across all tiers
+  const termlyFees = details.map((d) => d.termly_fee).filter((f): f is number => f != null);
+  const feeMin = termlyFees.length > 0 ? Math.min(...termlyFees) : null;
+  const feeMax = termlyFees.length > 0 ? Math.max(...termlyFees) : null;
+  const feeIncreasePct = firstDetail?.fee_increase_pct ?? null;
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       {/* Back link */}
@@ -167,6 +174,24 @@ export default function PrivateSchoolDetail() {
           <p className="mt-1 text-sm text-gray-500">
             Termly and annual fee breakdowns by age group.
           </p>
+          {feeMin != null && feeMax != null && (
+            <div className="mt-3 rounded-md bg-blue-50 px-3 py-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-blue-800">Fee range</span>
+                <span className="font-semibold text-blue-900">
+                  {feeMin === feeMax
+                    ? `${formatFee(feeMin)}/term`
+                    : `${formatFee(feeMin)} - ${formatFee(feeMax)}/term`}
+                </span>
+              </div>
+              {feeIncreasePct != null && (
+                <div className="mt-1 flex items-center justify-between text-xs text-blue-700">
+                  <span>Est. annual increase</span>
+                  <span className="font-medium">~{feeIncreasePct}% per year</span>
+                </div>
+              )}
+            </div>
+          )}
           {details.length > 0 ? (
             <div className="mt-4 space-y-2">
               {details.map((d) => (

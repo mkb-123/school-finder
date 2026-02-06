@@ -138,6 +138,7 @@ class PrivateSchoolDetails(Base):
     termly_fee: Mapped[float | None] = mapped_column(Float, nullable=True)
     annual_fee: Mapped[float | None] = mapped_column(Float, nullable=True)
     fee_age_group: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    fee_increase_pct: Mapped[float | None] = mapped_column(Float, nullable=True)  # estimated annual % increase
 
     school_day_start: Mapped[datetime.time | None] = mapped_column(Time, nullable=True)
     school_day_end: Mapped[datetime.time | None] = mapped_column(Time, nullable=True)
