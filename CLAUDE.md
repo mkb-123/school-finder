@@ -1,5 +1,24 @@
 # School Finder
 
+## ⚠️ CRITICAL RULE: NO RANDOM DATA GENERATION ⚠️
+
+**NEVER generate random data for school information.** This application affects real parents making critical decisions about their children's education. Generating fake data is:
+- Misleading and harmful
+- Could cause parents to make wrong school choices
+- Damages trust and credibility
+
+**What you MUST NOT randomly generate:**
+- ❌ Ofsted ratings (Outstanding, Good, Requires Improvement, Inadequate)
+- ❌ School performance data (SATs results, GCSE results, Progress 8 scores)
+- ❌ Admissions data (number of places, last distance offered, oversubscription ratios)
+- ❌ Any other data that parents use to make decisions
+
+**What you MUST do instead:**
+- ✅ Fetch real data from official sources (Ofsted website, DfE, GIAS)
+- ✅ Leave fields as NULL/"Not rated" when data is unavailable
+- ✅ Clearly label any demo/test data as fake and not for production use
+- ✅ Add warnings if using non-production data sources
+
 ## Project Overview
 
 A web application that helps parents find and compare schools in their local council area (e.g., Milton Keynes). It combines catchment area mapping, Ofsted ratings, club availability, private school details, and smart filtering to give parents a single place to research schooling options.
