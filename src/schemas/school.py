@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ClubResponse(BaseModel):
     """A breakfast or after-school club offered by a school."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     school_id: int
@@ -14,13 +16,15 @@ class ClubResponse(BaseModel):
     name: str
     description: str | None = None
     days_available: str | None = None
-    start_time: str | None = None
-    end_time: str | None = None
+    start_time: datetime.time | None = None
+    end_time: datetime.time | None = None
     cost_per_session: float | None = None
 
 
 class PerformanceResponse(BaseModel):
     """Academic performance metric for a school."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     school_id: int
@@ -32,6 +36,8 @@ class PerformanceResponse(BaseModel):
 
 class TermDateResponse(BaseModel):
     """Term date entry for a school."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     school_id: int
@@ -46,6 +52,8 @@ class TermDateResponse(BaseModel):
 class ReviewResponse(BaseModel):
     """Parent or external review for a school."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     school_id: int
     source: str
@@ -57,13 +65,15 @@ class ReviewResponse(BaseModel):
 class PrivateSchoolDetailsResponse(BaseModel):
     """Additional details specific to private/independent schools."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     school_id: int
     termly_fee: float | None = None
     annual_fee: float | None = None
     fee_age_group: str | None = None
-    school_day_start: str | None = None
-    school_day_end: str | None = None
+    school_day_start: datetime.time | None = None
+    school_day_end: datetime.time | None = None
     provides_transport: bool | None = None
     transport_notes: str | None = None
     holiday_schedule_notes: str | None = None
@@ -71,6 +81,8 @@ class PrivateSchoolDetailsResponse(BaseModel):
 
 class AdmissionsHistoryResponse(BaseModel):
     """Historical admissions data for waiting-list estimation."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     school_id: int
@@ -85,6 +97,8 @@ class AdmissionsHistoryResponse(BaseModel):
 
 class SchoolResponse(BaseModel):
     """Summary representation of a school for list views."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str

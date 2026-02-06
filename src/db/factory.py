@@ -1,17 +1,21 @@
 from __future__ import annotations
 
-from typing import Any
+from functools import lru_cache
 
 from src.config import get_settings
+from src.db.base import SchoolRepository
 
 
-def get_school_repository() -> Any:
-    """Return the appropriate school repository based on configuration.
+@lru_cache
+def get_school_repository() -> SchoolRepository:
+    """Return a cached repository instance based on the configured backend.
 
-    Actual implementations (SQLiteSchoolRepository, PostgresSchoolRepository)
-    will be registered in the database layer build phase.
+    Uses ``lru_cache`` so that the same engine / session factory is reused
+    across requests rather than creating a new connection pool each time.
     """
     settings = get_settings()
     if settings.DB_BACKEND == "postgres":
         raise NotImplementedError("PostgreSQL repository not yet implemented")
-    raise NotImplementedError("SQLite repository not yet implemented")
+    from src.db.sqlite_repo import SQLiteSchoolRepository
+
+    return SQLiteSchoolRepository(settings.SQLITE_PATH)
