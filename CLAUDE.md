@@ -528,6 +528,76 @@ uv run pytest
 
 ---
 
+## Development Agents (Claude Subagents)
+
+These are Claude Code subagents used during development to parallelise work across different parts of the codebase. They are invoked via the Task tool during implementation sessions.
+
+### GIAS Data Agent
+
+**Focus**: GIAS dataset research, download, parsing, and seed script.
+
+- Understands the GIAS CSV schema (hundreds of columns, inconsistent encoding)
+- Maps GIAS columns to the School model fields
+- Builds and maintains `src/db/seed.py`
+- Handles edge cases: missing lat/lng, closed schools, merged schools
+
+### Geospatial Agent
+
+**Focus**: All coordinate, distance, and mapping logic.
+
+- Implements and tests the Haversine formula in `src/services/catchment.py`
+- Builds the SQLite custom function registration
+- Handles coordinate system gotchas (WGS84 vs OSGB36)
+- Builds and tests catchment polygon rendering for the frontend map
+- Validates distance calculations against known reference points
+
+### Scraping Agent Builder
+
+**Focus**: Building and testing the 3+ data-collection agents.
+
+- Builds `src/agents/base_agent.py` with retry, rate-limit, and caching logic
+- Builds each specific scraper (term times, clubs, reviews/performance)
+- Handles PDFs (term dates are often published as PDFs), broken HTML, JS-rendered pages
+- Tests agents against real school websites with mocked HTTP in tests
+
+### API & Schema Agent
+
+**Focus**: FastAPI endpoints, Pydantic schemas, request validation.
+
+- Designs and builds all API routes in `src/api/`
+- Builds Pydantic v2 request/response models in `src/schemas/`
+- Ensures consistent error handling, pagination, and filter parsing
+- Gets the API contract right between backend and frontend
+
+### Frontend Map Agent
+
+**Focus**: Leaflet + React map integration.
+
+- Builds map components: pins, catchment overlays, colour-coded Ofsted markers
+- Implements click-to-highlight catchment areas
+- Handles performance with marker clustering for large datasets
+- Builds filter-driven map re-rendering
+
+### Decision Engine Agent
+
+**Focus**: Weighted scoring, pros/cons, and "what if" scenarios.
+
+- Builds `src/services/decision.py` with the composite scoring algorithm
+- Normalises heterogeneous data (Ofsted rating, distance in km, fee in pounds, booleans) into comparable scores
+- Implements pros/cons auto-generation logic
+- Builds the "what if" scenario engine
+
+### Test Agent
+
+**Focus**: Comprehensive test coverage for critical logic.
+
+- Writes geospatial tests with known coordinate pairs and verified distances
+- Tests filter edge cases (e.g., co-ed primary but single-sex sixth form)
+- Builds API integration tests with realistic fixture data
+- Tests agent scraping with mocked HTTP responses
+
+---
+
 ## Development Guidelines
 
 - Default to SQLite for local dev; no database server needed to get started
