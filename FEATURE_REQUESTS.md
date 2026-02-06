@@ -42,6 +42,10 @@ _Extends existing Feature 7 (Reviews, Ratings & Performance) which shows the cur
 
 Show the full Ofsted rating history for each school, not just the current rating. Display a trajectory indicator — is the school improving (e.g., Requires Improvement to Good), stable, or declining (e.g., Outstanding to Good)? The direction of travel matters as much as today's rating. Flag schools where the last inspection was over 5 years ago, as the current rating may be stale and an inspection could be imminent. Show the date of the last inspection prominently so parents can judge how current the rating is. Where available, surface key quotes from the most recent Ofsted report (strengths and areas for improvement) so parents get the flavour without reading the full document.
 
+## School Ethos One-Liner
+
+Display a short, at-a-glance summary of each school's ethos on the school card and detail page — pulled from the school's own website or prospectus (e.g., "Nurturing creativity and independence", "Traditional values with high academic expectations", "Inclusive, play-based learning"). Helps parents quickly get a feel for the school's culture without clicking through to a full prospectus.
+
 ## School Demographics
 
 Show the demographic profile of each school using published DfE school census data. Include ethnic diversity breakdown, percentage of pupils with English as an additional language (EAL), percentage eligible for free school meals (a proxy for socioeconomic mix), and percentage with SEND support. Present this clearly and without judgement — some parents actively seek diverse, mixed environments while others want to understand the community their child will be part of. Allow comparison across shortlisted schools so parents can see how demographics differ between nearby options.
