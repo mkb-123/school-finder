@@ -684,6 +684,411 @@ def _generate_test_schools(council: str) -> list[School]:
 
 
 # ---------------------------------------------------------------------------
+# Private school details generation
+# ---------------------------------------------------------------------------
+
+# Each entry: (school_name_fragment, fee_age_group, termly_fee, annual_fee,
+#              day_start, day_end, provides_transport, transport_notes,
+#              holiday_schedule_notes)
+_PRIVATE_SCHOOL_DETAILS: list[tuple[str, str, float, float, time, time, bool, str | None, str | None]] = [
+    # -- Thornton College (girls, Catholic) --
+    (
+        "Thornton College",
+        "Pre-prep (3-7)",
+        4500.0,
+        13500.0,
+        time(8, 15),
+        time(16, 0),
+        True,
+        "Bus routes from Milton Keynes, Buckingham, and Towcester. Door-to-door minibus service available.",
+        "Follows own term dates. Three terms with half-term breaks. Longer holidays than state schools.",  # noqa: E501
+    ),
+    (
+        "Thornton College",
+        "Prep (7-11)",
+        5000.0,
+        15000.0,
+        time(8, 15),
+        time(16, 0),
+        True,
+        "Bus routes from Milton Keynes, Buckingham, and Towcester. Door-to-door minibus service available.",
+        "Follows own term dates. Three terms with half-term breaks. Longer holidays than state schools.",  # noqa: E501
+    ),
+    (
+        "Thornton College",
+        "Senior (11-16)",
+        5500.0,
+        16500.0,
+        time(8, 15),
+        time(16, 0),
+        True,
+        "Bus routes from Milton Keynes, Buckingham, and Towcester. Door-to-door minibus service available.",
+        "Follows own term dates. Three terms with half-term breaks. Longer holidays than state schools.",  # noqa: E501
+    ),
+    (
+        "Thornton College",
+        "Sixth Form (16-19)",
+        5500.0,
+        16500.0,
+        time(8, 15),
+        time(16, 0),
+        True,
+        "Bus routes from Milton Keynes, Buckingham, and Towcester. Door-to-door minibus service available.",
+        "Follows own term dates. Three terms with half-term breaks. Longer holidays than state schools.",  # noqa: E501
+    ),
+    # -- Akeley Wood Senior School --
+    (
+        "Akeley Wood Senior",
+        "Senior (11-16)",
+        5500.0,
+        16500.0,
+        time(8, 30),
+        time(16, 15),
+        True,
+        "Dedicated bus routes covering Buckingham, Milton Keynes, Brackley, and surrounding villages.",
+        "Sets own term dates. Three terms with half-term breaks. Longer summer holidays.",  # noqa: E501
+    ),
+    (
+        "Akeley Wood Senior",
+        "Sixth Form (16-18)",
+        6000.0,
+        18000.0,
+        time(8, 30),
+        time(16, 15),
+        True,
+        "Dedicated bus routes covering Buckingham, Milton Keynes, Brackley, and surrounding villages.",
+        "Sets own term dates. Three terms with half-term breaks. Longer summer holidays.",  # noqa: E501
+    ),
+    # -- Akeley Wood Junior School --
+    (
+        "Akeley Wood Junior",
+        "Pre-prep (4-7)",
+        3800.0,
+        11400.0,
+        time(8, 30),
+        time(15, 45),
+        True,
+        "Shared transport with Akeley Wood Senior. Bus routes from Buckingham and Milton Keynes.",
+        "Follows Akeley Wood group term dates. Three terms with half-term breaks.",
+    ),
+    (
+        "Akeley Wood Junior",
+        "Prep (7-11)",
+        4500.0,
+        13500.0,
+        time(8, 30),
+        time(15, 45),
+        True,
+        "Shared transport with Akeley Wood Senior. Bus routes from Buckingham and Milton Keynes.",
+        "Follows Akeley Wood group term dates. Three terms with half-term breaks.",
+    ),
+    # -- Milton Keynes Preparatory School --
+    (
+        "Milton Keynes Preparatory",
+        "Nursery/Pre-prep (3-7)",
+        3500.0,
+        10500.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows broadly similar term dates to Milton Keynes state schools with minor variations.",
+    ),
+    (
+        "Milton Keynes Preparatory",
+        "Prep (7-11)",
+        4000.0,
+        12000.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows broadly similar term dates to Milton Keynes state schools with minor variations.",
+    ),
+    (
+        "Milton Keynes Preparatory",
+        "Senior (11-13)",
+        4200.0,
+        12600.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows broadly similar term dates to Milton Keynes state schools with minor variations.",
+    ),
+    # -- The Webber Independent School --
+    (
+        "Webber Independent",
+        "Early Years (0-4)",
+        3000.0,
+        9000.0,
+        time(8, 45),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates, broadly aligned with state school calendar.",
+    ),
+    (
+        "Webber Independent",
+        "Primary (4-11)",
+        3500.0,
+        10500.0,
+        time(8, 45),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates, broadly aligned with state school calendar.",
+    ),
+    (
+        "Webber Independent",
+        "Secondary (11-16)",
+        4000.0,
+        12000.0,
+        time(8, 45),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates, broadly aligned with state school calendar.",
+    ),
+    # -- The Grove Independent School --
+    (
+        "Grove Independent",
+        "Nursery (2-4)",
+        3200.0,
+        9600.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        "Limited minibus service available for local routes within Milton Keynes. Additional charge applies.",
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "Grove Independent",
+        "Infant (4-7)",
+        3500.0,
+        10500.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        "Limited minibus service available for local routes within Milton Keynes. Additional charge applies.",
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "Grove Independent",
+        "Junior (7-13)",
+        3800.0,
+        11400.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        "Limited minibus service available for local routes within Milton Keynes. Additional charge applies.",
+        "Follows own term dates. Three terms per year.",
+    ),
+    # -- Broughton Manor Preparatory School --
+    (
+        "Broughton Manor",
+        "Nursery (3-4)",
+        3400.0,
+        10200.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms with half-term breaks.",
+    ),
+    (
+        "Broughton Manor",
+        "Pre-prep (4-7)",
+        3800.0,
+        11400.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms with half-term breaks.",
+    ),
+    (
+        "Broughton Manor",
+        "Prep (7-11)",
+        4200.0,
+        12600.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms with half-term breaks.",
+    ),
+    # -- Swanbourne House School (nearby boarding prep) --
+    # Not in the seed data but mentioned in task; we'll match by name fragment
+    # against any school named "Swanbourne" in the DB.
+    (
+        "Swanbourne House",
+        "Pre-prep (4-7)",
+        5500.0,
+        16500.0,
+        time(8, 15),
+        time(17, 30),
+        True,
+        "Comprehensive bus network covering Aylesbury, Buckingham, Milton Keynes, and Bicester.",
+        "Follows own term dates. Boarding available from Year 3. Longer exeat weekends.",
+    ),
+    (
+        "Swanbourne House",
+        "Prep (7-11)",
+        6500.0,
+        19500.0,
+        time(8, 15),
+        time(17, 30),
+        True,
+        "Comprehensive bus network covering Aylesbury, Buckingham, Milton Keynes, and Bicester.",
+        "Follows own term dates. Boarding available from Year 3. Longer exeat weekends.",
+    ),
+    (
+        "Swanbourne House",
+        "Prep (11-13)",
+        7500.0,
+        22500.0,
+        time(8, 15),
+        time(17, 30),
+        True,
+        "Comprehensive bus network covering Aylesbury, Buckingham, Milton Keynes, and Bicester.",
+        "Follows own term dates. Boarding available from Year 3. Longer exeat weekends.",
+    ),
+    # -- Winchester House School (nearby prep) --
+    (
+        "Winchester House",
+        "Pre-prep (4-7)",
+        5000.0,
+        15000.0,
+        time(8, 15),
+        time(17, 15),
+        True,
+        "Bus routes serving Brackley, Buckingham, Towcester, and north Oxfordshire villages.",
+        "Follows own term dates. Three terms with half-term breaks and exeat weekends.",
+    ),
+    (
+        "Winchester House",
+        "Prep (7-11)",
+        5800.0,
+        17400.0,
+        time(8, 15),
+        time(17, 15),
+        True,
+        "Bus routes serving Brackley, Buckingham, Towcester, and north Oxfordshire villages.",
+        "Follows own term dates. Three terms with half-term breaks and exeat weekends.",
+    ),
+    (
+        "Winchester House",
+        "Prep (11-13)",
+        6500.0,
+        19500.0,
+        time(8, 15),
+        time(17, 15),
+        True,
+        "Bus routes serving Brackley, Buckingham, Towcester, and north Oxfordshire villages.",
+        "Follows own term dates. Three terms with half-term breaks and exeat weekends.",
+    ),
+    # -- KWS Milton Keynes --
+    (
+        "KWS Milton Keynes",
+        "Primary (7-11)",
+        3500.0,
+        10500.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "KWS Milton Keynes",
+        "Secondary (11-16)",
+        4200.0,
+        12600.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms per year.",
+    ),
+    (
+        "KWS Milton Keynes",
+        "Sixth Form (16-18)",
+        4800.0,
+        14400.0,
+        time(8, 30),
+        time(15, 30),
+        False,
+        None,
+        "Follows own term dates. Three terms per year.",
+    ),
+]
+
+
+def _generate_private_school_details(session: Session) -> int:
+    """Create PrivateSchoolDetails records for all private schools in the database.
+
+    Matches schools by name fragment and creates multiple fee-tier entries per
+    school (one per age group).  Returns the number of detail records inserted.
+    """
+    private_schools = session.query(School).filter_by(is_private=True).all()
+    if not private_schools:
+        return 0
+
+    # Build a lookup: name fragment -> list of detail tuples
+    details_by_fragment: dict[str, list[tuple[str, str, float, float, time, time, bool, str | None, str | None]]] = {}
+    for entry in _PRIVATE_SCHOOL_DETAILS:
+        fragment = entry[0]
+        details_by_fragment.setdefault(fragment, []).append(entry)
+
+    count = 0
+    for school in private_schools:
+        # Find matching details by checking if any known fragment is in the school name
+        matched_entries: list[tuple[str, str, float, float, time, time, bool, str | None, str | None]] = []
+        for fragment, entries in details_by_fragment.items():
+            if fragment.lower() in school.name.lower():
+                matched_entries = entries
+                break
+
+        if not matched_entries:
+            # No specific data for this school; skip it
+            continue
+
+        # Remove any existing details for this school (idempotent re-seed)
+        session.query(PrivateSchoolDetails).filter_by(school_id=school.id).delete()
+
+        for entry in matched_entries:
+            (
+                _name_frag,
+                fee_age_group,
+                termly_fee,
+                annual_fee,
+                day_start,
+                day_end,
+                provides_transport,
+                transport_notes,
+                holiday_schedule_notes,
+            ) = entry
+
+            detail = PrivateSchoolDetails(
+                school_id=school.id,
+                termly_fee=termly_fee,
+                annual_fee=annual_fee,
+                fee_age_group=fee_age_group,
+                school_day_start=day_start,
+                school_day_end=day_end,
+                provides_transport=provides_transport,
+                transport_notes=transport_notes,
+                holiday_schedule_notes=holiday_schedule_notes,
+            )
+            session.add(detail)
+            count += 1
+
+    session.commit()
+    return count
+
+
+# ---------------------------------------------------------------------------
 # Database operations
 # ---------------------------------------------------------------------------
 
@@ -778,7 +1183,7 @@ def main(argv: list[str] | None = None) -> None:
     # ------------------------------------------------------------------
     # 1. Obtain the GIAS CSV (download or use cache)
     # ------------------------------------------------------------------
-    print("[1/4] Obtaining GIAS CSV ...")
+    print("[1/5] Obtaining GIAS CSV ...")
 
     use_test_data = False
     csv_path: Path | None = None
@@ -801,11 +1206,11 @@ def main(argv: list[str] | None = None) -> None:
     schools: list[School] = []
 
     if use_test_data or csv_path is None:
-        print("[2/4] Generating test school data ...")
+        print("[2/5] Generating test school data ...")
         schools = _generate_test_schools(council)
         print(f"  Generated {len(schools)} test schools for '{council}'")
     else:
-        print("[2/4] Reading CSV ...")
+        print("[2/5] Reading CSV ...")
         rows = _read_csv(csv_path)
         print(f"  Total rows in CSV: {len(rows)}")
 
@@ -831,7 +1236,7 @@ def main(argv: list[str] | None = None) -> None:
         # ------------------------------------------------------------------
         # 3. Map rows to School objects
         # ------------------------------------------------------------------
-        print("[3/4] Mapping to School records ...")
+        print("[3/5] Mapping to School records ...")
         skipped = 0
         for row in council_rows:
             school = _row_to_school(row)
@@ -848,7 +1253,7 @@ def main(argv: list[str] | None = None) -> None:
     # ------------------------------------------------------------------
     # 4. Write to database
     # ------------------------------------------------------------------
-    print("[4/4] Writing to database ...")
+    print("[4/5] Writing to database ...")
     session = _ensure_database(db_path)
     try:
         inserted, updated = _upsert_schools(session, schools)
@@ -856,6 +1261,14 @@ def main(argv: list[str] | None = None) -> None:
         print(f"  Inserted: {inserted}")
         print(f"  Updated : {updated}")
         print(f"  Total schools for '{council}' in DB: {total_in_db}")
+
+        # ------------------------------------------------------------------
+        # 5. Seed private school details
+        # ------------------------------------------------------------------
+        print()
+        print("[5/5] Seeding private school details ...")
+        detail_count = _generate_private_school_details(session)
+        print(f"  Private school detail records: {detail_count}")
 
         # ------------------------------------------------------------------
         # Summary
@@ -880,10 +1293,13 @@ def main(argv: list[str] | None = None) -> None:
         )
         private_count = sum(1 for s in all_schools if s.is_private)
 
+        private_with_details = session.query(PrivateSchoolDetails.school_id).distinct().count()
+
         print(f"  Total schools       : {len(all_schools)}")
         print(f"  State primary       : {primary_count}")
         print(f"  State secondary     : {secondary_count}")
         print(f"  Private/independent : {private_count}")
+        print(f"  Private w/ details  : {private_with_details}")
         print()
 
         # By Ofsted rating
