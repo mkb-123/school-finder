@@ -280,7 +280,10 @@ def _normalise_faith(raw: str) -> str | None:
 
 
 def _generate_ethos(school_name: str, phase: str, faith: str | None, ofsted_rating: str | None) -> str:
-    """Generate a realistic ethos one-liner for a school."""
+    """⚠️ DISABLED: Do not generate fake ethos. Return empty string."""
+    return ""  # DISABLED - NO FAKE DATA
+
+    # OLD CODE DISABLED BELOW
     ethos_examples_primary = [
         "Nurturing creativity and independence in every child",
         "Where every child matters and excellence is celebrated",
@@ -664,8 +667,8 @@ _AFTERSCHOOL_CLUBS = [
 
 
 def _generate_test_clubs(schools: list[School]) -> list[SchoolClub]:
-    """Generate realistic breakfast and after-school club data for a sample of schools."""
-    rng = random.Random(42)
+    """⚠️ DISABLED: Do not generate fake club data."""
+    return []  # DISABLED - NO FAKE DATA
     clubs: list[SchoolClub] = []
     for school in schools:
         if school.id is None:
@@ -1248,8 +1251,8 @@ _PRIVATE_SCHOOL_TERMS_2025_2026 = [
 
 
 def _generate_test_term_dates(schools: list[School]) -> list[SchoolTermDate]:
-    """Generate realistic term date records for all schools."""
-    rng = random.Random(42)
+    """⚠️ DISABLED: Do not generate fake term dates."""
+    return []  # DISABLED - NO FAKE DATA
     academic_year = "2025/2026"
     term_dates: list[SchoolTermDate] = []
     for school in schools:
@@ -1422,15 +1425,8 @@ def _generate_test_admissions(schools: list[School], session: Session) -> int:
 
 
 def _generate_test_class_sizes(schools: list[School], session: Session) -> int:
-    """Generate realistic class size data showing enrollment trends over time.
-
-    Creates 4 years of class size data per school, tracking year group sizes
-    and showing growth/decline trends. Uses a deterministic RNG seeded with
-    42 for reproducibility.
-
-    Returns the number of records inserted.
-    """
-    rng = random.Random(42)
+    """⚠️ DISABLED: Do not generate fake class size data."""
+    return 0  # DISABLED - NO FAKE DATA
     count = 0
 
     # Year groups by school phase
