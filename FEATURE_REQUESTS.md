@@ -30,6 +30,12 @@ _Extends existing Feature 8 (Waiting List Estimator) which already covers last d
 
 Add a visual breakdown of each school's oversubscription priority order — the ranked criteria that determine who gets a place when the school is full. Show the priority tiers clearly (e.g., 1. Looked-after children, 2. Siblings, 3. Distance). For faith schools, surface what level of religious practice is expected (regular attendance, baptism certificate, priest's reference). Flag schools that require a supplementary information form (SIF) on top of the standard council application, so parents don't miss a deadline. This complements the existing waiting list estimator by showing _why_ a child might or might not get in, not just the statistical likelihood.
 
+## School Bus Routes
+
+_Extends existing Feature 9 (School Run Journey Planner) which covers walking, cycling, driving, and public transport routing._
+
+Show dedicated school bus routes where schools or councils provide them. Overlay bus routes on the map with stop locations, pick-up times, and eligibility criteria (some are distance-based or only for certain year groups). Include cost if applicable — some councils provide free transport beyond a certain distance (typically 2+ miles for primary, 3+ miles for secondary). Flag whether a bus stop is within walking distance of the parent's postcode. For private schools, show any private coach services, routes, and fees.
+
 ## School Demographics
 
 Show the demographic profile of each school using published DfE school census data. Include ethnic diversity breakdown, percentage of pupils with English as an additional language (EAL), percentage eligible for free school meals (a proxy for socioeconomic mix), and percentage with SEND support. Present this clearly and without judgement — some parents actively seek diverse, mixed environments while others want to understand the community their child will be part of. Allow comparison across shortlisted schools so parents can see how demographics differ between nearby options.
