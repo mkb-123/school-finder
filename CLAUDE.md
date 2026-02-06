@@ -532,6 +532,28 @@ uv run pytest
 
 These are Claude Code subagents used during development to parallelise work across different parts of the codebase. They are invoked via the Task tool during implementation sessions.
 
+### Coordinator Agent
+
+**Focus**: Orchestrates the other agents, ensures consistency, and commits regularly.
+
+This is the main agent (you, running in the primary conversation). Its responsibilities:
+
+- **Dispatch work** to specialist agents via the Task tool, running them in parallel where possible
+- **Check agent output** after each batch completes: verify imports resolve, lint passes, tests pass
+- **Reconcile conflicts** when multiple agents touch related code (e.g., frontend API calls must match backend routes, schemas must match models)
+- **Commit and push regularly** - after each batch of agent work lands, stage, commit with a descriptive message, and push. Don't let untracked files accumulate
+- **Track progress** via the TodoWrite tool, marking tasks complete as agents finish
+- **Re-dispatch on failure** - if an agent's output has lint errors or broken imports, either fix inline or re-dispatch a focused fix agent
+- **Sequence dependencies** - agents that depend on each other's output (e.g., frontend needs API contract finalised first) should be dispatched sequentially, not in parallel
+
+Workflow per phase:
+1. Plan which agents to dispatch and identify dependencies
+2. Launch independent agents in parallel (via Task with run_in_background=true)
+3. Monitor progress (check output files, git status)
+4. When agents complete: review changes, run lint + tests, fix issues
+5. Commit and push with a clear message describing what was built
+6. Repeat for next batch
+
 ### GIAS Data Agent
 
 **Focus**: GIAS dataset research, download, parsing, and seed script.
