@@ -621,8 +621,8 @@ export default function SchoolDetail() {
         <span className="rounded bg-gray-100 px-2 py-1">
           {school.gender_policy}
         </span>
-        <span className="rounded bg-gray-100 px-2 py-1">
-          {school.is_private ? "Private" : "State"}
+        <span className="rounded bg-gray-100 px-2 py-1 capitalize">
+          {school.type || (school.is_private ? "Private" : "State")}
         </span>
         {school.faith && (
           <span className="rounded bg-gray-100 px-2 py-1">{school.faith}</span>
@@ -703,7 +703,7 @@ export default function SchoolDetail() {
                 <dl className="mt-4 space-y-3 text-sm">
                   <div className="flex justify-between">
                     <dt className="text-gray-500">Type</dt>
-                    <dd className="font-medium text-gray-900">{school.type}</dd>
+                    <dd className="font-medium text-gray-900 capitalize">{school.type}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-gray-500">Council</dt>
