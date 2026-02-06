@@ -44,6 +44,7 @@ select = ["E", "F", "I", "N", "W", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/db/seed.py" = ["E501"]  # Long data lines in school seed data
+"scripts/*.py" = ["E501"]    # Long markdown strings in issue bodies
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
