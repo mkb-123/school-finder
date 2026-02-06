@@ -63,6 +63,12 @@ Add the following weighting sliders so parents can fine-tune how schools are ran
 - **School run ease** — combines journey time, walking safety, and transport options into one slider
 - **Homework intensity** — toggle between preferring more structured homework or a lighter approach
 
+## Private School Hidden Costs
+
+_Extends existing Feature 5 (Private Schools) which shows termly/annual fees, hours, and transport._
+
+Surface the costs that aren't in the headline fee. Many parents are caught off guard by extras that can add thousands per year. Break down: school lunches (often not included, ~£200-300/term), compulsory trips and residentials, exam entry fees, textbooks and materials, individual music tuition, sport fixtures transport, uniform from designated suppliers, registration and deposit fees, insurance levies, and building/development fund contributions. Show an estimated "true annual cost" alongside the advertised fee so parents can compare like-for-like across schools. Where possible, flag which extras are genuinely optional versus effectively compulsory.
+
 ## School Demographics
 
 Show the demographic profile of each school using published DfE school census data. Include ethnic diversity breakdown, percentage of pupils with English as an additional language (EAL), percentage eligible for free school meals (a proxy for socioeconomic mix), and percentage with SEND support. Present this clearly and without judgement — some parents actively seek diverse, mixed environments while others want to understand the community their child will be part of. Allow comparison across shortlisted schools so parents can see how demographics differ between nearby options.
