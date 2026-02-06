@@ -9,22 +9,34 @@ export default function PrivateSchools() {
   const [error, setError] = useState<string | null>(null);
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
 
+  // Council selection
+  const [councils, setCouncils] = useState<string[]>([]);
+  const [selectedCouncil, setSelectedCouncil] = useState<string>("Milton Keynes");
+
   // Filter state
   const [maxFee, setMaxFee] = useState<string>("");
   const [ageRange, setAgeRange] = useState<string>("");
   const [gender, setGender] = useState<string>("");
   const [transportOnly, setTransportOnly] = useState(false);
 
+  // Fetch available councils
+  useEffect(() => {
+    get<string[]>("/councils")
+      .then(setCouncils)
+      .catch(() => {});
+  }, []);
+
   // Fetch private schools from the API
   useEffect(() => {
+    if (!selectedCouncil) return;
     setLoading(true);
     setError(null);
 
-    get<School[]>("/private-schools", { council: "Milton Keynes" })
+    get<School[]>("/private-schools", { council: selectedCouncil })
       .then((data) => setSchools(data))
       .catch((err) => setError(err.detail ?? "Failed to load private schools"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedCouncil]);
 
   // Client-side filtering
   const filteredSchools = useMemo(() => {
@@ -53,9 +65,27 @@ export default function PrivateSchools() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Private Schools</h1>
         <p className="mt-1 text-sm text-gray-600 sm:text-base">
-          Browse independent and private schools in Milton Keynes. Filter by
+          Browse independent and private schools in {selectedCouncil || "your area"}. Filter by
           fees, age range, transport availability, and more.
         </p>
+      </div>
+
+      {/* Council selector */}
+      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <label htmlFor="council-select-private" className="block text-sm font-medium text-gray-700 mb-2">
+          Select Council
+        </label>
+        <select
+          id="council-select-private"
+          value={selectedCouncil}
+          onChange={(e) => setSelectedCouncil(e.target.value)}
+          className="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="">Select a council</option>
+          {councils.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
       </div>
 
       {error && (

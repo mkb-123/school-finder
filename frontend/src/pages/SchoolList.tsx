@@ -149,42 +149,82 @@ export default function SchoolList() {
 
   const mapCenter = userLocation ?? ([52.0406, -0.7594] as [number, number]);
 
-  // Show prompt if no council selected
-  if (!council) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-12 text-center" role="main">
-        <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
-          <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-          <h1 className="mt-4 text-2xl font-bold text-gray-900">Select a Council to Get Started</h1>
-          <p className="mt-2 text-gray-600">
-            To browse schools, please select your local council and enter a postcode from the home page.
-          </p>
-          <a
-            href="/"
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Go to Home Page
-          </a>
-        </div>
-      </main>
-    );
-  }
+  const [councils, setCouncils] = useState<string[]>([]);
+  const [tempCouncil, setTempCouncil] = useState(council);
+  const [tempPostcode, setTempPostcode] = useState(postcode);
+
+  // Fetch available councils
+  useEffect(() => {
+    get<string[]>("/councils")
+      .then(setCouncils)
+      .catch(() => {});
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      if (tempCouncil) updated.set("council", tempCouncil);
+      if (tempPostcode) updated.set("postcode", tempPostcode);
+      return updated;
+    });
+  };
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">School Results</h1>
         <p className="mt-1 text-sm text-gray-600 sm:text-base">
-          {postcode
+          {council && postcode
             ? `Showing schools near ${postcode} in ${council}`
-            : `Showing schools in ${council}`}
+            : council
+            ? `Showing schools in ${council}`
+            : "Select a council to browse schools"}
         </p>
       </div>
+
+      {/* Search form */}
+      <form onSubmit={handleSearch} className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label htmlFor="council-select" className="block text-sm font-medium text-gray-700 mb-1">
+              Council
+            </label>
+            <select
+              id="council-select"
+              value={tempCouncil}
+              onChange={(e) => setTempCouncil(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Select a council</option>
+              {councils.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="postcode-input" className="block text-sm font-medium text-gray-700 mb-1">
+              Postcode (optional)
+            </label>
+            <input
+              id="postcode-input"
+              type="text"
+              value={tempPostcode}
+              onChange={(e) => setTempPostcode(e.target.value.toUpperCase())}
+              placeholder="e.g. MK9 3XS"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              type="submit"
+              className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Search Schools
+            </button>
+          </div>
+        </div>
+      </form>
 
       {error && (
         <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
