@@ -278,13 +278,22 @@ if __name__ == "__main__":
     print("🏫 Importing real school performance data from DfE School Performance Tables...")
     print("=" * 70)
 
-    # Download latest data
-    primary_csv, secondary_csv = download_performance_data(year=2024)
+    # Try multiple years (most recent first)
+    for year in [2023, 2022, 2021]:
+        print(f"\nTrying year {year}...")
+        try:
+            primary_csv, secondary_csv = download_performance_data(year=year)
 
-    # Import primary (SATs)
-    primary_count = import_primary_performance(db_path, primary_csv, council_filter="Milton Keynes")
+            # Import primary (SATs)
+            primary_count = import_primary_performance(db_path, primary_csv, council_filter="Milton Keynes")
 
-    # Import secondary (GCSEs, Progress 8)
-    secondary_count = import_secondary_performance(db_path, secondary_csv, council_filter="Milton Keynes")
+            # Import secondary (GCSEs, Progress 8)
+            secondary_count = import_secondary_performance(db_path, secondary_csv, council_filter="Milton Keynes")
 
-    print(f"\n✅ Done! Imported {primary_count + secondary_count} total performance metrics from DfE")
+            print(f"\n✅ Done! Imported {primary_count + secondary_count} total performance metrics from DfE (year {year})")
+            break
+        except Exception as e:
+            print(f"Failed for year {year}: {e}")
+            if year == 2021:
+                print("❌ Could not download data for any recent year")
+                exit(1)
