@@ -92,6 +92,33 @@ You are a Performance & Reviews Specialist Agent. Get the latest Key Stage 2 SAT
 
 ---
 
+### 5. UX Design Specialist (`ux-design-specialist.md`)
+**Purpose**: World-class user experience design — make every page intuitive, beautiful, and effortless
+
+**Expertise**:
+- Progressive disclosure and visual hierarchy
+- Mobile-first responsive design
+- Micro-interactions and transitions
+- Accessibility (WCAG 2.1 AA)
+- Empty states, error states, and loading states
+- Copy and microcopy review
+- Comparison workflow optimisation
+- Map UX (pin density, zoom, info panels)
+
+**Use Cases**:
+- Review a page for visual hierarchy, information density, and mobile responsiveness
+- Audit a component for accessibility compliance
+- Walk through a user flow and identify friction points
+- Critique copy and microcopy for parent-friendliness
+- Ensure design system consistency across pages
+
+**Example Prompt**:
+```
+You are the UX Design Specialist Agent (see .claude/agents/ux-design-specialist.md). Review the SchoolDetail.tsx page for visual hierarchy, information density, and mobile responsiveness. Identify the top 5 UX issues and provide specific fixes.
+```
+
+---
+
 ## How to Use These Agents
 
 ### Method 1: Direct Task Tool Usage
@@ -148,6 +175,7 @@ Each agent is designed to output data that maps directly to the School Finder da
 - **Clubs Agent** → `school_clubs` table
 - **Term Times Agent** → `school_term_dates` table
 - **Performance Agent** → `school_performance`, `school_reviews` tables
+- **UX Design Agent** → `frontend/src/pages/*.tsx`, `frontend/src/components/*.tsx` (reviews, not data)
 
 The agents provide structured JSON output that can be directly inserted or used to update the SQLite database via the repository layer.
 
