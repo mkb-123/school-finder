@@ -1534,28 +1534,42 @@ def _generate_test_class_sizes(schools: list[School], session: Session) -> int:
 
 
 def _generate_test_ofsted_history(schools: list[School], session: Session) -> int:
-    """Generate realistic Ofsted inspection history for schools."""
+    """Generate Ofsted inspection history ONLY for schools with known ratings.
+
+    IMPORTANT: This function ONLY uses verified ratings from:
+    1. Known accurate ratings dictionary (verified from Ofsted reports)
+    2. GIAS CSV data (if available)
+
+    Schools without verified ratings are SKIPPED - we never generate random ratings
+    for real schools as this could mislead parents.
+    """
     count = 0
     ratings = ["Outstanding", "Good", "Requires Improvement", "Inadequate"]
+
+    # Known accurate Ofsted ratings verified from https://reports.ofsted.gov.uk/
+    # ONLY add schools here after verifying their actual rating
+    KNOWN_RATINGS = {
+        "Caroline Haslett Primary School": "Outstanding",
+        # Add more VERIFIED ratings here as needed - DO NOT GUESS
+    }
 
     for school in schools:
         # Delete existing history for this school
         session.query(OfstedHistory).filter_by(school_id=school.id).delete()
 
-        # Use current Ofsted rating or generate realistic distribution
-        # UK distribution: ~20% Outstanding, ~60% Good, ~15% Requires Improvement, ~5% Inadequate
-        if school.ofsted_rating and school.ofsted_rating in ratings:
+        # Determine if we have a verified rating for this school
+        current_rating = None
+
+        # Priority 1: Check known accurate ratings dictionary
+        if school.name in KNOWN_RATINGS:
+            current_rating = KNOWN_RATINGS[school.name]
+        # Priority 2: Use rating from GIAS data if available
+        elif school.ofsted_rating and school.ofsted_rating in ratings:
             current_rating = school.ofsted_rating
-        else:
-            rand = random.random()
-            if rand < 0.20:
-                current_rating = "Outstanding"
-            elif rand < 0.80:
-                current_rating = "Good"
-            elif rand < 0.95:
-                current_rating = "Requires Improvement"
-            else:
-                current_rating = "Inadequate"
+
+        # SKIP schools without verified ratings - do not generate fake data
+        if not current_rating:
+            continue
         current_date = school.ofsted_date or date(2023, 3, 15)
         current_idx = ratings.index(current_rating)
 
@@ -1583,49 +1597,12 @@ def _generate_test_ofsted_history(schools: list[School], session: Session) -> in
         )
         count += 1
 
-        # Update school's current Ofsted rating to match the history
+        # Update school's current Ofsted rating to match the verified history
         school.ofsted_rating = current_rating
         school.ofsted_date = current_date
 
-        # Add 1-3 previous inspections
-        num_previous = random.randint(1, 3)
-        previous_date = current_date
-
-        for _ in range(num_previous):
-            years_back = random.uniform(3.0, 5.0)
-            previous_date = previous_date - timedelta(days=int(years_back * 365))
-
-            # Previous rating tends to be similar or slightly worse
-            if random.random() < 0.6:
-                prev_idx = min(current_idx + random.choice([0, 1]), len(ratings) - 1)
-            else:
-                prev_idx = max(current_idx - 1, 0)
-
-            prev_rating = ratings[prev_idx]
-
-            session.add(
-                OfstedHistory(
-                    school_id=school.id,
-                    inspection_date=previous_date,
-                    rating=prev_rating,
-                    report_url=f"https://reports.ofsted.gov.uk/provider/21/{school.id}/archive",
-                    strengths_quote=random.choice([
-                        "Pupils make satisfactory progress in most subjects.",
-                        "The school provides a safe and caring environment.",
-                        "Leadership has improved since the last inspection.",
-                        "Teaching quality is variable but improving.",
-                    ]),
-                    improvements_quote=random.choice([
-                        "The school should improve outcomes in mathematics.",
-                        "More needs to be done to develop the curriculum.",
-                        "Governance needs strengthening.",
-                        "Safeguarding procedures need updating.",
-                    ]),
-                    is_current=False
-                )
-            )
-            count += 1
-            current_idx = prev_idx
+        # NOTE: Historical inspection records should be added manually with verified data
+        # DO NOT generate random historical inspections as this is misleading
 
     session.commit()
     return count
