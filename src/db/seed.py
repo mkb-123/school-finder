@@ -21,7 +21,7 @@ from __future__ import annotations
 import argparse
 import math
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, time
 from pathlib import Path
 
 import httpx
@@ -29,7 +29,7 @@ import polars as pl
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from src.db.models import Base, School
+from src.db.models import Base, PrivateSchoolDetails, School
 
 # ---------------------------------------------------------------------------
 # Paths

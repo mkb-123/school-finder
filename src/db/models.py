@@ -43,8 +43,8 @@ class School(Base):
         "SchoolPerformance", back_populates="school", lazy="selectin"
     )
     reviews: Mapped[list[SchoolReview]] = relationship("SchoolReview", back_populates="school", lazy="selectin")
-    private_details: Mapped[PrivateSchoolDetails | None] = relationship(
-        "PrivateSchoolDetails", back_populates="school", uselist=False, lazy="selectin"
+    private_details: Mapped[list[PrivateSchoolDetails]] = relationship(
+        "PrivateSchoolDetails", back_populates="school", lazy="selectin"
     )
     admissions_history: Mapped[list[AdmissionsHistory]] = relationship(
         "AdmissionsHistory", back_populates="school", lazy="selectin"
@@ -133,7 +133,7 @@ class PrivateSchoolDetails(Base):
     __tablename__ = "private_school_details"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), unique=True, nullable=False, index=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
 
     termly_fee: Mapped[float | None] = mapped_column(Float, nullable=True)
     annual_fee: Mapped[float | None] = mapped_column(Float, nullable=True)

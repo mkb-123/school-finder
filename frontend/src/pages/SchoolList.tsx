@@ -25,15 +25,75 @@ function meetsMinRating(
   return (RATING_ORDER[rating] ?? 0) >= (RATING_ORDER[minRating] ?? 0);
 }
 
+/** Read Filters from URLSearchParams, falling back to defaults. */
+function filtersFromParams(params: URLSearchParams): Filters {
+  return {
+    age: params.get("age") ?? DEFAULT_FILTERS.age,
+    gender: params.get("gender") ?? DEFAULT_FILTERS.gender,
+    schoolType: params.get("type") ?? DEFAULT_FILTERS.schoolType,
+    minRating: params.get("min_rating") ?? DEFAULT_FILTERS.minRating,
+    maxDistance: params.get("max_distance") ?? DEFAULT_FILTERS.maxDistance,
+    hasBreakfastClub:
+      params.get("breakfast_club") === "true" ||
+      DEFAULT_FILTERS.hasBreakfastClub,
+    hasAfterSchoolClub:
+      params.get("afterschool_club") === "true" ||
+      DEFAULT_FILTERS.hasAfterSchoolClub,
+  };
+}
+
 export default function SchoolList() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const council = searchParams.get("council") ?? "";
   const postcode = searchParams.get("postcode") ?? "";
+
+  // Derive filters from URL search params (single source of truth).
+  const filters = useMemo(
+    () => filtersFromParams(searchParams),
+    [searchParams],
+  );
+
+  const handleFilterChange = useCallback(
+    (next: Filters) => {
+      setSearchParams((prev) => {
+        const updated = new URLSearchParams(prev);
+
+        // Helper: set param if non-empty, delete otherwise.
+        const sync = (key: string, value: string) => {
+          if (value) {
+            updated.set(key, value);
+          } else {
+            updated.delete(key);
+          }
+        };
+
+        sync("age", next.age);
+        sync("gender", next.gender);
+        sync("type", next.schoolType);
+        sync("min_rating", next.minRating);
+        sync("max_distance", next.maxDistance);
+
+        // Booleans: only add when true, remove when false.
+        if (next.hasBreakfastClub) {
+          updated.set("breakfast_club", "true");
+        } else {
+          updated.delete("breakfast_club");
+        }
+        if (next.hasAfterSchoolClub) {
+          updated.set("afterschool_club", "true");
+        } else {
+          updated.delete("afterschool_club");
+        }
+
+        return updated;
+      });
+    },
+    [setSearchParams],
+  );
 
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
@@ -111,7 +171,7 @@ export default function SchoolList() {
         <aside className="lg:col-span-3">
           <FilterPanel
             filters={filters}
-            onChange={setFilters}
+            onChange={handleFilterChange}
             schoolCount={filteredSchools.length}
           />
         </aside>

@@ -186,11 +186,11 @@ class SQLiteSchoolRepository(SchoolRepository):
             result = await session.execute(stmt)
             return list(result.scalars().all())
 
-    async def get_private_school_details(self, school_id: int) -> PrivateSchoolDetails | None:
+    async def get_private_school_details(self, school_id: int) -> list[PrivateSchoolDetails]:
         stmt = select(PrivateSchoolDetails).where(PrivateSchoolDetails.school_id == school_id)
         async with self._session_factory() as session:
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
+            return list(result.scalars().all())
 
     # ------------------------------------------------------------------
     # Reference data

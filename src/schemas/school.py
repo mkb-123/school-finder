@@ -127,7 +127,7 @@ class SchoolDetailResponse(SchoolResponse):
     performance: list[PerformanceResponse] = []
     term_dates: list[TermDateResponse] = []
     admissions_history: list[AdmissionsHistoryResponse] = []
-    private_details: PrivateSchoolDetailsResponse | None = None
+    private_details: list[PrivateSchoolDetailsResponse] = []
 
 
 class CompareResponse(BaseModel):

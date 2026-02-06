@@ -95,8 +95,8 @@ class SchoolRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_private_school_details(self, school_id: int) -> PrivateSchoolDetails | None:
-        """Return private-school-specific details, or ``None`` if not applicable."""
+    async def get_private_school_details(self, school_id: int) -> list[PrivateSchoolDetails]:
+        """Return private-school-specific details (one entry per fee age group)."""
         ...
 
     # ------------------------------------------------------------------
