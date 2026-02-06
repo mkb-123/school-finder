@@ -231,11 +231,16 @@ class EthosAgent(BaseAgent):
         str | None
             Extracted ethos statement or None if not found.
         """
+        # Strategy 0: Look specifically for motto patterns (highest priority)
+        motto = self._extract_motto(soup)
+        if motto:
+            return self._clean_ethos(motto)
+
         # Strategy 1: Look for meta description tag
         meta_desc = soup.find("meta", attrs={"name": "description"})
         if meta_desc and meta_desc.get("content"):
             content = str(meta_desc.get("content", "")).strip()
-            if content and len(content) >= 50:
+            if content and len(content) >= 50 and not self._is_generic_welcome(content):
                 return self._clean_ethos(content)
 
         # Strategy 2: Look for headings containing ethos keywords
@@ -246,7 +251,11 @@ class EthosAgent(BaseAgent):
                 next_elem = heading.find_next(["p", "div"])
                 if next_elem:
                     text = next_elem.get_text(strip=True)
-                    if text and len(text) >= 30:
+                    if text and len(text) >= 30 and not self._is_generic_welcome(text):
+                        # Try to extract motto if embedded
+                        embedded_motto = self._extract_motto_from_text(text)
+                        if embedded_motto:
+                            return self._clean_ethos(embedded_motto)
                         return self._clean_ethos(text)
 
         # Strategy 3: Look for sections/divs with ethos-related classes or IDs
@@ -257,18 +266,104 @@ class EthosAgent(BaseAgent):
 
             if _ETHOS_PATTERN.search(combined):
                 text = elem.get_text(separator=" ", strip=True)
-                # Get first substantial paragraph
-                paragraphs = [p.strip() for p in text.split("\n") if len(p.strip()) >= 30]
+                # Get first substantial paragraph (skip welcome messages)
+                paragraphs = [p.strip() for p in text.split("\n")
+                            if len(p.strip()) >= 30 and not self._is_generic_welcome(p)]
                 if paragraphs:
+                    # Try to extract motto if embedded
+                    embedded_motto = self._extract_motto_from_text(paragraphs[0])
+                    if embedded_motto:
+                        return self._clean_ethos(embedded_motto)
                     return self._clean_ethos(paragraphs[0])
 
-        # Strategy 4: Search all paragraph text for ethos keywords
+        # Strategy 4: Search all paragraph text for ethos keywords (skip welcomes)
+        candidates = []
         for para in soup.find_all("p"):
             text = para.get_text(strip=True)
-            if _ETHOS_PATTERN.search(text) and len(text) >= 30:
-                return self._clean_ethos(text)
+            if _ETHOS_PATTERN.search(text) and len(text) >= 30 and not self._is_generic_welcome(text):
+                candidates.append((len(text), text))  # Store with length for sorting
+
+        # Prefer shorter, more concise statements
+        if candidates:
+            candidates.sort(key=lambda x: x[0])  # Sort by length (shortest first)
+            # Try to extract motto from shortest candidate
+            for _, text in candidates[:3]:  # Check top 3 shortest
+                embedded_motto = self._extract_motto_from_text(text)
+                if embedded_motto:
+                    return self._clean_ethos(embedded_motto)
+            # Fall back to shortest candidate
+            return self._clean_ethos(candidates[0][1])
 
         return None
+
+    def _extract_motto(self, soup: object) -> str | None:
+        """Look for explicit motto statements in the HTML.
+
+        Searches for patterns like:
+        - "Our motto is: [motto]"
+        - "School motto: [motto]"
+        - Quoted text near motto keywords
+        """
+        motto_patterns = [
+            r"(?:our\s+)?motto\s+is[:\s]+['\""]?([^'\"\.]+)['\""]?",
+            r"school\s+motto[:\s]+['\""]?([^'\"\.]+)['\""]?",
+            r"['\""]([^'\"]{20,100})['\""]",  # Quoted text (20-100 chars)
+        ]
+
+        # Search all text for motto patterns
+        all_text = soup.get_text(separator=" ", strip=True)
+        for pattern in motto_patterns:
+            match = re.search(pattern, all_text, re.IGNORECASE)
+            if match:
+                motto = match.group(1).strip()
+                if 20 <= len(motto) <= 150:  # Reasonable motto length
+                    return motto
+
+        return None
+
+    def _extract_motto_from_text(self, text: str) -> str | None:
+        """Extract just the motto from a paragraph that contains it.
+
+        Example: "At our school, our motto is: 'Excellence for all'. We believe..."
+        Returns: "Excellence for all"
+        """
+        motto_patterns = [
+            r"(?:our\s+)?motto\s+is[:\s]+['\""]?([^'\"\.]+)['\""]?",
+            r"school\s+motto[:\s]+['\""]?([^'\"\.]+)['\""]?",
+        ]
+
+        for pattern in motto_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                motto = match.group(1).strip()
+                # Clean up any trailing text
+                motto = re.split(r'[.!?]\s+[A-Z]', motto)[0]  # Stop at next sentence
+                if 10 <= len(motto) <= 150:
+                    return motto
+
+        return None
+
+    def _is_generic_welcome(self, text: str) -> bool:
+        """Check if text is a generic welcome/intro message rather than actual ethos.
+
+        Returns True if text contains headteacher welcome phrases.
+        """
+        welcome_patterns = [
+            r"welcome\s+to\s+(our\s+)?school",
+            r"(i|we)\s+(would\s+like\s+to\s+)?wish\s+you",
+            r"(headteacher|head\s+teacher|principal)",
+            r"(i\s+am\s+)?(proud|pleased|delighted)\s+to",
+            r"my\s+name\s+is",
+            r"please\s+do\s+not\s+hesitate",
+            r"take\s+a\s+look\s+around",
+        ]
+
+        text_lower = text.lower()
+        for pattern in welcome_patterns:
+            if re.search(pattern, text_lower):
+                return True
+
+        return False
 
     def _clean_ethos(self, text: str) -> str:
         """Clean and truncate ethos text to create a one-liner.
