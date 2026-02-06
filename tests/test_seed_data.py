@@ -114,7 +114,7 @@ class TestSeedDataDirect:
         assert len(private) >= 3, f"Expected 3+ private, got {len(private)}"
 
     def test_ofsted_ratings_valid(self):
-        valid = {"Outstanding", "Good", "Requires improvement", "Inadequate", None}
+        valid = {"Outstanding", "Good", "Requires Improvement", "Inadequate", None}
         for s in _generate_test_schools("Milton Keynes"):
             assert s.ofsted_rating in valid, f"{s.name} has invalid rating: {s.ofsted_rating}"
 
