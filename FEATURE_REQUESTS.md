@@ -36,6 +36,12 @@ _Extends existing Feature 9 (School Run Journey Planner) which covers walking, c
 
 Show dedicated school bus routes where schools or councils provide them. Overlay bus routes on the map with stop locations, pick-up times, and eligibility criteria (some are distance-based or only for certain year groups). Include cost if applicable — some councils provide free transport beyond a certain distance (typically 2+ miles for primary, 3+ miles for secondary). Flag whether a bus stop is within walking distance of the parent's postcode. For private schools, show any private coach services, routes, and fees.
 
+## Ofsted Trajectory & Last Inspection
+
+_Extends existing Feature 7 (Reviews, Ratings & Performance) which shows the current Ofsted rating and inspection date._
+
+Show the full Ofsted rating history for each school, not just the current rating. Display a trajectory indicator — is the school improving (e.g., Requires Improvement to Good), stable, or declining (e.g., Outstanding to Good)? The direction of travel matters as much as today's rating. Flag schools where the last inspection was over 5 years ago, as the current rating may be stale and an inspection could be imminent. Show the date of the last inspection prominently so parents can judge how current the rating is. Where available, surface key quotes from the most recent Ofsted report (strengths and areas for improvement) so parents get the flavour without reading the full document.
+
 ## School Demographics
 
 Show the demographic profile of each school using published DfE school census data. Include ethnic diversity breakdown, percentage of pupils with English as an additional language (EAL), percentage eligible for free school meals (a proxy for socioeconomic mix), and percentage with SEND support. Present this clearly and without judgement — some parents actively seek diverse, mixed environments while others want to understand the community their child will be part of. Allow comparison across shortlisted schools so parents can see how demographics differ between nearby options.
