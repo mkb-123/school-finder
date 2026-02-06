@@ -98,7 +98,7 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
           <div>
             <p className="font-semibold text-amber-900">Rating may be stale</p>
             <p className="text-sm text-amber-800 mt-1">
-              The last inspection was {trajectory.inspection_age_years.toFixed(1)} years ago (over 5 years).
+              The last inspection was {trajectory.inspection_age_years!.toFixed(1)} years ago (over 5 years).
               A new inspection may be due soon.
             </p>
           </div>
@@ -109,7 +109,7 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Clock className="w-4 h-4" />
           <span>
-            Last inspected {trajectory.inspection_age_years.toFixed(1)} years ago
+            Last inspected {trajectory.inspection_age_years!.toFixed(1)} years ago
           </span>
         </div>
       )}

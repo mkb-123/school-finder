@@ -1,0 +1,13 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run TypeScript type checking before commit
+echo "Running TypeScript type check..."
+cd frontend && npm run type-check
+
+# Run backend linting
+echo "Running backend linting..."
+cd ..
+uv run ruff check src/ tests/
+
+echo "✅ Pre-commit checks passed!"

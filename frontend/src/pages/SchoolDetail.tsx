@@ -74,7 +74,7 @@ interface OfstedInspection {
   is_current: boolean;
 }
 
-interface OfstedTrajectory {
+interface OfstedTrajectoryResponse {
   school_id: number;
   trajectory: 'improving' | 'stable' | 'declining' | 'unknown';
   current_rating?: string | null;
@@ -92,7 +92,7 @@ interface SchoolDetail extends School {
   prospectus_url: string | null;
   class_sizes: ClassSize[];
   parking_summary?: ParkingRatingSummary | null;
-  ofsted_trajectory?: OfstedTrajectory | null;
+  ofsted_trajectory?: OfstedTrajectoryResponse | null;
 }
 
 const TABS = [
