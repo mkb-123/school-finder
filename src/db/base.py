@@ -4,11 +4,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from src.db.models import (
+    AdmissionsDeadline,
     AdmissionsHistory,
     PrivateSchoolDetails,
     School,
     SchoolClub,
     SchoolPerformance,
+    SchoolReview,
     SchoolTermDate,
 )
 
@@ -27,6 +29,7 @@ class SchoolFilters:
     max_distance_km: float | None = None
     has_breakfast_club: bool | None = None
     has_afterschool_club: bool | None = None
+    has_both_clubs: bool | None = None
     faith: str | None = None
     is_private: bool | None = None
     max_fee: float | None = None  # max termly fee for private school filtering
@@ -101,6 +104,25 @@ class SchoolRepository(ABC):
     @abstractmethod
     async def get_private_school_details(self, school_id: int) -> list[PrivateSchoolDetails]:
         """Return private-school-specific details (one entry per fee age group)."""
+        ...
+
+    @abstractmethod
+    async def get_reviews_for_school(self, school_id: int) -> list[SchoolReview]:
+        """Return parent reviews for a school."""
+        ...
+
+    # ------------------------------------------------------------------
+    # Admissions deadlines
+    # ------------------------------------------------------------------
+
+    @abstractmethod
+    async def get_admissions_deadlines(self, school_id: int) -> list[AdmissionsDeadline]:
+        """Return admissions deadlines for a school."""
+        ...
+
+    @abstractmethod
+    async def get_upcoming_deadlines(self, council: str | None = None) -> list[AdmissionsDeadline]:
+        """Return upcoming admissions deadlines, optionally filtered by council."""
         ...
 
     # ------------------------------------------------------------------

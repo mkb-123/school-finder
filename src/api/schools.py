@@ -9,10 +9,12 @@ from src.db.base import SchoolFilters, SchoolRepository
 from src.db.factory import get_school_repository
 from src.schemas.filters import SchoolFilterParams
 from src.schemas.school import (
+    AdmissionsDeadlineResponse,
     AdmissionsEstimateResponse,
     AdmissionsHistoryResponse,
     ClubResponse,
     PerformanceResponse,
+    ReviewResponse,
     SchoolDetailResponse,
     SchoolResponse,
     TermDateResponse,
@@ -53,6 +55,7 @@ async def _to_school_filters(params: SchoolFilterParams) -> SchoolFilters:
         max_distance_km=params.max_distance_km,
         has_breakfast_club=params.has_breakfast_club,
         has_afterschool_club=params.has_afterschool_club,
+        has_both_clubs=params.has_both_clubs,
         faith=params.faith,
         search=params.search,
         limit=params.limit,
@@ -86,6 +89,7 @@ async def get_school(
     term_dates = await repo.get_term_dates_for_school(school_id)
     admissions = await repo.get_admissions_history(school_id)
     private_details = await repo.get_private_school_details(school_id)
+    reviews = await repo.get_reviews_for_school(school_id)
 
     base = SchoolResponse.model_validate(school, from_attributes=True)
     return SchoolDetailResponse(
@@ -95,6 +99,7 @@ async def get_school(
         term_dates=term_dates,
         admissions_history=admissions,
         private_details=private_details,
+        reviews=reviews,
     )
 
 
@@ -138,6 +143,16 @@ async def get_school_admissions(
     return admissions
 
 
+@router.get("/api/schools/{school_id}/reviews", response_model=list[ReviewResponse])
+async def get_school_reviews(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[ReviewResponse]:
+    """Get parent reviews for a school."""
+    reviews = await repo.get_reviews_for_school(school_id)
+    return reviews
+
+
 @router.get("/api/schools/{school_id}/admissions/estimate", response_model=AdmissionsEstimateResponse)
 async def get_admissions_estimate(
     school_id: int,
@@ -162,3 +177,23 @@ async def get_admissions_estimate(
         avg_oversubscription_ratio=result.avg_oversubscription_ratio,
         years_of_data=result.years_of_data,
     )
+
+
+@router.get("/api/schools/{school_id}/deadlines", response_model=list[AdmissionsDeadlineResponse])
+async def get_school_deadlines(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[AdmissionsDeadlineResponse]:
+    """Get upcoming admissions deadlines for a school."""
+    deadlines = await repo.get_admissions_deadlines(school_id)
+    return deadlines
+
+
+@router.get("/api/deadlines", response_model=list[AdmissionsDeadlineResponse])
+async def list_upcoming_deadlines(
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+    council: str | None = None,
+) -> list[AdmissionsDeadlineResponse]:
+    """Get all upcoming admissions deadlines, optionally filtered by council."""
+    deadlines = await repo.get_upcoming_deadlines(council=council)
+    return deadlines

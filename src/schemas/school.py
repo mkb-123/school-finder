@@ -96,6 +96,19 @@ class AdmissionsHistoryResponse(BaseModel):
     appeals_upheld: int | None = None
 
 
+class AdmissionsDeadlineResponse(BaseModel):
+    """Upcoming admissions deadline for a school."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    academic_year: str
+    deadline_type: str
+    deadline_date: datetime.date
+    description: str | None = None
+
+
 class SchoolResponse(BaseModel):
     """Summary representation of a school for list views."""
 
@@ -121,6 +134,23 @@ class SchoolResponse(BaseModel):
     catchment_radius_km: float | None = None
 
 
+class FeeProjectionYear(BaseModel):
+    """Projected fees for a single year."""
+
+    year: int
+    fee_age_group: str
+    projected_termly_fee: float
+    projected_annual_fee: float
+
+
+class FeeProjectionResponse(BaseModel):
+    """Fee projection for a private school over future years."""
+
+    school_id: int
+    school_name: str
+    projections: list[FeeProjectionYear]
+
+
 class SchoolDetailResponse(SchoolResponse):
     """Full school detail including related data."""
 
@@ -129,6 +159,7 @@ class SchoolDetailResponse(SchoolResponse):
     term_dates: list[TermDateResponse] = []
     admissions_history: list[AdmissionsHistoryResponse] = []
     private_details: list[PrivateSchoolDetailsResponse] = []
+    reviews: list[ReviewResponse] = []
 
 
 class CompareResponse(BaseModel):

@@ -31,12 +31,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from src.db.models import (
+    AdmissionsDeadline,
     AdmissionsHistory,
     Base,
     PrivateSchoolDetails,
     School,
     SchoolClub,
     SchoolPerformance,
+    SchoolReview,
     SchoolTermDate,
 )
 
@@ -1339,6 +1341,53 @@ def _generate_test_admissions(schools: list[School], session: Session) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Admissions deadline seed data
+# ---------------------------------------------------------------------------
+
+
+def _generate_test_deadlines(schools: list[School], session: Session) -> int:
+    """Generate admissions deadline data for schools."""
+    random.seed(42)
+    count = 0
+    current_year = date.today().year
+    next_academic_year = f"{current_year + 1}/{current_year + 2}"
+
+    default_deadlines = [
+        ("application", f"Application deadline for {next_academic_year} intake", date(current_year, 10, 31)),
+        ("supplementary_form", "Supplementary information form deadline", date(current_year, 11, 15)),
+        ("national_offer_day", "National Offer Day - places announced", date(current_year + 1, 4, 16)),
+        ("acceptance", "Deadline to accept or decline offered place", date(current_year + 1, 5, 1)),
+        ("appeal", f"Appeal submission deadline for {next_academic_year}", date(current_year + 1, 5, 20)),
+    ]
+
+    for school in schools:
+        if school.is_private:
+            # Private schools have their own deadlines
+            deadlines = [
+                ("registration", f"Registration deadline for {next_academic_year}", date(current_year, 11, 30)),
+                ("assessment", "Assessment/entrance exam date", date(current_year + 1, 1, 15)),
+                ("offer", "Offers sent to families", date(current_year + 1, 2, 15)),
+                ("acceptance", "Deadline to accept place and pay deposit", date(current_year + 1, 3, 15)),
+            ]
+        else:
+            deadlines = list(default_deadlines)
+
+        for dtype, desc, ddate in deadlines:
+            deadline = AdmissionsDeadline(
+                school_id=school.id,
+                academic_year=next_academic_year,
+                deadline_type=dtype,
+                deadline_date=ddate,
+                description=desc,
+            )
+            session.add(deadline)
+            count += 1
+
+    session.commit()
+    return count
+
+
+# ---------------------------------------------------------------------------
 # Database operations
 # ---------------------------------------------------------------------------
 
@@ -1379,6 +1428,90 @@ def _upsert_schools(session: Session, schools: list[School]) -> tuple[int, int]:
     return inserted, updated
 
 
+def _generate_test_reviews(schools: list[School], session: Session) -> int:
+    """Generate realistic parent review data for schools."""
+    review_sources = ["Google Reviews", "Mumsnet", "DfE Parent View", "Local Facebook Group", "Ofsted Parent Survey"]
+
+    review_snippets_positive = [
+        "Wonderful school with dedicated teachers who really care about each child's progress.",
+        "My children love going here. The pastoral care is exceptional.",
+        "Great communication from the school. We always know what's happening.",
+        "Fantastic range of extra-curricular activities. Something for everyone.",
+        "The school has really helped my child grow in confidence.",
+        "Outstanding leadership team who are always visible and approachable.",
+        "Brilliant breakfast club - gives us peace of mind before work.",
+        "The after-school clubs are varied and well-run. My kids don't want to leave!",
+        "Beautiful grounds and well-maintained facilities.",
+        "Inclusive and welcoming community. We felt at home from day one.",
+    ]
+
+    review_snippets_mixed = [
+        "Generally good school but communication could be better at times.",
+        "Happy with academic progress but wish there were more sports options.",
+        "Good teachers but the building is showing its age.",
+        "My child is happy here, though homework expectations seem inconsistent.",
+        "Nice community feel but parking at drop-off is a nightmare.",
+        "Teaching is solid but the lunch menu could use an update.",
+        "Good school overall. Some classes are better than others.",
+        "We're satisfied but feel the school could do more for gifted pupils.",
+    ]
+
+    review_snippets_negative = [
+        "Communication from the school has been poor this year.",
+        "Concerned about class sizes and individual attention.",
+        "The school run parking situation is genuinely dangerous.",
+        "Disappointed with the lack of after-school club options.",
+        "Bullying incidents were not handled well in our experience.",
+    ]
+
+    random.seed(42)
+    count = 0
+    today = date.today()
+
+    for school in schools:
+        # Number of reviews correlates loosely with Ofsted rating
+        rating_map = {"Outstanding": (4, 7), "Good": (3, 6), "Requires Improvement": (2, 5), "Inadequate": (1, 4)}
+        min_reviews, max_reviews = rating_map.get(school.ofsted_rating, (2, 5))
+        num_reviews = random.randint(min_reviews, max_reviews)
+
+        for _ in range(num_reviews):
+            source = random.choice(review_sources)
+
+            # Rating and snippet depend on Ofsted rating with some variance
+            if school.ofsted_rating == "Outstanding":
+                rating = round(random.uniform(4.0, 5.0), 1)
+                snippet = random.choice(review_snippets_positive)
+            elif school.ofsted_rating == "Good":
+                rating = round(random.uniform(3.5, 4.8), 1)
+                snippet = random.choice(review_snippets_positive + review_snippets_mixed)
+            elif school.ofsted_rating == "Requires Improvement":
+                rating = round(random.uniform(2.5, 3.8), 1)
+                snippet = random.choice(review_snippets_mixed + review_snippets_negative)
+            elif school.ofsted_rating == "Inadequate":
+                rating = round(random.uniform(1.5, 3.0), 1)
+                snippet = random.choice(review_snippets_mixed + review_snippets_negative)
+            else:
+                rating = round(random.uniform(3.0, 4.5), 1)
+                snippet = random.choice(review_snippets_positive + review_snippets_mixed)
+
+            # Random date within last 2 years
+            days_ago = random.randint(30, 730)
+            review_date = today - timedelta(days=days_ago)
+
+            review = SchoolReview(
+                school_id=school.id,
+                source=source,
+                rating=rating,
+                snippet=snippet,
+                review_date=review_date,
+            )
+            session.add(review)
+            count += 1
+
+    session.commit()
+    return count
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -1407,7 +1540,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     print(f"  Database       : {db_path}")
     print()
 
-    print("[1/9] Obtaining GIAS CSV ...")
+    print("[1/11] Obtaining GIAS CSV ...")
     use_test_data = False
     csv_path: Path | None = None
     cached = _find_cached_csv()
@@ -1424,11 +1557,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
 
     schools: list[School] = []
     if use_test_data or csv_path is None:
-        print("[2/9] Generating test school data ...")
+        print("[2/11] Generating test school data ...")
         schools = _generate_test_schools(council)
         print(f"  Generated {len(schools)} test schools for '{council}'")
     else:
-        print("[2/9] Reading CSV ...")
+        print("[2/11] Reading CSV ...")
         rows = _read_csv(csv_path)
         print(f"  Total rows in CSV: {len(rows)}")
         council_lower = council.lower()
@@ -1447,7 +1580,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
                 if len(all_councils) > 20:
                     print(f"    ... and {len(all_councils) - 20} more", file=sys.stderr)
             sys.exit(1)
-        print("[3/9] Mapping to School records ...")
+        print("[3/11] Mapping to School records ...")
         skipped = 0
         for row in council_rows:
             school = _row_to_school(row)
@@ -1460,7 +1593,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
     geo_count = sum(1 for s in schools if s.lat is not None)
     print(f"  With coordinates: {geo_count}/{len(schools)}")
 
-    print("[4/9] Writing schools to database ...")
+    print("[4/11] Writing schools to database ...")
     session = _ensure_database(db_path)
     try:
         inserted, updated = _upsert_schools(session, schools)
@@ -1469,11 +1602,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  Updated : {updated}")
         print(f"  Total schools for '{council}' in DB: {total_in_db}")
 
-        print("[5/9] Seeding term dates ...")
+        print("[5/11] Seeding term dates ...")
         term_count = _seed_term_dates(session, council)
         print(f"  Term date records created: {term_count}")
 
-        print("[6/9] Generating club data ...")
+        print("[6/11] Generating club data ...")
         all_schools = session.query(School).filter_by(council=council).all()
         clubs = _generate_test_clubs(all_schools)
         clubs_inserted = _upsert_clubs(session, clubs)
@@ -1484,11 +1617,11 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  Clubs inserted  : {clubs_inserted}")
         print(f"  Total clubs in DB: {total_clubs}")
 
-        print("[7/9] Generating private school details ...")
+        print("[7/11] Generating private school details ...")
         pvt_count = _generate_private_school_details(session)
         print(f"  Private school detail tiers: {pvt_count}")
 
-        print("[8/9] Generating performance data ...")
+        print("[8/11] Generating performance data ...")
         # Clear existing performance data for idempotent re-seed
         school_ids = [s.id for s in all_schools]
         if school_ids:
@@ -1499,9 +1632,21 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         perf_count = _generate_test_performance(all_schools, session)
         print(f"  Performance records created: {perf_count}")
 
-        print("[9/9] Generating admissions history ...")
+        print("[9/11] Generating admissions history ...")
         admissions_count = _generate_test_admissions(all_schools, session)
         print(f"  Admissions history records created: {admissions_count}")
+
+        print("[10/11] Generating parent reviews ...")
+        # Clear existing reviews for idempotent re-seed
+        if school_ids:
+            session.query(SchoolReview).filter(SchoolReview.school_id.in_(school_ids)).delete(synchronize_session=False)
+            session.flush()
+        review_count = _generate_test_reviews(all_schools, session)
+        print(f"  Review records created: {review_count}")
+
+        print("[11/11] Generating admissions deadlines ...")
+        deadline_count = _generate_test_deadlines(all_schools, session)
+        print(f"  Deadline records created: {deadline_count}")
 
         print()
         print("=" * 60)
@@ -1525,6 +1670,8 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
         print(f"  Term date records   : {term_count}")
         print(f"  Performance records : {perf_count}")
         print(f"  Admissions records  : {admissions_count}")
+        print(f"  Review records      : {review_count}")
+        print(f"  Deadline records    : {deadline_count}")
         print(f"  Breakfast clubs     : {breakfast_count}")
         print(f"  After-school clubs  : {afterschool_count}")
         print()

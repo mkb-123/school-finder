@@ -9,12 +9,14 @@ from sqlalchemy.orm import selectinload
 
 from src.db.base import SchoolFilters, SchoolRepository
 from src.db.models import (
+    AdmissionsDeadline,
     AdmissionsHistory,
     Base,
     PrivateSchoolDetails,
     School,
     SchoolClub,
     SchoolPerformance,
+    SchoolReview,
     SchoolTermDate,
 )
 
@@ -144,6 +146,21 @@ class SQLiteSchoolRepository(SchoolRepository):
                 .exists()
             )
 
+        if filters.has_both_clubs is True:
+            stmt = stmt.where(
+                select(SchoolClub.id)
+                .where(SchoolClub.school_id == School.id)
+                .where(SchoolClub.club_type == "breakfast")
+                .correlate(School)
+                .exists()
+            ).where(
+                select(SchoolClub.id)
+                .where(SchoolClub.school_id == School.id)
+                .where(SchoolClub.club_type == "after_school")
+                .correlate(School)
+                .exists()
+            )
+
         # Max fee filter: join to private_school_details
         if filters.max_fee is not None:
             stmt = stmt.where(
@@ -240,6 +257,41 @@ class SQLiteSchoolRepository(SchoolRepository):
 
     async def get_private_school_details(self, school_id: int) -> list[PrivateSchoolDetails]:
         stmt = select(PrivateSchoolDetails).where(PrivateSchoolDetails.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_reviews_for_school(self, school_id: int) -> list[SchoolReview]:
+        stmt = select(SchoolReview).where(SchoolReview.school_id == school_id).order_by(SchoolReview.review_date.desc())
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    # ------------------------------------------------------------------
+    # Admissions deadlines
+    # ------------------------------------------------------------------
+
+    async def get_admissions_deadlines(self, school_id: int) -> list[AdmissionsDeadline]:
+        stmt = (
+            select(AdmissionsDeadline)
+            .where(AdmissionsDeadline.school_id == school_id)
+            .order_by(AdmissionsDeadline.deadline_date)
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_upcoming_deadlines(self, council: str | None = None) -> list[AdmissionsDeadline]:
+        from datetime import date as date_cls
+
+        stmt = (
+            select(AdmissionsDeadline)
+            .join(School, AdmissionsDeadline.school_id == School.id)
+            .where(AdmissionsDeadline.deadline_date >= date_cls.today())
+            .order_by(AdmissionsDeadline.deadline_date)
+        )
+        if council is not None:
+            stmt = stmt.where(School.council == council)
         async with self._session_factory() as session:
             result = await session.execute(stmt)
             return list(result.scalars().all())

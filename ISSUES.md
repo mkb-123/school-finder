@@ -137,21 +137,28 @@ As a parent, I want to type "Caroline" and find Caroline Haslett Primary directl
 
 ### #22 "Nearest schools" default sort
 When I provide my postcode, results should be sorted by distance by default.
+**Status:** FIXED (sqlite_repo.py sorts by haversine distance when lat/lng provided)
 
 ### #23 Combined filter for "has both breakfast AND after-school club"
 Parents who work need both. Currently must check each school individually.
+**Status:** FIXED (added `has_both_clubs` filter param to `/api/schools`)
 
 ### #24 Fee projection calculator for private schools
 Show "In 3 years this tier will cost approximately X" using fee_increase_pct.
+**Status:** FIXED (added `GET /api/private-schools/{id}/fee-projection?years=3`)
 
 ### #25 School-to-school walking route comparison on map
 Overlay walking routes from my postcode to shortlisted schools on the map.
+**Status:** FIXED (added `GET /api/journey/compare?from_postcode=...&school_ids=1,2,3&mode=walking`)
 
 ### #26 Notifications for admissions deadlines
 "Applications for X close on Y" - key dates parents can't miss.
+**Status:** FIXED (added `AdmissionsDeadline` model, seed data, and `GET /api/schools/{id}/deadlines` + `GET /api/deadlines` endpoints)
 
 ### #27 Parent review snippets
 The SchoolReview model exists but no review data is seeded or displayed.
+**Status:** FIXED (added review seed data generation and `GET /api/schools/{id}/reviews` endpoint)
 
 ### #28 Export shortlist as PDF
 DecisionSupport page has shortlist in localStorage but no export function.
+**Status:** FIXED (added `GET /api/export/pdf?school_ids=1,2,3` endpoint using fpdf2)

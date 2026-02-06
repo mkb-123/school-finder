@@ -7,7 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from src.db.base import SchoolFilters, SchoolRepository
 from src.db.factory import get_school_repository
 from src.schemas.filters import PrivateSchoolFilterParams
-from src.schemas.school import SchoolDetailResponse, SchoolResponse
+from src.schemas.school import (
+    FeeProjectionResponse,
+    FeeProjectionYear,
+    SchoolDetailResponse,
+    SchoolResponse,
+)
 
 router = APIRouter(tags=["private-schools"])
 
@@ -62,4 +67,59 @@ async def get_private_school(
         term_dates=term_dates,
         admissions_history=admissions,
         private_details=private_details,
+    )
+
+
+@router.get(
+    "/api/private-schools/{school_id}/fee-projection",
+    response_model=FeeProjectionResponse,
+)
+async def get_fee_projection(
+    school_id: int,
+    years: int = Query(
+        default=3, ge=1, le=10, description="Number of years to project"
+    ),
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)] = None,
+) -> FeeProjectionResponse:
+    """Project future fees for a private school based on historical increase rate."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None:
+        raise HTTPException(status_code=404, detail="School not found")
+    if not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    details = await repo.get_private_school_details(school_id)
+    if not details:
+        raise HTTPException(
+            status_code=404, detail="No fee data available for this school"
+        )
+
+    projections = []
+    for detail in details:
+        if detail.termly_fee is None:
+            continue
+        increase_pct = (
+            detail.fee_increase_pct
+            if detail.fee_increase_pct is not None
+            else 5.0  # default 5% increase
+        )
+        for year in range(1, years + 1):
+            factor = (1 + increase_pct / 100) ** year
+            projected_termly = round(detail.termly_fee * factor, 2)
+            projected_annual = round(
+                (detail.annual_fee or detail.termly_fee * 3) * factor, 2
+            )
+            projections.append(
+                FeeProjectionYear(
+                    year=year,
+                    fee_age_group=detail.fee_age_group or "General",
+                    projected_termly_fee=projected_termly,
+                    projected_annual_fee=projected_annual,
+                )
+            )
+
+    return FeeProjectionResponse(
+        school_id=school_id,
+        school_name=school.name,
+        projections=projections,
     )

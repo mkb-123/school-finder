@@ -172,3 +172,21 @@ class AdmissionsHistory(Base):
 
     def __repr__(self) -> str:
         return f"<AdmissionsHistory(school_id={self.school_id}, year={self.academic_year!r})>"
+
+
+class AdmissionsDeadline(Base):
+    __tablename__ = "admissions_deadlines"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    academic_year: Mapped[str] = mapped_column(String(20), nullable=False)  # e.g. "2026/2027"
+    deadline_type: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g. "application", "appeal", "acceptance"
+    deadline_date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    school: Mapped[School] = relationship("School", backref="admissions_deadlines")
+
+    def __repr__(self) -> str:
+        return (
+            f"<AdmissionsDeadline(school_id={self.school_id}, type={self.deadline_type!r}, date={self.deadline_date})>"
+        )
