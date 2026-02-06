@@ -176,6 +176,7 @@ class SchoolDetailResponse(SchoolResponse):
     parking_summary: ParkingRatingSummary | None = None
     uniform: list[UniformResponse] = []
     absence_policy: list[AbsencePolicyResponse] = []
+    ofsted_trajectory: OfstedTrajectoryResponse | None = None
 
 
 class CompareResponse(BaseModel):
@@ -354,7 +355,7 @@ class OfstedHistoryResponse(BaseModel):
 
     id: int
     school_id: int
-    inspection_date: str
+    inspection_date: datetime.date
     rating: str
     report_url: str | None = None
     strengths_quote: str | None = None
