@@ -284,7 +284,7 @@ def _download_gias_csv(force: bool = False) -> Path:
             resp = client.get(url)
             resp.raise_for_status()
     except httpx.HTTPStatusError:
-        yesterday_str = (date.today().replace(day=date.today().day - 1)).strftime("%Y%m%d")
+        yesterday_str = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
         fallback_url = GIAS_CSV_URL_TEMPLATE.format(date=yesterday_str)
         print(f"  Today's file not available; trying {fallback_url} ...")
         with httpx.Client(timeout=120.0, follow_redirects=True) as client:
@@ -377,7 +377,7 @@ def _generate_test_schools(council: str) -> list[School]:  # noqa: C901
         ("136730", "Shenley Brook End School", "MK5 7ZT", 52.0070, -0.8050, 11, 18, "Secondary", "Mixed", None, "Good", "2023-05-17", False, "Academies"),  # noqa: E501
         ("135665", "The Milton Keynes Academy", "MK6 5LA", 52.0330, -0.7450, 11, 18, "Secondary", "Mixed", None, "Good", "2023-09-20", False, "Academies"),  # noqa: E501
         ("136468", "Denbigh School", "MK5 6EX", 52.0115, -0.7920, 11, 18, "Secondary", "Mixed", None, "Good", "2022-11-09", False, "Academies"),  # noqa: E501
-        ("148835", "Stantonbury School", "MK14 6BN", 52.0585, -0.7750, 11, 19, "Secondary", "Mixed", None, "Requires improvement", "2024-01-22", False, "Academies"),  # noqa: E501
+        ("148835", "Stantonbury School", "MK14 6BN", 52.0585, -0.7750, 11, 19, "Secondary", "Mixed", None, "Requires Improvement", "2024-01-22", False, "Academies"),  # noqa: E501
         ("138439", "Sir Herbert Leon Academy", "MK2 3HQ", 52.0090, -0.7345, 11, 16, "Secondary", "Mixed", None, "Good", "2023-06-21", False, "Academies"),  # noqa: E501
         ("137052", "Ousedale School", "MK16 0BJ", 52.0850, -0.7060, 11, 18, "Secondary", "Mixed", None, "Good", "2022-09-14", False, "Academies"),  # noqa: E501
         ("136844", "The Hazeley Academy", "MK8 0PT", 52.0250, -0.8100, 11, 18, "Secondary", "Mixed", None, "Good", "2021-12-01", False, "Academies"),  # noqa: E501
@@ -427,7 +427,7 @@ def _generate_test_schools(council: str) -> list[School]:  # noqa: C901
         ("110295", "Wyvern School", "MK12 5HU", 52.0600, -0.8050, 4, 11, "Primary", "Mixed", None, "Good", "2023-06-28", False, "Local authority maintained schools"),  # noqa: E501
         ("110366", "Great Linford Primary School", "MK14 5BL", 52.0680, -0.7650, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-22", False, "Local authority maintained schools"),  # noqa: E501
         ("110381", "Giffard Park Primary School", "MK14 5PY", 52.0640, -0.7520, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-12", False, "Local authority maintained schools"),  # noqa: E501
-        ("110346", "New Bradwell School", "MK13 0BH", 52.0620, -0.7850, 3, 11, "Primary", "Mixed", None, "Requires improvement", "2024-05-15", False, "Local authority maintained schools"),  # noqa: E501
+        ("110346", "New Bradwell School", "MK13 0BH", 52.0620, -0.7850, 3, 11, "Primary", "Mixed", None, "Requires Improvement", "2024-05-15", False, "Local authority maintained schools"),  # noqa: E501
         ("148193", "Water Hall Primary School", "MK2 3QF", 52.0030, -0.7280, 3, 11, "Primary", "Mixed", None, "Good", "2023-07-05", False, "Academies"),  # noqa: E501
         ("138715", "Shepherdswell Academy", "MK6 3NP", 52.0310, -0.7340, 4, 11, "Primary", "Mixed", None, "Good", "2022-06-22", False, "Academies"),  # noqa: E501
         ("110352", "Southwood School", "MK14 7AR", 52.0560, -0.7720, 4, 11, "Primary", "Mixed", None, "Good", "2023-11-15", False, "Local authority maintained schools"),  # noqa: E501
@@ -1258,7 +1258,7 @@ def _generate_test_admissions(schools: list[School], session: Session) -> int:
             popularity = rng.uniform(2.0, 3.0)
         elif school.ofsted_rating == "Good":
             popularity = rng.uniform(1.2, 2.2)
-        elif school.ofsted_rating == "Requires improvement":
+        elif school.ofsted_rating == "Requires Improvement":
             popularity = rng.uniform(0.8, 1.3)
         else:
             popularity = rng.uniform(1.0, 1.8)
@@ -1530,7 +1530,7 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
 
         rating_counts = Counter(s.ofsted_rating for s in all_schools if s.ofsted_rating)
         print("  Ofsted ratings:")
-        for rating in ["Outstanding", "Good", "Requires improvement", "Inadequate"]:
+        for rating in ["Outstanding", "Good", "Requires Improvement", "Inadequate"]:
             count = rating_counts.get(rating, 0)
             if count:
                 print(f"    {rating:25s}: {count}")

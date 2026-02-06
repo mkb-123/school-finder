@@ -42,6 +42,8 @@ async def get_private_school(
     school = await repo.get_school_by_id(school_id)
     if school is None:
         raise HTTPException(status_code=404, detail="School not found")
+    if not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
 
     clubs = await repo.get_clubs_for_school(school_id)
     performance = await repo.get_performance_for_school(school_id)

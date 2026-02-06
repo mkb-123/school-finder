@@ -180,7 +180,10 @@ async def calculate_journey(
     time_multiplier = _TIME_MULTIPLIERS[time_of_day][mode]
     duration_minutes = base_duration_hours * 60.0 * time_multiplier
 
-    is_rush_hour = time_of_day in (TimeOfDay.DROPOFF, TimeOfDay.PICKUP)
+    is_rush_hour = time_of_day in (TimeOfDay.DROPOFF, TimeOfDay.PICKUP) and mode in (
+        TravelMode.DRIVING,
+        TravelMode.TRANSIT,
+    )
 
     return JourneyResult(
         distance_km=round(estimated_road_km, 2),

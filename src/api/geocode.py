@@ -89,12 +89,17 @@ async def geocode_postcode(
 
         if response.status_code == 200:
             data = response.json()
-            result = data.get("result", {})
-            return GeocodeResponse(
-                postcode=result.get("postcode", clean),
-                lat=result.get("latitude", 0.0),
-                lng=result.get("longitude", 0.0),
-            )
+            result = data.get("result") or {}
+            lat = result.get("latitude")
+            lng = result.get("longitude")
+            if lat is None or lng is None:
+                logger.warning("postcodes.io returned 200 but missing coordinates for %s", clean)
+            else:
+                return GeocodeResponse(
+                    postcode=result.get("postcode", clean),
+                    lat=lat,
+                    lng=lng,
+                )
 
         # Non-200 from postcodes.io – fall through to local lookup
         logger.warning("postcodes.io returned %s for %s", response.status_code, clean)

@@ -108,8 +108,11 @@ async def _geocode_postcode(postcode: str) -> tuple[float, float]:
             response = await client.get(url)
         if response.status_code == 200:
             data = response.json()
-            result = data.get("result", {})
-            return (result.get("latitude", 0.0), result.get("longitude", 0.0))
+            result = data.get("result") or {}
+            lat = result.get("latitude")
+            lng = result.get("longitude")
+            if lat is not None and lng is not None:
+                return (lat, lng)
     except Exception:
         logger.warning("postcodes.io unreachable for journey geocoding – using fallback")
 

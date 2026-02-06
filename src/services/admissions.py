@@ -18,6 +18,7 @@ VERY_LIKELY = "Very likely"
 LIKELY = "Likely"
 UNLIKELY = "Unlikely"
 VERY_UNLIKELY = "Very unlikely"
+UNKNOWN = "Unknown"
 
 # ---------------------------------------------------------------------------
 # Trend labels
@@ -26,6 +27,7 @@ VERY_UNLIKELY = "Very unlikely"
 TREND_SHRINKING = "shrinking"
 TREND_STABLE = "stable"
 TREND_GROWING = "growing"
+TREND_UNKNOWN = "unknown"
 
 
 # ---------------------------------------------------------------------------
@@ -161,11 +163,11 @@ def estimate_likelihood(
         ``"Very unlikely"``.
     """
     if not admissions_history:
-        return LIKELY
+        return UNKNOWN
 
     distances = _get_distances(admissions_history)
     if not distances:
-        return LIKELY
+        return UNKNOWN
 
     avg_dist = sum(distances) / len(distances)
 
@@ -234,8 +236,8 @@ def estimate_full(
     """
     if not admissions_history:
         return AdmissionsEstimate(
-            likelihood=LIKELY,
-            trend=TREND_STABLE,
+            likelihood=UNKNOWN,
+            trend=TREND_UNKNOWN,
             avg_last_distance_km=None,
             min_last_distance_km=None,
             max_last_distance_km=None,
