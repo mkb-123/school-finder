@@ -1,0 +1,200 @@
+from __future__ import annotations
+
+import math
+from typing import Any
+
+from sqlalchemy import event, select, text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from src.db.base import SchoolFilters, SchoolRepository
+from src.db.models import (
+    AdmissionsHistory,
+    Base,
+    PrivateSchoolDetails,
+    School,
+    SchoolClub,
+    SchoolPerformance,
+    SchoolTermDate,
+)
+
+# ---------------------------------------------------------------------------
+# Haversine implementation registered as a SQLite custom function
+# ---------------------------------------------------------------------------
+
+def _haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """Return great-circle distance in km between two lat/lng pairs."""
+    earth_radius_km = 6371.0
+    lat1_r, lat2_r = math.radians(lat1), math.radians(lat2)
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1_r) * math.cos(lat2_r) * math.sin(dlng / 2) ** 2
+    return earth_radius_km * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _register_haversine(dbapi_connection: Any, _connection_record: Any) -> None:
+    """Register the ``haversine`` function on every raw SQLite connection."""
+    dbapi_connection.create_function("haversine", 4, _haversine)
+
+
+# ---------------------------------------------------------------------------
+# Repository
+# ---------------------------------------------------------------------------
+
+class SQLiteSchoolRepository(SchoolRepository):
+    """SQLite-backed implementation of :class:`SchoolRepository`.
+
+    Uses *aiosqlite* via SQLAlchemy's async engine.  A custom ``haversine``
+    scalar function is registered on each connection so that spatial distance
+    calculations can be performed entirely inside SQL.
+    """
+
+    def __init__(self, sqlite_path: str = "./data/schools.db") -> None:
+        url = f"sqlite+aiosqlite:///{sqlite_path}"
+        self._engine = create_async_engine(url, echo=False)
+        # Register the haversine function on every new raw DBAPI connection.
+        event.listen(self._engine.sync_engine, "connect", _register_haversine)
+        self._session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
+            self._engine, expire_on_commit=False
+        )
+
+    async def init_db(self) -> None:
+        """Create all tables if they do not already exist."""
+        async with self._engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+    # ------------------------------------------------------------------
+    # Catchment / spatial
+    # ------------------------------------------------------------------
+
+    async def find_schools_in_catchment(self, lat: float, lng: float, council: str) -> list[School]:
+        stmt = (
+            select(School)
+            .where(School.council == council)
+            .where(School.lat.is_not(None))
+            .where(School.lng.is_not(None))
+            .where(School.catchment_radius_km.is_not(None))
+            .where(
+                text("haversine(schools.lat, schools.lng, :lat, :lng) <= schools.catchment_radius_km")
+            )
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt, {"lat": lat, "lng": lng})
+            return list(result.scalars().all())
+
+    async def find_schools_by_filters(self, filters: SchoolFilters) -> list[School]:  # noqa: C901
+        stmt = select(School)
+
+        if filters.council is not None:
+            stmt = stmt.where(School.council == filters.council)
+
+        if filters.is_private is not None:
+            stmt = stmt.where(School.is_private == filters.is_private)
+
+        if filters.school_type is not None:
+            stmt = stmt.where(School.type == filters.school_type)
+
+        if filters.faith is not None:
+            stmt = stmt.where(School.faith == filters.faith)
+
+        if filters.gender is not None:
+            # Exclude schools whose gender_policy is incompatible
+            if filters.gender == "male":
+                stmt = stmt.where(School.gender_policy.in_(["co-ed", "boys"]))
+            elif filters.gender == "female":
+                stmt = stmt.where(School.gender_policy.in_(["co-ed", "girls"]))
+
+        if filters.age is not None:
+            stmt = stmt.where(School.age_range_from <= filters.age).where(School.age_range_to >= filters.age)
+
+        acceptable_ratings = filters.min_rating_values()
+        if acceptable_ratings is not None:
+            stmt = stmt.where(School.ofsted_rating.in_(acceptable_ratings))
+
+        # Distance filter requires a reference point
+        if filters.max_distance_km is not None and filters.lat is not None and filters.lng is not None:
+            stmt = (
+                stmt.where(School.lat.is_not(None))
+                .where(School.lng.is_not(None))
+                .where(
+                    text("haversine(schools.lat, schools.lng, :lat, :lng) <= :max_dist")
+                )
+            )
+
+        # Club-based filters: use EXISTS sub-queries
+        if filters.has_breakfast_club is True:
+            stmt = stmt.where(
+                select(SchoolClub.id)
+                .where(SchoolClub.school_id == School.id)
+                .where(SchoolClub.club_type == "breakfast")
+                .correlate(School)
+                .exists()
+            )
+
+        if filters.has_afterschool_club is True:
+            stmt = stmt.where(
+                select(SchoolClub.id)
+                .where(SchoolClub.school_id == School.id)
+                .where(SchoolClub.club_type == "after_school")
+                .correlate(School)
+                .exists()
+            )
+
+        params: dict[str, Any] = {}
+        if filters.lat is not None:
+            params["lat"] = filters.lat
+        if filters.lng is not None:
+            params["lng"] = filters.lng
+        if filters.max_distance_km is not None:
+            params["max_dist"] = filters.max_distance_km
+
+        async with self._session_factory() as session:
+            result = await session.execute(stmt, params)
+            return list(result.scalars().all())
+
+    # ------------------------------------------------------------------
+    # Single-school lookups
+    # ------------------------------------------------------------------
+
+    async def get_school_by_id(self, school_id: int) -> School | None:
+        async with self._session_factory() as session:
+            return await session.get(School, school_id)
+
+    async def get_clubs_for_school(self, school_id: int) -> list[SchoolClub]:
+        stmt = select(SchoolClub).where(SchoolClub.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_performance_for_school(self, school_id: int) -> list[SchoolPerformance]:
+        stmt = select(SchoolPerformance).where(SchoolPerformance.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_term_dates_for_school(self, school_id: int) -> list[SchoolTermDate]:
+        stmt = select(SchoolTermDate).where(SchoolTermDate.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_admissions_history(self, school_id: int) -> list[AdmissionsHistory]:
+        stmt = select(AdmissionsHistory).where(AdmissionsHistory.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_private_school_details(self, school_id: int) -> PrivateSchoolDetails | None:
+        stmt = select(PrivateSchoolDetails).where(PrivateSchoolDetails.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+
+    # ------------------------------------------------------------------
+    # Reference data
+    # ------------------------------------------------------------------
+
+    async def list_councils(self) -> list[str]:
+        stmt = select(School.council).distinct().order_by(School.council)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
