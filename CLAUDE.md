@@ -8,12 +8,15 @@ A web application that helps parents find and compare schools in their local cou
 
 - **Frontend**: React (Vite), TypeScript, Tailwind CSS
 - **Mapping**: Leaflet / React-Leaflet (OpenStreetMap) for catchment radius visualisation
-- **Backend**: Python, FastAPI
-- **Database (default)**: SQLite with SpatiaLite extension (zero-dependency, self-contained)
+- **Backend**: Python 3.11+, FastAPI
+- **Package Manager**: uv (fast Python package manager)
+- **Build System**: Hatch / Hatchling
+- **Database (default)**: SQLite with Haversine distance queries (zero-dependency, self-contained)
 - **Database (swappable)**: PostgreSQL + PostGIS via the repository abstraction layer
-- **ORM / Query Layer**: SQLAlchemy 2.0 (Core + ORM) with GeoAlchemy2 for spatial queries
+- **ORM / Query Layer**: SQLAlchemy 2.0 (Core + ORM) with GeoAlchemy2 for spatial queries (Postgres only)
 - **Data Sources**: GOV.UK Get Information About Schools (GIAS) API, Ofsted data downloads, school websites (scraped by agents)
 - **Agent Framework**: Python async agents using httpx + BeautifulSoup/Playwright
+- **Linting**: Ruff
 - **Testing**: pytest, pytest-asyncio, Playwright (E2E)
 
 ---
@@ -26,7 +29,7 @@ The data layer uses a **repository pattern** so the app runs self-contained with
 src/
   db/
     base.py              # Abstract repository interfaces (ABCs)
-    sqlite_repo.py       # SQLite + SpatiaLite implementation (default)
+    sqlite_repo.py       # SQLite implementation (default)
     postgres_repo.py     # PostgreSQL + PostGIS implementation (optional)
     factory.py           # Returns the correct repo based on config / env var
     models.py            # SQLAlchemy ORM models (shared across backends)
@@ -57,7 +60,7 @@ def get_school_repository() -> SchoolRepository:
 
 ### Spatial queries without PostGIS
 
-For SQLite mode, geospatial catchment checks use the **Haversine formula** implemented as a Python function registered as a SQLite custom function. This keeps the app fully self-contained with no native extensions required. SpatiaLite is used opportunistically if available (for polygon-based catchment boundaries) but is not required — the app falls back to radius-based distance calculations.
+For SQLite mode, geospatial catchment checks use the **Haversine formula** implemented as a Python function registered as a SQLite custom function. This keeps the app fully self-contained with no native extensions required.
 
 ```python
 # Haversine fallback for SQLite (no extensions needed)
@@ -139,8 +142,46 @@ A dedicated section for independent/private schools with additional data:
 - Ofsted rating and inspection date
 - Academic performance data (SATs results for primary, GCSE/A-level for secondary)
 - Parent reviews (aggregated from public sources)
-- School-specific strengths (SEND provision, sports, arts, languages, etc.)
 - Progress 8 / Attainment 8 scores where applicable
+
+### 8. Waiting List Estimator
+
+Uses historical admissions data to estimate how likely a child is to get a place:
+
+- **Last distance offered** - how far from the school the furthest admitted child lived, per year
+- **Trend analysis** - is the catchment shrinking or growing over recent years?
+- **Waiting list movement** - historical data on how many places freed up after initial offers
+- **Likelihood indicator** - "Very likely" / "Likely" / "Unlikely" based on the user's postcode distance vs historical cutoffs
+- **Appeals success rate** - what percentage of appeals succeed at each school (where data is available)
+
+### 9. School Run Journey Planner
+
+Calculates realistic travel times to each school factoring in actual drop-off and pick-up times:
+
+- **Time-of-day routing** - estimates use traffic data for **8:00-8:45am** (drop-off) and **2:45-3:30pm** (pick-up), not generic travel times
+- **Multiple transport modes** - walking, cycling, driving, public transport
+- **Route display on map** - overlay the route from your postcode to the school
+- **Multi-school comparison** - "School A is 8 min walk, School B is 22 min walk at drop-off time"
+- **Parking/drop-off notes** - flag schools with known parking difficulties or drop-off restrictions
+
+### 10. Decision Support Page
+
+A **dedicated separate page** that helps parents weigh up their options holistically:
+
+- **Weighted scoring** - user sets what matters most to them (distance, rating, clubs, fees, etc.) and schools get ranked by a personalised composite score
+- **Pros/cons summary** - auto-generated bullet points for each school (e.g., "Outstanding Ofsted but no breakfast club", "10 min walk but Requires Improvement")
+- **Side-by-side comparison** - pick 2-4 schools and see every metric in columns
+- **"What if" scenarios** - "What if I'm OK with a 15 min drive?" / "What if I drop my minimum Ofsted to Good?"
+- **Shortlist** - save schools to a shortlist that persists across sessions (local storage)
+- **Export** - download comparison as PDF or share via link
+
+### 11. SEND Provision (Hidden by Default)
+
+SEND (Special Educational Needs & Disabilities) information is available but **hidden by default** behind a toggle:
+
+- Enable via a "Show SEND information" toggle in settings/filters
+- When enabled: SEND provision detail, EHCP-friendly flags, accessibility info, specialist unit availability
+- Hidden by default to reduce clutter for users who don't need it
 
 ---
 
@@ -157,7 +198,7 @@ src/agents/
 ```
 
 All agents:
-- Are runnable standalone: `python -m src.agents.term_times --council "Milton Keynes"`
+- Are runnable standalone: `uv run python -m src.agents.term_times --council "Milton Keynes"`
 - Use httpx for async HTTP + BeautifulSoup for parsing
 - Respect rate limits (configurable delay between requests)
 - Cache raw responses to `./data/cache/` to avoid re-fetching
@@ -200,7 +241,7 @@ All agents:
 schools
   - id (PK), name, urn, type (state/private), council, address, postcode
   - lat, lng, catchment_radius_km (float - used for distance-based catchment)
-  - catchment_geometry (optional - WKT polygon for precise boundaries)
+  - catchment_geometry (optional - WKT polygon for precise boundaries, Postgres only)
   - gender_policy (co-ed/boys/girls), faith, age_range_from, age_range_to
   - ofsted_rating, ofsted_date
   - is_private (boolean)
@@ -233,6 +274,33 @@ private_school_details
   - school_day_start, school_day_end
   - provides_transport, transport_notes
   - holiday_schedule_notes
+
+admissions_history
+  - id (PK), school_id (FK), academic_year
+  - places_offered, applications_received
+  - last_distance_offered_km
+  - waiting_list_offers (how many came off the list)
+  - appeals_heard, appeals_upheld
+
+user_shortlists
+  - Stored client-side in localStorage (no server table needed)
+```
+
+---
+
+## Page Structure
+
+```
+/                           - Landing page: select council, enter postcode
+/schools                    - Results list + map (state schools in catchment)
+/schools/[id]               - Individual school detail page
+/schools/map                - Full-screen map with filters (Ofsted, type, clubs)
+/private-schools            - Private school browser with fees, transport, hours
+/private-schools/[id]       - Individual private school detail page
+/compare                    - Side-by-side school comparison
+/term-dates                 - Calendar view of term dates across schools
+/decision-support           - Weighted scoring, pros/cons, "what if" scenarios
+/journey                    - School run planner (drop-off & pick-up time routing)
 ```
 
 ---
@@ -243,7 +311,8 @@ private_school_details
 school-finder/
   CLAUDE.md
   README.md
-  pyproject.toml              # Python project config (dependencies, scripts)
+  pyproject.toml              # Hatch build config + dependencies
+  uv.lock                    # uv lockfile (committed)
   .env.example
   data/
     schools.db                # SQLite database (created on first run)
@@ -261,6 +330,8 @@ school-finder/
       clubs.py                # /api/clubs endpoints
       performance.py          # /api/performance endpoints
       geocode.py              # /api/geocode (postcode lookup proxy)
+      journey.py              # /api/journey (school run routing)
+      admissions.py           # /api/admissions (waiting list data)
     db/
       __init__.py
       base.py                 # Abstract repository interfaces
@@ -280,6 +351,9 @@ school-finder/
       catchment.py            # Catchment calculation logic (haversine, polygon)
       filters.py              # Constraint-based filtering logic
       geocoding.py            # Postcode geocoding via postcodes.io
+      journey.py              # School run route calculations
+      admissions.py           # Waiting list estimation logic
+      decision.py             # Weighted scoring & pros/cons generation
     schemas/
       __init__.py
       school.py               # Pydantic request/response models
@@ -297,6 +371,8 @@ school-finder/
         PrivateSchoolDetail.tsx
         Compare.tsx           # Side-by-side comparison
         TermDates.tsx         # Calendar view
+        DecisionSupport.tsx   # Weighted scoring & what-if scenarios
+        Journey.tsx           # School run planner
       components/
         Map.tsx               # Leaflet map wrapper
         CatchmentOverlay.tsx  # Catchment radius/polygon on map
@@ -304,6 +380,9 @@ school-finder/
         SchoolCard.tsx        # School summary card
         ClubList.tsx          # Breakfast/after-school club display
         PerformanceChart.tsx  # Academic results visualisation
+        WaitingListGauge.tsx  # Likelihood indicator for admissions
+        JourneyCard.tsx       # Travel time comparison card
+        SendToggle.tsx        # SEND info toggle (hidden by default)
   tests/
     conftest.py
     test_catchment.py         # Geospatial logic tests
@@ -323,11 +402,13 @@ GET  /api/schools/{id}
 GET  /api/schools/{id}/clubs
 GET  /api/schools/{id}/performance
 GET  /api/schools/{id}/term-dates
+GET  /api/schools/{id}/admissions          # Waiting list / historical admissions
 GET  /api/private-schools?council=...&age=&gender=&max_fee=...
 GET  /api/private-schools/{id}
 GET  /api/geocode?postcode=MK9+1AB
-GET  /api/councils                    # List available councils
-GET  /api/compare?ids=1,2,3           # Compare multiple schools
+GET  /api/councils                         # List available councils
+GET  /api/compare?ids=1,2,3               # Compare multiple schools
+GET  /api/journey?from_postcode=...&to_school_id=...&mode=walking|driving|cycling|transit
 ```
 
 ---
@@ -336,7 +417,7 @@ GET  /api/compare?ids=1,2,3           # Compare multiple schools
 
 ### Phase 1: Foundation
 
-- [ ] Project scaffolding (FastAPI, pyproject.toml, SQLite setup)
+- [ ] Project scaffolding (FastAPI, pyproject.toml, uv, SQLite setup)
 - [ ] SQLAlchemy models + repository pattern (base, sqlite, factory)
 - [ ] Seed database with GIAS school data for Milton Keynes
 - [ ] Postcode geocoding service (postcodes.io - free, no key)
@@ -382,11 +463,34 @@ GET  /api/compare?ids=1,2,3           # Compare multiple schools
 - [ ] Parent review aggregation
 - [ ] Performance comparison across schools
 
-### Phase 8: PostgreSQL Support & Polish
+### Phase 8: Waiting List Estimator
+
+- [ ] Historical admissions data model and seeding
+- [ ] Waiting list estimation service
+- [ ] Likelihood indicator UI component
+- [ ] Trend visualisation (catchment distance over years)
+
+### Phase 9: School Run Journey Planner
+
+- [ ] Journey calculation service (using routing API with time-of-day traffic)
+- [ ] Journey API endpoint
+- [ ] Route overlay on map
+- [ ] Multi-school travel time comparison UI
+
+### Phase 10: Decision Support Page
+
+- [ ] Weighted scoring engine in backend
+- [ ] Pros/cons auto-generation logic
+- [ ] Decision support frontend page
+- [ ] "What if" scenario controls
+- [ ] Shortlist (localStorage) + PDF export
+
+### Phase 11: PostgreSQL Support & Polish
 
 - [ ] PostgreSQL + PostGIS repository implementation
 - [ ] Polygon-based catchment boundaries (when PostGIS available)
 - [ ] Alembic migrations for both backends
+- [ ] SEND toggle and data (hidden by default)
 - [ ] Mobile-responsive design
 - [ ] Accessibility audit (WCAG 2.1 AA)
 - [ ] Performance optimisation (map clustering for large datasets)
@@ -396,23 +500,30 @@ GET  /api/compare?ids=1,2,3           # Compare multiple schools
 ## Running the Project
 
 ```bash
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Backend
-pip install -e ".[dev]"         # Install with dev dependencies
-python -m src.main              # Start FastAPI server (uvicorn)
+uv sync --all-extras               # Install all dependencies (including dev)
+uv run python -m src.main          # Start FastAPI server (uvicorn)
 
 # Frontend
 cd frontend && npm install && npm run dev
 
 # Seed the database
-python -m src.db.seed --council "Milton Keynes"
+uv run python -m src.db.seed --council "Milton Keynes"
 
 # Run agents
-python -m src.agents.term_times --council "Milton Keynes"
-python -m src.agents.clubs --council "Milton Keynes"
-python -m src.agents.reviews_performance --council "Milton Keynes"
+uv run python -m src.agents.term_times --council "Milton Keynes"
+uv run python -m src.agents.clubs --council "Milton Keynes"
+uv run python -m src.agents.reviews_performance --council "Milton Keynes"
+
+# Lint
+uv run ruff check src/ tests/
+uv run ruff format --check src/ tests/
 
 # Tests
-pytest
+uv run pytest
 ```
 
 ---
@@ -420,6 +531,7 @@ pytest
 ## Development Guidelines
 
 - Default to SQLite for local dev; no database server needed to get started
+- Use `uv` for all Python dependency management; commit `uv.lock`
 - All data-collection agents live in `src/agents/` and are runnable standalone via CLI
 - Keep agent scraping respectful: rate-limit requests, cache responses, honour robots.txt
 - Validate all user input server-side (postcodes, filter params)
@@ -427,3 +539,4 @@ pytest
 - Write tests for geospatial queries (catchment containment logic is critical)
 - Frontend: use client components only for interactive elements (map, filters)
 - Repository pattern: every new query goes through the abstract interface, never directly against a specific DB
+- SEND features are behind a toggle; never show SEND data unless explicitly enabled
