@@ -124,7 +124,7 @@ export default function FilterPanel({
           <option value="">Any</option>
           <option value="Outstanding">Outstanding only</option>
           <option value="Good">Good or better</option>
-          <option value="Requires improvement">Requires Improvement+</option>
+          <option value="Requires Improvement">Requires Improvement+</option>
         </select>
       </div>
 

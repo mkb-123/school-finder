@@ -30,7 +30,7 @@ export interface School {
   ofsted_rating: string | null;
   ofsted_date: string | null;
   is_private: boolean;
-  catchment_radius_km: number;
+  catchment_radius_km: number | null;
 }
 
 interface MapProps {
@@ -54,7 +54,7 @@ function ofstedColor(rating: string | null): string {
       return "#16a34a";
     case "Good":
       return "#2563eb";
-    case "Requires improvement":
+    case "Requires Improvement":
       return "#d97706";
     case "Inadequate":
       return "#dc2626";
@@ -197,12 +197,12 @@ export default function Map({
         {/* Catchment circles (behind pins) */}
         {schoolsWithCoords.map((school) => {
           const isSelected = school.id === selectedSchoolId;
-          if (!isSelected) return null;
+          if (!isSelected || !school.catchment_radius_km) return null;
           return (
             <Circle
               key={`catchment-${school.id}`}
               center={[school.lat!, school.lng!]}
-              radius={school.catchment_radius_km * 1000}
+              radius={(school.catchment_radius_km ?? 0) * 1000}
               pathOptions={{
                 color: ofstedColor(school.ofsted_rating),
                 fillColor: ofstedColor(school.ofsted_rating),

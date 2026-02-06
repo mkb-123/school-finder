@@ -26,7 +26,7 @@ interface PrivateSchoolResponse extends School {
 const RATING_COLORS: Record<string, string> = {
   Outstanding: "bg-green-100 text-green-800",
   Good: "bg-blue-100 text-blue-800",
-  "Requires improvement": "bg-amber-100 text-amber-800",
+  "Requires Improvement": "bg-amber-100 text-amber-800",
   Inadequate: "bg-red-100 text-red-800",
 };
 
