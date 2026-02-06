@@ -157,6 +157,17 @@ class SQLiteSchoolRepository(SchoolRepository):
         if filters.search is not None:
             stmt = stmt.where(School.name.ilike(f"%{filters.search}%"))
 
+        # Bounding-box pre-filter: cheap lat/lng rectangle before expensive haversine
+        if filters.lat is not None and filters.lng is not None and filters.max_distance_km is not None:
+            delta_lat = filters.max_distance_km / 111.0  # ~111 km per degree latitude
+            delta_lng = filters.max_distance_km / (111.0 * math.cos(math.radians(filters.lat)))
+            stmt = (
+                stmt.where(School.lat >= filters.lat - delta_lat)
+                .where(School.lat <= filters.lat + delta_lat)
+                .where(School.lng >= filters.lng - delta_lng)
+                .where(School.lng <= filters.lng + delta_lng)
+            )
+
         params: dict[str, Any] = {}
         if filters.lat is not None:
             params["lat"] = filters.lat
@@ -164,6 +175,12 @@ class SQLiteSchoolRepository(SchoolRepository):
             params["lng"] = filters.lng
         if filters.max_distance_km is not None:
             params["max_dist"] = filters.max_distance_km
+
+        # Pagination
+        if filters.offset is not None:
+            stmt = stmt.offset(filters.offset)
+        if filters.limit is not None:
+            stmt = stmt.limit(filters.limit)
 
         async with self._session_factory() as session:
             result = await session.execute(stmt, params)

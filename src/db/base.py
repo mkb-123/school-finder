@@ -31,6 +31,8 @@ class SchoolFilters:
     is_private: bool | None = None
     max_fee: float | None = None  # max termly fee for private school filtering
     search: str | None = None  # name-based search (case-insensitive substring)
+    limit: int | None = None  # max results to return
+    offset: int | None = None  # number of results to skip
 
     # Internal: ordered list of Ofsted ratings from best to worst, used by repositories
     _rating_order: list[str] = field(

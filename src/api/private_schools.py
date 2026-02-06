@@ -20,6 +20,8 @@ def _to_private_filters(params: PrivateSchoolFilterParams) -> SchoolFilters:
         gender=params.gender,
         is_private=True,
         max_fee=params.max_fee,
+        limit=params.limit,
+        offset=params.offset,
     )
 
 

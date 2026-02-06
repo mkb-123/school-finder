@@ -19,6 +19,8 @@ class SchoolFilterParams(BaseModel):
     has_afterschool_club: bool | None = None
     faith: str | None = None
     search: str | None = None
+    limit: int | None = None
+    offset: int | None = None
 
 
 class PrivateSchoolFilterParams(BaseModel):
@@ -28,3 +30,5 @@ class PrivateSchoolFilterParams(BaseModel):
     age: int | None = None
     gender: str | None = None
     max_fee: float | None = None
+    limit: int | None = None
+    offset: int | None = None

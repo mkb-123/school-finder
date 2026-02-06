@@ -55,6 +55,8 @@ async def _to_school_filters(params: SchoolFilterParams) -> SchoolFilters:
         has_afterschool_club=params.has_afterschool_club,
         faith=params.faith,
         search=params.search,
+        limit=params.limit,
+        offset=params.offset,
     )
 
 
