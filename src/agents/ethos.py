@@ -305,9 +305,9 @@ class EthosAgent(BaseAgent):
         - Quoted text near motto keywords
         """
         motto_patterns = [
-            r"(?:our\s+)?motto\s+is[:\s]+['\""]?([^'\"\.]+)['\""]?",
-            r"school\s+motto[:\s]+['\""]?([^'\"\.]+)['\""]?",
-            r"['\""]([^'\"]{20,100})['\""]",  # Quoted text (20-100 chars)
+            r"(?:our\s+)?motto\s+is[:\s]+['\"]?([^'\"\.]+)['\"]?",
+            r"school\s+motto[:\s]+['\"]?([^'\"\.]+)['\"]?",
+            r"['\"]([^'\"]{20,100})['\"]",  # Quoted text (20-100 chars)
         ]
 
         # Search all text for motto patterns
@@ -328,8 +328,8 @@ class EthosAgent(BaseAgent):
         Returns: "Excellence for all"
         """
         motto_patterns = [
-            r"(?:our\s+)?motto\s+is[:\s]+['\""]?([^'\"\.]+)['\""]?",
-            r"school\s+motto[:\s]+['\""]?([^'\"\.]+)['\""]?",
+            r"(?:our\s+)?motto\s+is[:\s]+['\"]?([^'\"\.]+)['\"]?",
+            r"school\s+motto[:\s]+['\"]?([^'\"\.]+)['\"]?",
         ]
 
         for pattern in motto_patterns:
