@@ -8,5 +8,6 @@ build/
 .env
 data/schools.db
 data/cache/
+data/seeds/
 .venv/
 node_modules/
