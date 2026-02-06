@@ -125,13 +125,9 @@ class ClubsAgent(BaseAgent):
         engine = create_engine(f"sqlite:///{settings.SQLITE_PATH}")
 
         with Session(engine) as session:
-            stmt = select(School.id, School.name, School.address).where(School.council == self.council)
+            stmt = select(School.id, School.name, School.website).where(School.council == self.council)
             rows = session.execute(stmt).all()
 
-        # NOTE: The School model does not yet have a dedicated ``website``
-        # column.  Until that column is added we fall back to ``address``
-        # as a placeholder so the skeleton compiles and runs.  Replace
-        # ``School.address`` with ``School.website`` once available.
         return [(row[0], row[1], row[2]) for row in rows]
 
     # ------------------------------------------------------------------

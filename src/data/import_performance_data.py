@@ -38,16 +38,21 @@ def download_performance_data(year: int = 2024) -> tuple[Path, Path]:
     primary_path = data_dir / f"primary_performance_{year}.csv"
     secondary_path = data_dir / f"secondary_performance_{year}.csv"
 
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+
     # Download primary
     print(f"  Downloading primary (KS2) data...")
-    response = httpx.get(primary_url, follow_redirects=True, timeout=120.0)
+    response = httpx.get(primary_url, headers=headers, follow_redirects=True, timeout=120.0)
     response.raise_for_status()
     primary_path.write_bytes(response.content)
     print(f"  ✅ Primary: {len(response.content) / 1024 / 1024:.1f} MB")
 
     # Download secondary
     print(f"  Downloading secondary (KS4) data...")
-    response = httpx.get(secondary_url, follow_redirects=True, timeout=120.0)
+    response = httpx.get(secondary_url, headers=headers, follow_redirects=True, timeout=120.0)
     response.raise_for_status()
     secondary_path.write_bytes(response.content)
     print(f"  ✅ Secondary: {len(response.content) / 1024 / 1024:.1f} MB")
