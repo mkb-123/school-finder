@@ -1079,19 +1079,18 @@ def _generate_private_school_details(session: Session) -> int:
 
 
 def _generate_test_performance(schools: list[School], session: Session) -> int:
-    """Generate realistic SchoolPerformance records for seeded schools.
+    """⚠️ DISABLED: Do not generate fake performance data.
 
-    Creates SATs data for primary schools and GCSE / Progress8 / Attainment8
-    data for secondary schools, across two academic years for trend analysis.
-    Returns the number of records inserted.
+    Performance data (SATs, GCSEs, Progress 8) is critical information that
+    parents use to make school decisions. Generating random data is harmful.
+
+    Real performance data should be imported from:
+    - DfE School Performance Tables: https://www.compare-school-performance.service.gov.uk/
+    - Official government downloads
+
+    Until real data is imported, we return 0 (no fake data).
     """
-    rng = random.Random(42)
-    academic_years = [2023, 2024]  # representing 2022/2023 and 2023/2024
-    count = 0
-
-    for school in schools:
-        if school.id is None or school.is_private:
-            continue
+    return 0  # DISABLED - DO NOT GENERATE FAKE PERFORMANCE DATA
 
         # Use overlapping range checks so all-through schools (e.g. age 4-18)
         # get both primary AND secondary performance data.
@@ -1308,24 +1307,20 @@ _ACADEMIC_YEARS = ["2021/2022", "2022/2023", "2023/2024", "2024/2025"]
 
 
 def _generate_test_admissions(schools: list[School], session: Session) -> int:
-    """Generate realistic historical admissions data for state schools.
+    """⚠️ DISABLED: Do not generate fake admissions data.
 
-    Creates 4 years of admissions history per state school with realistic
-    data including places offered, applications received, last distance
-    offered, waiting list offers, and appeals data.  Uses a deterministic
-    RNG seeded with 42 for reproducibility.
+    Admissions data (places offered, last distance offered, oversubscription)
+    is critical information that parents rely on to understand their chances
+    of getting into a school. Generating random data is misleading.
 
-    Returns the number of records inserted.
+    Real admissions data should be imported from:
+    - Local authority admissions reports
+    - School websites
+    - Council transparency data
+
+    Until real data is imported, we return 0 (no fake data).
     """
-    rng = random.Random(42)
-    count = 0
-
-    for school in schools:
-        if school.id is None or school.is_private:
-            continue
-
-        # Determine school size category based on age range
-        is_secondary = (
+    return 0  # DISABLED - DO NOT GENERATE FAKE ADMISSIONS DATA
             school.age_range_from is not None
             and school.age_range_from >= 11
             and school.age_range_to is not None
