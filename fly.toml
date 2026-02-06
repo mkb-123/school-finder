@@ -1,28 +1,23 @@
-# Fly.io deployment configuration for School Finder
-# Deploy: fly launch --copy-config --no-deploy && fly deploy
+# fly.toml app configuration file generated for school-finder on 2026-02-06T17:45:58Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "school-finder"
-primary_region = "lhr"  # London Heathrow - closest to Milton Keynes
+app = 'school-finder'
+primary_region = 'ams'
 
 [build]
-  dockerfile = "Dockerfile"
-
-[env]
-  DB_BACKEND = "sqlite"
-  SQLITE_PATH = "/app/data/schools.db"
 
 [http_service]
-  internal_port = 8000
+  internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
+  processes = ['app']
 
 [[vm]]
-  memory = "512mb"
-  cpu_kind = "shared"
+  memory = '1gb'
+  cpu_kind = 'shared'
   cpus = 1
-
-[mounts]
-  source = "school_data"
-  destination = "/app/data"
+  memory_mb = 256

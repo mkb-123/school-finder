@@ -195,7 +195,6 @@ src/agents/
   term_times.py          # Agent 1
   clubs.py               # Agent 2
   reviews_performance.py # Agent 3
-  ethos.py               # Agent 4: School ethos extraction
 ```
 
 All agents:
@@ -228,17 +227,6 @@ All agents:
 
 **Purpose**: Aggregate ratings, academic results, and reviews for each school.
 
-### Agent 4: School Ethos Extraction Agent
-
-**Purpose**: Extract concise ethos/mission statements from school websites.
-
-- Scrapes school homepages and about pages for ethos, mission, vision, or values statements
-- Uses multiple heuristic strategies: meta descriptions, heading keywords, section classes, paragraph scanning
-- Cleans and formats extracted text (removes prefixes, truncates to 500 chars)
-- Falls back to generated ethos statement when extraction fails
-- Stores results in `School.ethos` field
-- Run with: `uv run python -m src.agents.ethos --council "Milton Keynes"`
-
 - Pulls Ofsted inspection data from the Ofsted data downloads
 - Pulls academic performance from DfE school performance tables
 - Scrapes parent review snippets from public review sites
@@ -257,8 +245,6 @@ schools
   - gender_policy (co-ed/boys/girls), faith, age_range_from, age_range_to
   - ofsted_rating, ofsted_date
   - is_private (boolean)
-  - website (string - school website URL)
-  - ethos (string - short ethos/mission statement, max 500 chars)
 
 school_term_dates
   - id (PK), school_id (FK), academic_year
@@ -631,6 +617,25 @@ Workflow per phase:
 - Tests filter edge cases (e.g., co-ed primary but single-sex sixth form)
 - Builds API integration tests with realistic fixture data
 - Tests agent scraping with mocked HTTP responses
+
+### UX Design Agent
+
+**Focus**: World-class user experience design, informed by experience at companies like Apple. Mission is to make every page intuitive, beautiful, and effortless.
+
+- Reviews every page, component, and interaction flow with a critical design eye before it ships
+- Enforces a **progressive disclosure** philosophy — show only what the user needs at each stage, hide complexity behind thoughtful layering (e.g., SEND toggle, advanced filters revealed on demand)
+- Ensures **visual hierarchy** is clear on every page — the most important information (school name, Ofsted rating, distance) is instantly scannable; secondary details are accessible but don't compete for attention
+- Designs **micro-interactions** and transitions — smooth map zoom-to-school, filter animations, skeleton loading states, toast confirmations — that make the app feel polished and responsive
+- Audits **information density** — school detail pages must balance comprehensive data with readability; uses cards, tabs, and expandable sections to prevent wall-of-text fatigue
+- Owns the **mobile-first** responsive strategy — every layout must work beautifully on a phone screen first (parents often search on mobile), then scale up to desktop
+- Ensures **consistency** across the design system — spacing, typography scale, colour palette, button styles, card patterns, and icon usage are uniform throughout
+- Champions **accessibility** (WCAG 2.1 AA minimum) — colour contrast, focus states, screen reader labels, keyboard navigation, touch targets (minimum 44px), and reduced motion support
+- Designs the **empty states** and **error states** — what does the app look like when there are no results? When the API fails? When there's no data for a field? These moments define perceived quality
+- Reviews **copy and microcopy** — button labels, placeholder text, tooltips, error messages, and empty state descriptions should be clear, human, and parent-friendly (avoid jargon like "geocode" or "haversine")
+- Applies the **"squint test"** — if you squint at any page, the layout, grouping, and visual weight should still make sense; nothing should feel randomly placed
+- Designs for **comparison workflows** — parents compare schools constantly; ensure side-by-side views, shortlist interactions, and the decision support page are optimised for scanning differences at a glance
+- Owns the **map UX** — pin density, zoom behaviour, info panel positioning, filter-to-map feedback loop, and the transition between list view and map view
+- Validates that **onboarding flow** (council + postcode entry) is frictionless — one screen, clear CTAs, instant feedback, smart defaults
 
 ---
 
