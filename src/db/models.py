@@ -425,6 +425,9 @@ class OfstedHistory(Base):
     # Report URL
     report_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
+    # Flag for current inspection
+    is_current: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     school: Mapped[School] = relationship("School", back_populates="ofsted_history")
 
     def __repr__(self) -> str:

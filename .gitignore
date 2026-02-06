@@ -6,7 +6,6 @@ __pycache__/
 dist/
 build/
 .env
-data/schools.db
 data/cache/
 data/seeds/
 .venv/

@@ -97,6 +97,17 @@ async def get_school(
     class_sizes = await repo.get_class_sizes(school_id)
     uniform = await repo.get_uniform_for_school(school_id)
 
+    # Get Ofsted trajectory
+    from src.services.ofsted_trajectory import calculate_trajectory
+
+    ofsted_history = await repo.get_ofsted_history(school_id)
+    trajectory_data = calculate_trajectory(ofsted_history)
+    ofsted_trajectory = OfstedTrajectoryResponse(
+        school_id=school_id,
+        history=ofsted_history,
+        **trajectory_data
+    ) if ofsted_history else None
+
     # Calculate parking summary
     parking_ratings = await repo.get_parking_ratings_for_school(school_id)
     parking_summary = None
@@ -140,6 +151,7 @@ async def get_school(
         class_sizes=class_sizes,
         parking_summary=parking_summary,
         uniform=uniform,
+        ofsted_trajectory=ofsted_trajectory,
     )
 
 
