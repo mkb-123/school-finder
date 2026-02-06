@@ -268,9 +268,9 @@ export default function DecisionSupport() {
   );
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 print:px-0">
-      <h1 className="text-3xl font-bold text-gray-900">Decision Support</h1>
-      <p className="mt-1 text-gray-600">
+    <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8 print:px-0" role="main">
+      <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Decision Support</h1>
+      <p className="mt-1 text-sm text-gray-600 sm:text-base">
         Set your priorities, explore scenarios, and build a shortlist to find the
         best school for your family.
       </p>
@@ -281,9 +281,9 @@ export default function DecisionSupport() {
         </div>
       )}
 
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-12">
+      <div className="mt-6 grid grid-cols-1 gap-6 sm:mt-8 sm:gap-8 lg:grid-cols-12">
         {/* ---- Left column: controls ---- */}
-        <aside className="space-y-6 lg:col-span-4 print:hidden">
+        <aside className="space-y-4 sm:space-y-6 lg:col-span-4 print:hidden" aria-label="Decision support controls">
           {/* School selector */}
           <section className="rounded-lg border border-gray-200 bg-white p-5">
             <h2 className="text-base font-semibold text-gray-900">
@@ -295,12 +295,14 @@ export default function DecisionSupport() {
             <div className="mt-3 flex gap-2">
               <button
                 onClick={selectAllSchools}
+                aria-label="Select all schools"
                 className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
               >
                 Select all
               </button>
               <button
                 onClick={clearSelection}
+                aria-label="Clear school selection"
                 className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
               >
                 Clear
@@ -359,6 +361,10 @@ export default function DecisionSupport() {
                     onChange={(e) =>
                       handleWeightChange(key, Number(e.target.value))
                     }
+                    aria-label={`${label} weight: ${weights[key]} out of 100`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={weights[key]}
                     className="mt-1 w-full accent-blue-600"
                   />
                 </div>

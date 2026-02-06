@@ -93,9 +93,9 @@ export default function Compare() {
   );
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900">Compare Schools</h1>
-      <p className="mt-1 text-gray-600">
+    <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
+      <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Compare Schools</h1>
+      <p className="mt-1 text-sm text-gray-600 sm:text-base">
         Side-by-side comparison of 2-4 schools. Select schools from the search
         results page or enter school IDs to compare every metric in columns.
       </p>
@@ -111,12 +111,15 @@ export default function Compare() {
       )}
 
       {loading && (
-        <p className="mt-4 text-gray-500">Loading comparison data...</p>
+        <p className="mt-4 text-gray-500" aria-live="polite">Loading comparison data...</p>
       )}
 
       {!loading && schools.length > 0 && (
-        <div className="mt-8 overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
+        <div className="mt-8 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <table
+            className="min-w-full divide-y divide-gray-200 border border-gray-200"
+            aria-label="School comparison table"
+          >
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">

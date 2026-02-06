@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import SendToggle from "../components/SendToggle";
 
 const COUNCILS = [
   "Milton Keynes",
@@ -22,12 +23,12 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-16">
+    <main className="mx-auto max-w-3xl px-4 py-8 sm:py-16" role="main">
       <div className="text-center">
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
           School Finder
         </h1>
-        <p className="mt-4 text-lg text-gray-600">
+        <p className="mt-4 text-base text-gray-600 sm:text-lg">
           Find and compare schools in your local council area. Search by
           postcode to discover schools in your catchment, view Ofsted ratings,
           explore clubs, and plan the school run.
@@ -36,7 +37,8 @@ export default function Home() {
 
       <form
         onSubmit={handleSearch}
-        className="mt-10 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+        className="mt-8 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:mt-10 sm:p-6"
+        aria-label="School search form"
       >
         <div className="space-y-4">
           <div>
@@ -87,6 +89,14 @@ export default function Home() {
           </button>
         </div>
       </form>
+
+      {/* Settings */}
+      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-4">
+        <h2 className="text-sm font-semibold text-gray-900">Settings</h2>
+        <div className="mt-3">
+          <SendToggle />
+        </div>
+      </div>
 
       <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
         <div className="rounded-lg border border-gray-200 bg-white p-4 text-center">

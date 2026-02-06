@@ -150,10 +150,10 @@ export default function SchoolList() {
   const mapCenter = userLocation ?? ([52.0406, -0.7594] as [number, number]);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8">
+    <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">School Results</h1>
-        <p className="mt-1 text-gray-600">
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">School Results</h1>
+        <p className="mt-1 text-sm text-gray-600 sm:text-base">
           {council && postcode
             ? `Showing schools near ${postcode} in ${council}`
             : "Search for schools by council and postcode from the home page."}
@@ -161,14 +161,15 @@ export default function SchoolList() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      {/* Mobile: stacked layout (filters, results, map). Desktop: 3-column grid */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-12">
         {/* Filter sidebar */}
-        <aside className="lg:col-span-3">
+        <aside className="lg:col-span-3" aria-label="School filters">
           <FilterPanel
             filters={filters}
             onChange={handleFilterChange}
@@ -177,12 +178,15 @@ export default function SchoolList() {
         </aside>
 
         {/* School cards */}
-        <section className="space-y-3 lg:col-span-4">
+        <section
+          className="space-y-3 lg:col-span-4"
+          aria-label="School results list"
+        >
           {loading && (
-            <p className="text-sm text-gray-500">Loading schools...</p>
+            <p className="text-sm text-gray-500" aria-live="polite">Loading schools...</p>
           )}
           {!loading && filteredSchools.length === 0 && council && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500" aria-live="polite">
               No schools match your filters. Try widening your criteria.
             </p>
           )}
@@ -190,7 +194,16 @@ export default function SchoolList() {
             <div
               key={s.id}
               onClick={() => handleSchoolSelect(s.id)}
-              className={`cursor-pointer rounded-lg transition ${
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleSchoolSelect(s.id);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Select ${s.name} on map`}
+              className={`cursor-pointer rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 selectedSchoolId === s.id
                   ? "ring-2 ring-blue-500 ring-offset-1"
                   : ""
@@ -212,8 +225,11 @@ export default function SchoolList() {
           ))}
         </section>
 
-        {/* Map */}
-        <section className="h-[500px] lg:col-span-5 lg:h-auto lg:min-h-[600px]">
+        {/* Map - on mobile appears below results */}
+        <section
+          className="h-[350px] sm:h-[500px] lg:col-span-5 lg:h-auto lg:min-h-[600px]"
+          aria-label="School locations map"
+        >
           <Map
             center={mapCenter}
             schools={filteredSchools}

@@ -109,19 +109,19 @@ export default function Journey() {
   }, [schools, schoolSearch]);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900">
+    <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
+      <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
         School Run Planner
       </h1>
-      <p className="mt-1 text-gray-600">
+      <p className="mt-1 text-sm text-gray-600 sm:text-base">
         Plan the school run with realistic travel time estimates. Times are
         calculated for drop-off (8:00-8:45am) and pick-up (5:00-5:30pm) to
         account for peak traffic conditions.
       </p>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-12">
         {/* Controls */}
-        <aside className="space-y-4 lg:col-span-4">
+        <aside className="space-y-4 lg:col-span-4" aria-label="Journey settings">
           {/* Route Settings */}
           <div className="rounded-lg border border-gray-200 bg-white p-4">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -157,7 +157,9 @@ export default function Journey() {
                     <button
                       key={m.value}
                       onClick={() => setMode(m.value)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                      aria-pressed={mode === m.value}
+                      aria-label={`Transport mode: ${m.label}`}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         mode === m.value
                           ? "bg-blue-600 text-white"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -234,7 +236,8 @@ export default function Journey() {
               <button
                 onClick={handleCalculate}
                 disabled={loading || !postcode.trim() || selectedSchoolIds.length === 0}
-                className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                aria-label="Calculate journey times for selected schools"
+                className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 {loading ? "Calculating..." : "Calculate Journey Times"}
               </button>
@@ -290,7 +293,10 @@ export default function Journey() {
         </aside>
 
         {/* Map */}
-        <section className="h-[500px] lg:col-span-8 lg:h-auto lg:min-h-[600px]">
+        <section
+          className="h-[350px] sm:h-[500px] lg:col-span-8 lg:h-auto lg:min-h-[600px]"
+          aria-label="Journey map"
+        >
           <Map
             center={mapCenter}
             schools={mapSchools}

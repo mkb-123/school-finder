@@ -7,6 +7,7 @@ import type {
   AdmissionsRecord,
   AdmissionsEstimate,
 } from "../components/WaitingListGauge";
+import SendToggle, { useSendEnabled, SendInfoPanel } from "../components/SendToggle";
 
 interface Club {
   id: number;
@@ -309,6 +310,7 @@ export default function SchoolDetail() {
   const [admissionsEstimate, setAdmissionsEstimate] =
     useState<AdmissionsEstimate | null>(null);
   const [estimateLoaded, setEstimateLoaded] = useState(false);
+  const [sendEnabled] = useSendEnabled();
 
   useEffect(() => {
     if (!id) return;
@@ -337,18 +339,39 @@ export default function SchoolDetail() {
       });
   }, [activeTab, school, estimateLoaded]);
 
+  /** Handle keyboard navigation for tabs (arrow keys). */
+  function handleTabKeyDown(e: React.KeyboardEvent, tabIndex: number) {
+    let nextIndex = tabIndex;
+    if (e.key === "ArrowRight") {
+      nextIndex = (tabIndex + 1) % TABS.length;
+    } else if (e.key === "ArrowLeft") {
+      nextIndex = (tabIndex - 1 + TABS.length) % TABS.length;
+    } else if (e.key === "Home") {
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      nextIndex = TABS.length - 1;
+    } else {
+      return;
+    }
+    e.preventDefault();
+    setActiveTab(TABS[nextIndex]);
+    // Focus the new tab button
+    const tabBtn = document.getElementById(`school-tab-${TABS[nextIndex]}`);
+    tabBtn?.focus();
+  }
+
   if (loading) {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <p className="text-gray-500">Loading school details...</p>
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
+        <p className="text-gray-500" aria-live="polite">Loading school details...</p>
       </main>
     );
   }
 
   if (!school) {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900">School Not Found</h1>
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">School Not Found</h1>
         <p className="mt-2 text-gray-600">
           No school found with ID {id}.
         </p>
@@ -359,12 +382,12 @@ export default function SchoolDetail() {
   const badge = RATING_COLORS[school.ofsted_rating ?? ""] ?? "bg-gray-100 text-gray-800";
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{school.name}</h1>
-          <p className="mt-1 text-gray-600">{school.address}</p>
-          <p className="text-sm text-gray-500">{school.postcode}</p>
+          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{school.name}</h1>
+          <p className="mt-1 text-sm text-gray-600 sm:text-base">{school.address}</p>
+          <p className="text-xs text-gray-500 sm:text-sm">{school.postcode}</p>
         </div>
         {school.ofsted_rating && (
           <span className={`rounded-full px-3 py-1 text-sm font-medium ${badge}`}>
@@ -374,7 +397,7 @@ export default function SchoolDetail() {
       </div>
 
       {/* Quick facts */}
-      <div className="mt-4 flex flex-wrap gap-3 text-sm text-gray-600">
+      <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-600 sm:gap-3 sm:text-sm">
         <span className="rounded bg-gray-100 px-2 py-1">
           Ages {school.age_range_from}&ndash;{school.age_range_to}
         </span>
@@ -392,14 +415,24 @@ export default function SchoolDetail() {
         </span>
       </div>
 
-      {/* Tab navigation */}
+      {/* Tab navigation - horizontal scroll on mobile */}
       <div className="mt-6 border-b border-gray-200">
-        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-          {TABS.map((tab) => (
+        <nav
+          className="-mb-px flex overflow-x-auto"
+          role="tablist"
+          aria-label="School detail tabs"
+        >
+          {TABS.map((tab, idx) => (
             <button
               key={tab}
+              id={`school-tab-${tab}`}
+              role="tab"
+              aria-selected={activeTab === tab}
+              aria-controls={`school-tabpanel-${tab}`}
+              tabIndex={activeTab === tab ? 0 : -1}
               onClick={() => setActiveTab(tab)}
-              className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium ${
+              onKeyDown={(e) => handleTabKeyDown(e, idx)}
+              className={`flex-shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:px-4 ${
                 activeTab === tab
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
@@ -412,51 +445,78 @@ export default function SchoolDetail() {
       </div>
 
       {/* Tab content */}
-      <div className="mt-6">
+      <div
+        className="mt-6"
+        id={`school-tabpanel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`school-tab-${activeTab}`}
+      >
         {activeTab === "Overview" && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-lg border border-gray-200 bg-white p-6">
-              <h2 className="text-xl font-semibold text-gray-900">Details</h2>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">Type</dt>
-                  <dd className="font-medium text-gray-900">{school.type}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">Council</dt>
-                  <dd className="font-medium text-gray-900">{school.council}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">Catchment Radius</dt>
-                  <dd className="font-medium text-gray-900">
-                    {school.catchment_radius_km} km
-                  </dd>
-                </div>
-                {school.ofsted_date && (
+          <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-lg border border-gray-200 bg-white p-6">
+                <h2 className="text-xl font-semibold text-gray-900">Details</h2>
+                <dl className="mt-4 space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-gray-500">Last Ofsted</dt>
+                    <dt className="text-gray-500">Type</dt>
+                    <dd className="font-medium text-gray-900">{school.type}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Council</dt>
+                    <dd className="font-medium text-gray-900">{school.council}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Catchment Radius</dt>
                     <dd className="font-medium text-gray-900">
-                      {school.ofsted_date}
+                      {school.catchment_radius_km} km
                     </dd>
                   </div>
+                  {school.ofsted_date && (
+                    <div className="flex justify-between">
+                      <dt className="text-gray-500">Last Ofsted</dt>
+                      <dd className="font-medium text-gray-900">
+                        {school.ofsted_date}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+              {/* Catchment map */}
+              <div className="h-[350px] rounded-lg border border-gray-200 bg-white">
+                {school.lat != null && school.lng != null ? (
+                  <Map
+                    center={[school.lat, school.lng]}
+                    zoom={14}
+                    schools={[school]}
+                    selectedSchoolId={school.id}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-gray-400">
+                    No location data
+                  </div>
                 )}
-              </dl>
+              </div>
             </div>
-            {/* Catchment map */}
-            <div className="h-[350px] rounded-lg border border-gray-200 bg-white">
-              {school.lat != null && school.lng != null ? (
-                <Map
-                  center={[school.lat, school.lng]}
-                  zoom={14}
-                  schools={[school]}
-                  selectedSchoolId={school.id}
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-gray-400">
-                  No location data
+
+            {/* SEND information - hidden by default */}
+            {sendEnabled && (
+              <SendInfoPanel
+                senProvision={null}
+                ehcpFriendly={null}
+                accessibilityInfo={null}
+                specialistUnit={null}
+              />
+            )}
+            {!sendEnabled && (
+              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-500">
+                    SEND information is hidden. Enable it to see SEN provision details.
+                  </p>
+                  <SendToggle />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 

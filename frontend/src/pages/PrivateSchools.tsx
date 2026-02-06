@@ -49,10 +49,10 @@ export default function PrivateSchools() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8">
+    <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Private Schools</h1>
-        <p className="mt-1 text-gray-600">
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Private Schools</h1>
+        <p className="mt-1 text-sm text-gray-600 sm:text-base">
           Browse independent and private schools in Milton Keynes. Filter by
           fees, age range, transport availability, and more.
         </p>
@@ -64,9 +64,9 @@ export default function PrivateSchools() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-12">
         {/* Filter sidebar */}
-        <aside className="space-y-4 lg:col-span-3">
+        <aside className="space-y-4 lg:col-span-3" aria-label="Private school filters">
           <div className="rounded-lg border border-gray-200 bg-white p-4">
             <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
 
@@ -193,7 +193,7 @@ export default function PrivateSchools() {
         </section>
 
         {/* Map */}
-        <section className="h-[500px] lg:col-span-5 lg:h-auto lg:min-h-[600px]">
+        <section className="h-[350px] sm:h-[500px] lg:col-span-5 lg:h-auto lg:min-h-[600px]" aria-label="Private schools map">
           <Map
             schools={filteredSchools}
             selectedSchoolId={selectedSchoolId}

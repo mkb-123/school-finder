@@ -69,16 +69,16 @@ export default function PrivateSchoolDetail() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <p className="text-gray-500">Loading school details...</p>
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
+        <p className="text-gray-500" aria-live="polite">Loading school details...</p>
       </main>
     );
   }
 
   if (!school) {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900">School Not Found</h1>
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">School Not Found</h1>
         <p className="mt-2 text-gray-600">
           No private school found with ID {id}.
         </p>
@@ -109,11 +109,12 @@ export default function PrivateSchoolDetail() {
   const feeIncreasePct = firstDetail?.fee_increase_pct ?? null;
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
       {/* Back link */}
       <Link
         to="/private-schools"
         className="mb-4 inline-flex items-center text-sm text-blue-600 hover:underline"
+        aria-label="Back to private schools list"
       >
         <svg
           className="mr-1 h-4 w-4"
@@ -134,9 +135,9 @@ export default function PrivateSchoolDetail() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{school.name}</h1>
-          <p className="mt-1 text-gray-600">{school.address}</p>
-          <p className="text-sm text-gray-500">{school.postcode}</p>
+          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{school.name}</h1>
+          <p className="mt-1 text-sm text-gray-600 sm:text-base">{school.address}</p>
+          <p className="text-xs text-gray-500 sm:text-sm">{school.postcode}</p>
         </div>
         {school.ofsted_rating && (
           <span

@@ -15,11 +15,19 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="border-b border-gray-200 bg-white">
+    <nav
+      className="border-b border-gray-200 bg-white"
+      role="navigation"
+      aria-label="Main navigation"
+    >
       <div className="mx-auto max-w-7xl px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo / brand */}
-          <Link to="/" className="text-lg font-bold text-blue-600">
+          <Link
+            to="/"
+            className="text-lg font-bold text-blue-600"
+            aria-label="School Finder home"
+          >
             School Finder
           </Link>
 
@@ -46,9 +54,10 @@ export default function Navbar() {
           {/* Mobile menu button */}
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 md:hidden"
+            className="inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-expanded={mobileMenuOpen}
+            aria-label="Open main menu"
           >
             <span className="sr-only">Open main menu</span>
             {mobileMenuOpen ? (
@@ -57,6 +66,7 @@ export default function Navbar() {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -71,6 +81,7 @@ export default function Navbar() {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"

@@ -109,9 +109,9 @@ export default function TermDates() {
   };
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900">Term Dates</h1>
-      <p className="mt-1 text-gray-600">
+    <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8" role="main">
+      <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Term Dates</h1>
+      <p className="mt-1 text-sm text-gray-600 sm:text-base">
         Compare term dates across Milton Keynes schools. Academies and free
         schools may set their own dates. Private schools often have different
         schedules with longer holidays.
