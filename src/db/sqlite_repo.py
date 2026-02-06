@@ -30,8 +30,14 @@ from src.db.models import (
 # ---------------------------------------------------------------------------
 
 
-def _haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
-    """Return great-circle distance in km between two lat/lng pairs."""
+def _haversine(lat1: float | None, lng1: float | None, lat2: float | None, lng2: float | None) -> float | None:
+    """Return great-circle distance in km between two lat/lng pairs.
+
+    Returns None if any coordinate is None (SQL NULL).
+    """
+    if lat1 is None or lng1 is None or lat2 is None or lng2 is None:
+        return None
+
     earth_radius_km = 6371.0
     lat1_r, lat2_r = math.radians(lat1), math.radians(lat2)
     dlat = math.radians(lat2 - lat1)
