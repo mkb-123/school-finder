@@ -15,9 +15,9 @@ from pydantic import BaseModel
 from src.db.base import SchoolRepository
 from src.db.factory import get_school_repository
 from src.services.journey import (
+    SchoolInfo,
     SchoolJourneyResult,
     TravelMode,
-    _SchoolInfo,
     compare_journeys,
 )
 
@@ -163,7 +163,7 @@ async def get_journey(
     if school.lat is None or school.lng is None:
         raise HTTPException(status_code=400, detail="School has no coordinates")
 
-    schools_info = [_SchoolInfo(id=school.id, name=school.name, lat=school.lat, lng=school.lng)]
+    schools_info = [SchoolInfo(id=school.id, name=school.name, lat=school.lat, lng=school.lng)]
     results = await compare_journeys(lat, lng, schools_info, travel_mode)
 
     return _school_journey_to_response(results[0])
@@ -197,14 +197,14 @@ async def compare_school_journeys(
         raise HTTPException(status_code=400, detail="Maximum 10 schools for comparison")
 
     # Look up schools from the database
-    schools_info: list[_SchoolInfo] = []
+    schools_info: list[SchoolInfo] = []
     for sid in ids:
         school = await repo.get_school_by_id(sid)
         if school is None:
             raise HTTPException(status_code=404, detail=f"School {sid} not found")
         if school.lat is None or school.lng is None:
             continue  # Skip schools without coordinates
-        schools_info.append(_SchoolInfo(id=school.id, name=school.name, lat=school.lat, lng=school.lng))
+        schools_info.append(SchoolInfo(id=school.id, name=school.name, lat=school.lat, lng=school.lng))
 
     if not schools_info:
         raise HTTPException(status_code=400, detail="No valid schools found with coordinates")

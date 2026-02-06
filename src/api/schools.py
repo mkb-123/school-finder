@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,15 +19,33 @@ from src.schemas.school import (
 )
 from src.services.admissions import estimate_full
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(tags=["schools"])
 
 
-def _to_school_filters(params: SchoolFilterParams) -> SchoolFilters:
-    """Convert API filter params to the repository's filter dataclass."""
+async def _to_school_filters(params: SchoolFilterParams) -> SchoolFilters:
+    """Convert API filter params to the repository's filter dataclass.
+
+    When a *postcode* is provided but *lat*/*lng* are not, the postcode is
+    auto-geocoded so that distance-based filtering and sorting work.
+    """
+    lat = params.lat
+    lng = params.lng
+
+    # Auto-geocode postcode when lat/lng are not explicitly provided
+    if params.postcode and lat is None and lng is None:
+        try:
+            from src.services.geocoding import geocode_postcode
+
+            lat, lng = await geocode_postcode(params.postcode)
+        except Exception:
+            logger.warning("Failed to geocode postcode '%s' – skipping distance filters", params.postcode)
+
     return SchoolFilters(
         council=params.council,
-        lat=params.lat,
-        lng=params.lng,
+        lat=lat,
+        lng=lng,
         age=params.age,
         gender=params.gender,
         school_type=params.type,
@@ -35,6 +54,7 @@ def _to_school_filters(params: SchoolFilterParams) -> SchoolFilters:
         has_breakfast_club=params.has_breakfast_club,
         has_afterschool_club=params.has_afterschool_club,
         faith=params.faith,
+        search=params.search,
     )
 
 
@@ -44,7 +64,7 @@ async def list_schools(
     repo: Annotated[SchoolRepository, Depends(get_school_repository)],
 ) -> list[SchoolResponse]:
     """List and search schools with optional filters."""
-    school_filters = _to_school_filters(filters)
+    school_filters = await _to_school_filters(filters)
     schools = await repo.find_schools_by_filters(school_filters)
     return schools
 

@@ -20,6 +20,7 @@ from src.schemas.decision import (
     WhatIfRequest,
     WhatIfResponse,
 )
+from src.services.catchment import haversine_distance
 from src.services.decision import (
     SchoolData,
     ScoredSchool,
@@ -61,15 +62,25 @@ def _parse_weights(weights_str: str | None) -> dict[str, float] | None:
 async def _load_school_data(
     school_ids: list[int],
     repo: SchoolRepository,
+    lat: float | None = None,
+    lng: float | None = None,
 ) -> list[SchoolData]:
-    """Load schools from the repository and convert to SchoolData."""
+    """Load schools from the repository and convert to SchoolData.
+
+    When *lat* and *lng* are provided, the Haversine distance from
+    that point to each school is computed and attached to the
+    ``SchoolData`` so that the scorer can use it.
+    """
     school_data_list: list[SchoolData] = []
     for sid in school_ids:
         school = await repo.get_school_by_id(sid)
         if school is None:
             continue
         clubs = await repo.get_clubs_for_school(sid)
-        sd = school_data_from_orm(school, clubs)
+        distance_km: float | None = None
+        if lat is not None and lng is not None and school.lat is not None and school.lng is not None:
+            distance_km = haversine_distance(lat, lng, school.lat, school.lng)
+        sd = school_data_from_orm(school, clubs, distance_km=distance_km)
         school_data_list.append(sd)
     return school_data_list
 
@@ -115,6 +126,14 @@ async def score_schools(
             description="Comma-separated key:value weights (e.g. 'distance:0.3,ofsted:0.3,clubs:0.2,fees:0.2')",
         ),
     ] = None,
+    lat: Annotated[
+        float | None,
+        Query(description="Latitude of the user's location for distance scoring"),
+    ] = None,
+    lng: Annotated[
+        float | None,
+        Query(description="Longitude of the user's location for distance scoring"),
+    ] = None,
     repo: SchoolRepository = Depends(get_school_repository),
 ) -> DecisionScoreResponse:
     """Score and rank schools by weighted composite score."""
@@ -125,7 +144,7 @@ async def score_schools(
     parsed_weights = _parse_weights(weights)
     scorer = WeightedScorer(parsed_weights)
 
-    school_data_list = await _load_school_data(ids, repo)
+    school_data_list = await _load_school_data(ids, repo, lat=lat, lng=lng)
     if not school_data_list:
         raise HTTPException(status_code=404, detail="No schools found for the given IDs")
 
@@ -140,6 +159,14 @@ async def score_schools(
 @router.get("/api/decision/pros-cons", response_model=ProsConsResponse)
 async def get_pros_cons(
     school_id: Annotated[int, Query(description="School ID to generate pros/cons for")],
+    lat: Annotated[
+        float | None,
+        Query(description="Latitude of the user's location for distance-based pros/cons"),
+    ] = None,
+    lng: Annotated[
+        float | None,
+        Query(description="Longitude of the user's location for distance-based pros/cons"),
+    ] = None,
     repo: SchoolRepository = Depends(get_school_repository),
 ) -> ProsConsResponse:
     """Generate auto-generated pros and cons for a single school."""
@@ -148,7 +175,10 @@ async def get_pros_cons(
         raise HTTPException(status_code=404, detail="School not found")
 
     clubs = await repo.get_clubs_for_school(school_id)
-    sd = school_data_from_orm(school, clubs)
+    distance_km: float | None = None
+    if lat is not None and lng is not None and school.lat is not None and school.lng is not None:
+        distance_km = haversine_distance(lat, lng, school.lat, school.lng)
+    sd = school_data_from_orm(school, clubs, distance_km=distance_km)
     pros, cons = generate_pros_cons(sd)
 
     return ProsConsResponse(
@@ -173,7 +203,7 @@ async def what_if_scenario(
     if not request.school_ids:
         raise HTTPException(status_code=400, detail="At least one school_id is required")
 
-    school_data_list = await _load_school_data(request.school_ids, repo)
+    school_data_list = await _load_school_data(request.school_ids, repo, lat=request.lat, lng=request.lng)
     if not school_data_list:
         raise HTTPException(status_code=404, detail="No schools found for the given IDs")
 

@@ -46,13 +46,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+_settings = get_settings()
+_cors_origins = [o.strip() for o in _settings.CORS_ORIGINS.split(",") if o.strip()] if _settings.CORS_ORIGINS else []
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 app.include_router(schools_router)
 app.include_router(private_schools_router)

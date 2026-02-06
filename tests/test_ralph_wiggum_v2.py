@@ -4,6 +4,7 @@ a parent of 4-year-old Lily in Milton Keynes (MK5 6EX), working until 5:30pm.
 Probes every endpoint for real bugs, edge cases, data quality issues, and
 missing features that a real parent would encounter.
 """
+
 from __future__ import annotations
 
 import json
@@ -169,23 +170,16 @@ class TestBasicSearchFlow:
                 "gender_policy IN ('co-ed', 'girls') but seed data uses "
                 "'Mixed' not 'co-ed'. This is the single most important "
                 "user flow and it is completely broken.",
-                "GET /api/schools?council=Milton+Keynes&lat=52.0115&lng=-0.792"
-                "&age=4&gender=female&max_distance_km=5.0",
+                "GET /api/schools?council=Milton+Keynes&lat=52.0115&lng=-0.792&age=4&gender=female&max_distance_km=5.0",
             )
             return
 
         # All results should accept age 4
         for s in schools:
             if s["age_range_from"] is not None:
-                assert s["age_range_from"] <= 4, (
-                    f"{s['name']} has age_range_from={s['age_range_from']}, "
-                    f"should be <= 4"
-                )
+                assert s["age_range_from"] <= 4, f"{s['name']} has age_range_from={s['age_range_from']}, should be <= 4"
             if s["age_range_to"] is not None:
-                assert s["age_range_to"] >= 4, (
-                    f"{s['name']} has age_range_to={s['age_range_to']}, "
-                    f"should be >= 4"
-                )
+                assert s["age_range_to"] >= 4, f"{s['name']} has age_range_to={s['age_range_to']}, should be >= 4"
 
         # No boys-only schools
         for s in schools:
@@ -213,8 +207,7 @@ class TestBasicSearchFlow:
         for s in schools[:10]:
             detail_resp = client.get(f"/api/schools/{s['id']}")
             assert detail_resp.status_code == 200, (
-                f"School {s['id']} ({s['name']}) detail page returned "
-                f"{detail_resp.status_code}"
+                f"School {s['id']} ({s['name']}) detail page returned {detail_resp.status_code}"
             )
 
     def test_school_detail_includes_all_sections(self, client: TestClient):
@@ -315,8 +308,7 @@ class TestPostcodeEdgeCases:
                 "bug",
                 "medium",
                 "Empty postcode returns 200",
-                "An empty postcode string should return 400 or 422, "
-                "not 200.",
+                "An empty postcode string should return 400 or 422, not 200.",
                 "GET /api/geocode?postcode=",
             )
 
@@ -421,9 +413,7 @@ class TestDistanceFilterEdgeCases:
         )
         assert resp.status_code == 200
         schools = resp.json()
-        assert len(schools) <= 1, (
-            f"At 1 metre distance, expected 0-1 schools, got {len(schools)}"
-        )
+        assert len(schools) <= 1, f"At 1 metre distance, expected 0-1 schools, got {len(schools)}"
 
     def test_distances_are_reasonable_for_mk(self, client: TestClient):
         """Schools in Milton Keynes should be within ~20km, not 1000km."""
@@ -518,8 +508,7 @@ class TestGenderFilter:
                     "bug",
                     "critical",
                     "Boys-only school shown for female gender filter",
-                    f"'{s['name']}' has gender_policy='Boys' but appears "
-                    f"in gender=female results.",
+                    f"'{s['name']}' has gender_policy='Boys' but appears in gender=female results.",
                     "GET /api/schools?gender=female&council=Milton+Keynes",
                 )
 
@@ -588,8 +577,7 @@ class TestRatingFilter:
         schools = resp.json()
         for s in schools:
             assert s.get("ofsted_rating") == "Outstanding", (
-                f"School '{s['name']}' has rating '{s.get('ofsted_rating')}' "
-                f"but should be Outstanding only"
+                f"School '{s['name']}' has rating '{s.get('ofsted_rating')}' but should be Outstanding only"
             )
 
     def test_outstanding_and_age_4_gives_results(self, client: TestClient):
@@ -693,15 +681,10 @@ class TestClubFilters:
                     # Breakfast should start before 9am
                     if club.get("start_time"):
                         hour = int(club["start_time"].split(":")[0])
-                        assert hour < 9, (
-                            f"Breakfast club starts at {club['start_time']}, "
-                            f"should be before 9am"
-                        )
+                        assert hour < 9, f"Breakfast club starts at {club['start_time']}, should be before 9am"
                 if club.get("cost_per_session") is not None:
                     cost = club["cost_per_session"]
-                    assert 0 <= cost <= 30, (
-                        f"Club cost {cost} seems unreasonable"
-                    )
+                    assert 0 <= cost <= 30, f"Club cost {cost} seems unreasonable"
 
 
 # ============================================================================
@@ -777,8 +760,7 @@ class TestPrivateSchools:
                             "bug",
                             "medium",
                             f"Unreasonable fee_increase_pct={pct}",
-                            f"'{s['name']}' has fee_increase_pct={pct}%. "
-                            f"Expected 0-20% range.",
+                            f"'{s['name']}' has fee_increase_pct={pct}%. Expected 0-20% range.",
                             f"GET /api/private-schools/{s['id']}",
                         )
 
@@ -812,9 +794,7 @@ class TestPrivateSchools:
 
         if cheapest_fee is not None:
             # Should be a realistic UK private school fee
-            assert 3000 < cheapest_fee < 30000, (
-                f"Cheapest private school fee {cheapest_fee} seems unrealistic"
-            )
+            assert 3000 < cheapest_fee < 30000, f"Cheapest private school fee {cheapest_fee} seems unrealistic"
 
 
 # ============================================================================
@@ -950,9 +930,7 @@ class TestJourneyPlanner:
 
     def test_invalid_travel_mode(self, client: TestClient):
         """mode='helicopter' should return 400."""
-        schools = client.get(
-            "/api/schools", params={"council": "Milton Keynes"}
-        ).json()
+        schools = client.get("/api/schools", params={"council": "Milton Keynes"}).json()
         if not schools:
             pytest.skip("No schools")
 
@@ -964,9 +942,7 @@ class TestJourneyPlanner:
                 "mode": "helicopter",
             },
         )
-        assert resp.status_code == 400, (
-            f"Invalid mode 'helicopter' should return 400, got {resp.status_code}"
-        )
+        assert resp.status_code == 400, f"Invalid mode 'helicopter' should return 400, got {resp.status_code}"
 
     def test_journey_compare_multiple_schools(self, client: TestClient):
         """Compare journeys to multiple schools."""
@@ -998,9 +974,7 @@ class TestJourneyPlanner:
 
         # Should be sorted by dropoff duration (shortest first)
         durations = [j["dropoff"]["duration_minutes"] for j in data["journeys"]]
-        assert durations == sorted(durations), (
-            f"Journeys not sorted by dropoff duration: {durations}"
-        )
+        assert durations == sorted(durations), f"Journeys not sorted by dropoff duration: {durations}"
 
     def test_journey_to_nonexistent_school(self, client: TestClient):
         """Journey to school_id=99999 should return 404."""
@@ -1043,9 +1017,7 @@ class TestCompareEndpoint:
         for s in data["schools"]:
             required_fields = ["clubs", "performance", "term_dates", "admissions_history"]
             for field in required_fields:
-                assert field in s, (
-                    f"Compare response for '{s['name']}' missing '{field}'"
-                )
+                assert field in s, f"Compare response for '{s['name']}' missing '{field}'"
 
     def test_compare_same_school_with_itself(self, client: TestClient):
         """Compare a school with itself - should work but is useless."""
@@ -1140,8 +1112,7 @@ class TestTermDates:
             for td in dates:
                 year = td.get("academic_year", "")
                 assert "2025" in year or "2026" in year, (
-                    f"Term date for {s['name']} has year '{year}', "
-                    f"expected 2025/2026"
+                    f"Term date for {s['name']} has year '{year}', expected 2025/2026"
                 )
 
     def test_term_date_ranges_make_sense(self, client: TestClient):
@@ -1203,17 +1174,13 @@ class TestPerformanceData:
                     val_str = p["metric_value"]
                     try:
                         val = float(val_str)
-                        assert -2.0 <= val <= 2.0, (
-                            f"Progress8 value {val} out of range for "
-                            f"{s['name']}"
-                        )
+                        assert -2.0 <= val <= 2.0, f"Progress8 value {val} out of range for {s['name']}"
                     except ValueError:
                         _add_issue(
                             "bug",
                             "medium",
                             f"Progress8 value not parseable: '{val_str}'",
-                            f"School '{s['name']}' has Progress8 value "
-                            f"'{val_str}' which is not a valid number.",
+                            f"School '{s['name']}' has Progress8 value '{val_str}' which is not a valid number.",
                             f"GET /api/schools/{s['id']}/performance",
                         )
 
@@ -1233,9 +1200,7 @@ class TestPerformanceData:
                     match = re.search(r"(\d+)%", val_str)
                     if match:
                         pct = int(match.group(1))
-                        assert 0 <= pct <= 100, (
-                            f"SATs % = {pct} for {s['name']}, out of range"
-                        )
+                        assert 0 <= pct <= 100, f"SATs % = {pct} for {s['name']}, out of range"
 
 
 # ============================================================================
@@ -1380,9 +1345,7 @@ class TestDecisionScoring:
 
         # Should be sorted by score (highest first)
         scores = [s["composite_score"] for s in data["schools"]]
-        assert scores == sorted(scores, reverse=True), (
-            f"Schools not sorted by score: {scores}"
-        )
+        assert scores == sorted(scores, reverse=True), f"Schools not sorted by score: {scores}"
 
     def test_scoring_with_custom_weights(self, client: TestClient):
         """Custom weights: distance heavy."""
@@ -1407,9 +1370,7 @@ class TestDecisionScoring:
         # Weights should be normalised
         w = data["weights_used"]
         total = sum(w.values())
-        assert abs(total - 1.0) < 0.01, (
-            f"Weights should sum to ~1.0, got {total}: {w}"
-        )
+        assert abs(total - 1.0) < 0.01, f"Weights should sum to ~1.0, got {total}: {w}"
 
     def test_weights_sum_to_more_than_one(self, client: TestClient):
         """Weights summing to > 1 should still work (normalised internally)."""
@@ -1434,9 +1395,7 @@ class TestDecisionScoring:
         # Should normalise internally
         w = data["weights_used"]
         total = sum(w.values())
-        assert abs(total - 1.0) < 0.01, (
-            f"Weights > 1 not normalised: {w}, sum={total}"
-        )
+        assert abs(total - 1.0) < 0.01, f"Weights > 1 not normalised: {w}, sum={total}"
 
     def test_negative_weights(self, client: TestClient):
         """Negative weights should be handled gracefully."""
@@ -1549,9 +1508,7 @@ class TestProsCons:
         assert resp.status_code == 200
         data = resp.json()
         all_pros = " ".join(data["pros"]).lower()
-        assert "outstanding" in all_pros, (
-            f"Outstanding school should have 'Outstanding' as a pro: {data['pros']}"
-        )
+        assert "outstanding" in all_pros, f"Outstanding school should have 'Outstanding' as a pro: {data['pros']}"
 
     def test_pros_cons_nonexistent_school(self, client: TestClient):
         """Pros/cons for non-existent school should return 404."""
@@ -1616,8 +1573,7 @@ class TestWhatIfScenarios:
         for s in data["schools"]:
             rating = s.get("ofsted_rating")
             assert rating in ["Outstanding", "Good", None], (
-                f"School '{s['school_name']}' has rating '{rating}' "
-                f"which should be filtered by min_rating=Good"
+                f"School '{s['school_name']}' has rating '{rating}' which should be filtered by min_rating=Good"
             )
 
     def test_what_if_empty_school_ids(self, client: TestClient):
@@ -1670,10 +1626,7 @@ class TestPrivateSchoolEndpoint:
         assert resp.status_code == 200
         schools = resp.json()
         for s in schools:
-            assert s["is_private"] is True, (
-                f"'{s['name']}' is not private but appears in "
-                f"/api/private-schools"
-            )
+            assert s["is_private"] is True, f"'{s['name']}' is not private but appears in /api/private-schools"
 
     def test_private_school_journey(self, client: TestClient):
         """Can I calculate a journey to a private school?"""
@@ -1776,9 +1729,12 @@ class TestDataQuality:
     def test_ofsted_ratings_are_valid(self, client: TestClient):
         """Ofsted ratings should only be standard values."""
         valid_ratings = {
-            "Outstanding", "Good", "Requires Improvement",
+            "Outstanding",
+            "Good",
+            "Requires Improvement",
             "Requires improvement",  # case variation
-            "Inadequate", None,
+            "Inadequate",
+            None,
         }
         schools = client.get(
             "/api/schools",
@@ -1809,10 +1765,7 @@ class TestDataQuality:
             fr = s.get("age_range_from")
             to = s.get("age_range_to")
             if fr is not None and to is not None:
-                assert fr < to, (
-                    f"'{s['name']}' has age_range_from={fr} >= "
-                    f"age_range_to={to}"
-                )
+                assert fr < to, f"'{s['name']}' has age_range_from={fr} >= age_range_to={to}"
 
 
 # ============================================================================
@@ -1878,21 +1831,14 @@ class TestOfstedCaseSensitivity:
         all_schools = all_resp.json()
 
         # Check if any school has 'Requires improvement' (lowercase i)
-        ri_lowercase = [
-            s for s in all_schools
-            if s.get("ofsted_rating") == "Requires improvement"
-        ]
-        ri_uppercase = [
-            s for s in all_schools
-            if s.get("ofsted_rating") == "Requires Improvement"
-        ]
+        ri_lowercase = [s for s in all_schools if s.get("ofsted_rating") == "Requires improvement"]
+        ri_uppercase = [s for s in all_schools if s.get("ofsted_rating") == "Requires Improvement"]
 
         if ri_lowercase and not ri_uppercase:
             _add_issue(
                 "bug",
                 "high",
-                "Ofsted rating case mismatch: 'Requires improvement' "
-                "vs 'Requires Improvement'",
+                "Ofsted rating case mismatch: 'Requires improvement' vs 'Requires Improvement'",
                 f"Found {len(ri_lowercase)} schools with 'Requires improvement' "
                 f"(lowercase i). The filter system uses 'Requires Improvement' "
                 f"(uppercase I) in its rating order. This means these schools "
@@ -2063,9 +2009,7 @@ class TestPickupTimeForWorkingParent:
             pytest.skip(f"Journey returned {resp.status_code}")
 
         journey = resp.json()
-        assert journey["pickup"]["is_rush_hour"] is True, (
-            "Pickup (5pm) should be flagged as rush hour"
-        )
+        assert journey["pickup"]["is_rush_hour"] is True, "Pickup (5pm) should be flagged as rush hour"
         assert journey["pickup"]["time_of_day"] == "pickup"
 
 

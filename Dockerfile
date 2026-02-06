@@ -26,8 +26,9 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 # Create data directory for SQLite
 RUN mkdir -p /app/data
 
-# Seed the database at build time
-RUN uv run python -m src.db.seed --council "Milton Keynes"
+# Copy entrypoint (seeds DB on first boot if volume is empty)
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 
 # Expose port
 EXPOSE 8000
@@ -36,5 +37,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/councils')" || exit 1
 
-# Run the app
-CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Seed on first boot, then start the app
+CMD ["./entrypoint.sh"]

@@ -29,6 +29,8 @@ class SchoolFilters:
     has_afterschool_club: bool | None = None
     faith: str | None = None
     is_private: bool | None = None
+    max_fee: float | None = None  # max termly fee for private school filtering
+    search: str | None = None  # name-based search (case-insensitive substring)
 
     # Internal: ordered list of Ofsted ratings from best to worst, used by repositories
     _rating_order: list[str] = field(

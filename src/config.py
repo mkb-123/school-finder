@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     SQLITE_PATH: str = "./data/schools.db"
     DATABASE_URL: str | None = None
     POSTCODES_IO_BASE: str = "https://api.postcodes.io"
+    CORS_ORIGINS: str = ""  # Comma-separated origins, empty = same-origin only
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

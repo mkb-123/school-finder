@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import event, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import selectinload
 
 from src.db.base import SchoolFilters, SchoolRepository
 from src.db.models import (
@@ -142,6 +143,20 @@ class SQLiteSchoolRepository(SchoolRepository):
                 .exists()
             )
 
+        # Max fee filter: join to private_school_details
+        if filters.max_fee is not None:
+            stmt = stmt.where(
+                select(PrivateSchoolDetails.id)
+                .where(PrivateSchoolDetails.school_id == School.id)
+                .where(PrivateSchoolDetails.termly_fee <= filters.max_fee)
+                .correlate(School)
+                .exists()
+            )
+
+        # Name-based search filter
+        if filters.search is not None:
+            stmt = stmt.where(School.name.ilike(f"%{filters.search}%"))
+
         params: dict[str, Any] = {}
         if filters.lat is not None:
             params["lat"] = filters.lat
@@ -159,8 +174,21 @@ class SQLiteSchoolRepository(SchoolRepository):
     # ------------------------------------------------------------------
 
     async def get_school_by_id(self, school_id: int) -> School | None:
+        stmt = (
+            select(School)
+            .where(School.id == school_id)
+            .options(
+                selectinload(School.term_dates),
+                selectinload(School.clubs),
+                selectinload(School.performance),
+                selectinload(School.reviews),
+                selectinload(School.private_details),
+                selectinload(School.admissions_history),
+            )
+        )
         async with self._session_factory() as session:
-            return await session.get(School, school_id)
+            result = await session.execute(stmt)
+            return result.scalars().first()
 
     async def get_clubs_for_school(self, school_id: int) -> list[SchoolClub]:
         stmt = select(SchoolClub).where(SchoolClub.school_id == school_id)

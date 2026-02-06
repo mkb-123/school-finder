@@ -1,0 +1,28 @@
+# Fly.io deployment configuration for School Finder
+# Deploy: fly launch --copy-config --no-deploy && fly deploy
+
+app = "school-finder"
+primary_region = "lhr"  # London Heathrow - closest to Milton Keynes
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  DB_BACKEND = "sqlite"
+  SQLITE_PATH = "/app/data/schools.db"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[mounts]
+  source = "school_data"
+  destination = "/app/data"

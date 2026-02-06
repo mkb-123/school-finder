@@ -60,6 +60,8 @@ class WhatIfRequest(BaseModel):
     min_rating: str | None = None
     include_faith: bool | None = None
     max_annual_fee: float | None = None
+    lat: float | None = None
+    lng: float | None = None
 
 
 class WhatIfResponse(BaseModel):

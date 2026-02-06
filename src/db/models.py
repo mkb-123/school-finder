@@ -37,17 +37,17 @@ class School(Base):
     is_private: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Relationships
-    term_dates: Mapped[list[SchoolTermDate]] = relationship("SchoolTermDate", back_populates="school", lazy="selectin")
-    clubs: Mapped[list[SchoolClub]] = relationship("SchoolClub", back_populates="school", lazy="selectin")
+    term_dates: Mapped[list[SchoolTermDate]] = relationship("SchoolTermDate", back_populates="school", lazy="select")
+    clubs: Mapped[list[SchoolClub]] = relationship("SchoolClub", back_populates="school", lazy="select")
     performance: Mapped[list[SchoolPerformance]] = relationship(
-        "SchoolPerformance", back_populates="school", lazy="selectin"
+        "SchoolPerformance", back_populates="school", lazy="select"
     )
-    reviews: Mapped[list[SchoolReview]] = relationship("SchoolReview", back_populates="school", lazy="selectin")
+    reviews: Mapped[list[SchoolReview]] = relationship("SchoolReview", back_populates="school", lazy="select")
     private_details: Mapped[list[PrivateSchoolDetails]] = relationship(
-        "PrivateSchoolDetails", back_populates="school", lazy="selectin"
+        "PrivateSchoolDetails", back_populates="school", lazy="select"
     )
     admissions_history: Mapped[list[AdmissionsHistory]] = relationship(
-        "AdmissionsHistory", back_populates="school", lazy="selectin"
+        "AdmissionsHistory", back_populates="school", lazy="select"
     )
 
     def __repr__(self) -> str:

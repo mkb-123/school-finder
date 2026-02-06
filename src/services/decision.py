@@ -323,11 +323,12 @@ def apply_what_if(
 # ---------------------------------------------------------------------------
 
 
-def school_data_from_orm(school: Any, clubs: list[Any] | None = None) -> SchoolData:
+def school_data_from_orm(school: Any, clubs: list[Any] | None = None, distance_km: float | None = None) -> SchoolData:
     """Construct a :class:`SchoolData` from an ORM ``School`` instance.
 
     Optionally accepts a list of ``SchoolClub`` ORM instances to populate
-    the breakfast/afterschool flags.
+    the breakfast/afterschool flags, and a pre-computed *distance_km* value
+    (since the ``School`` ORM model has no ``distance_km`` column).
     """
     has_breakfast = False
     has_afterschool = False
@@ -353,7 +354,7 @@ def school_data_from_orm(school: Any, clubs: list[Any] | None = None) -> SchoolD
         id=school.id,
         name=school.name,
         ofsted_rating=getattr(school, "ofsted_rating", None),
-        distance_km=getattr(school, "distance_km", None),
+        distance_km=distance_km,
         is_private=getattr(school, "is_private", False),
         has_breakfast_club=has_breakfast,
         has_afterschool_club=has_afterschool,

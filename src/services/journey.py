@@ -146,6 +146,8 @@ async def calculate_journey(
     to_lng: float,
     mode: TravelMode = TravelMode.WALKING,
     time_of_day: TimeOfDay = TimeOfDay.GENERIC,
+    *,
+    straight_line_km: float | None = None,
 ) -> JourneyResult:
     """Calculate a journey between two geographic points.
 
@@ -164,13 +166,19 @@ async def calculate_journey(
         Travel mode (walking, cycling, driving, transit).
     time_of_day:
         Time-of-day window used for traffic estimation.
+    straight_line_km:
+        Optional pre-computed Haversine distance.  When provided the
+        internal Haversine calculation is skipped, avoiding redundant work
+        when the same origin/destination pair is used for multiple
+        time-of-day windows.
 
     Returns
     -------
     JourneyResult
         Estimated distance (km), duration (minutes), and rush-hour flag.
     """
-    straight_line_km = _haversine_distance(from_lat, from_lng, to_lat, to_lng)
+    if straight_line_km is None:
+        straight_line_km = _haversine_distance(from_lat, from_lng, to_lat, to_lng)
     route_factor = _ROUTE_FACTORS[mode]
     estimated_road_km = straight_line_km * route_factor
 
@@ -196,7 +204,7 @@ async def calculate_journey(
 
 
 @dataclass
-class _SchoolInfo:
+class SchoolInfo:
     """Minimal school info needed for journey comparison."""
 
     id: int
@@ -208,7 +216,7 @@ class _SchoolInfo:
 async def compare_journeys(
     from_lat: float,
     from_lng: float,
-    schools: list[_SchoolInfo],
+    schools: list[SchoolInfo],
     mode: TravelMode = TravelMode.WALKING,
 ) -> list[SchoolJourneyResult]:
     """Compare journey times from an origin to multiple schools.
@@ -237,13 +245,19 @@ async def compare_journeys(
     results: list[SchoolJourneyResult] = []
 
     for school in schools:
-        straight_line_km = _haversine_distance(from_lat, from_lng, school.lat, school.lng)
+        sl_km = _haversine_distance(from_lat, from_lng, school.lat, school.lng)
         route_factor = _ROUTE_FACTORS[mode]
-        distance_km = round(straight_line_km * route_factor, 2)
+        distance_km = round(sl_km * route_factor, 2)
 
-        dropoff = await calculate_journey(from_lat, from_lng, school.lat, school.lng, mode, TimeOfDay.DROPOFF)
-        pickup = await calculate_journey(from_lat, from_lng, school.lat, school.lng, mode, TimeOfDay.PICKUP)
-        off_peak = await calculate_journey(from_lat, from_lng, school.lat, school.lng, mode, TimeOfDay.GENERIC)
+        dropoff = await calculate_journey(
+            from_lat, from_lng, school.lat, school.lng, mode, TimeOfDay.DROPOFF, straight_line_km=sl_km
+        )
+        pickup = await calculate_journey(
+            from_lat, from_lng, school.lat, school.lng, mode, TimeOfDay.PICKUP, straight_line_km=sl_km
+        )
+        off_peak = await calculate_journey(
+            from_lat, from_lng, school.lat, school.lng, mode, TimeOfDay.GENERIC, straight_line_km=sl_km
+        )
 
         results.append(
             SchoolJourneyResult(

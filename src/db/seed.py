@@ -585,7 +585,7 @@ def _generate_test_clubs(schools: list[School]) -> list[SchoolClub]:
     rng = random.Random(42)
     clubs: list[SchoolClub] = []
     for school in schools:
-        if school.id is None or school.is_private:
+        if school.id is None:
             continue
         is_secondary = (
             school.age_range_from is not None
@@ -1010,28 +1010,30 @@ def _generate_test_performance(schools: list[School], session: Session) -> int:
         if school.id is None or school.is_private:
             continue
 
-        is_secondary = (
+        # Use overlapping range checks so all-through schools (e.g. age 4-18)
+        # get both primary AND secondary performance data.
+        has_primary = (
             school.age_range_from is not None
-            and school.age_range_from >= 11
             and school.age_range_to is not None
+            and school.age_range_from <= 11
+            and school.age_range_to >= 7
+        )
+        has_secondary = (
+            school.age_range_from is not None
+            and school.age_range_to is not None
+            and school.age_range_from <= 14
             and school.age_range_to >= 16
         )
-        is_primary = (
-            school.age_range_from is not None
-            and school.age_range_from < 11
-            and school.age_range_to is not None
-            and school.age_range_to <= 13
-        )
 
-        # Skip schools that don't clearly fit primary or secondary
-        if not is_primary and not is_secondary:
+        # Skip schools that don't cover primary or secondary years
+        if not has_primary and not has_secondary:
             continue
 
         for year in academic_years:
             # Small year-on-year variation
             year_drift = rng.uniform(-3.0, 3.0)
 
-            if is_primary:
+            if has_primary:
                 # SATs results: expected standard %
                 base_expected = rng.uniform(55.0, 85.0)
                 expected_pct = round(max(40.0, min(95.0, base_expected + year_drift)), 0)
@@ -1060,7 +1062,7 @@ def _generate_test_performance(schools: list[School], session: Session) -> int:
                 )
                 count += 1
 
-            elif is_secondary:
+            if has_secondary:
                 # GCSE results: 5+ GCSEs at grade 9-4 %
                 base_gcse = rng.uniform(50.0, 85.0)
                 gcse_pct = round(max(30.0, min(98.0, base_gcse + year_drift)), 0)
