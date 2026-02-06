@@ -158,7 +158,7 @@ Uses historical admissions data to estimate how likely a child is to get a place
 
 Calculates realistic travel times to each school factoring in actual drop-off and pick-up times:
 
-- **Time-of-day routing** - estimates use traffic data for **8:00-8:45am** (drop-off) and **2:45-3:30pm** (pick-up), not generic travel times
+- **Time-of-day routing** - estimates use traffic data for **8:00-8:45am** (drop-off) and **5:00-5:30pm** (pick-up after work), not generic travel times
 - **Multiple transport modes** - walking, cycling, driving, public transport
 - **Route display on map** - overlay the route from your postcode to the school
 - **Multi-school comparison** - "School A is 8 min walk, School B is 22 min walk at drop-off time"
