@@ -23,11 +23,11 @@ RUN uv sync --frozen --no-dev
 # Copy frontend build from stage 1
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-# Create data directory and copy pre-seeded database to /app/seed
-RUN mkdir -p /app/data /app/seed
-COPY data/schools.db /app/seed/schools.db
+# Copy database directly (no volume mount needed since DB is in git)
+RUN mkdir -p /app/data
+COPY data/schools.db /app/data/schools.db
 
-# Copy entrypoint (seeds DB on first boot if volume is empty)
+# Copy entrypoint
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 
