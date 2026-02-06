@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
-
 # ---------------------------------------------------------------------------
 # GET /api/councils
 # ---------------------------------------------------------------------------
@@ -72,9 +71,21 @@ class TestSchoolsListEndpoint:
         assert "name" in school
         assert "council" in school
         # Optional fields should exist (even if None)
-        for field in ("urn", "type", "address", "postcode", "lat", "lng",
-                       "gender_policy", "faith", "age_range_from", "age_range_to",
-                       "ofsted_rating", "is_private", "catchment_radius_km"):
+        for field in (
+            "urn",
+            "type",
+            "address",
+            "postcode",
+            "lat",
+            "lng",
+            "gender_policy",
+            "faith",
+            "age_range_from",
+            "age_range_to",
+            "ofsted_rating",
+            "is_private",
+            "catchment_radius_km",
+        ):
             assert field in school, f"Missing field: {field}"
 
     def test_filter_by_min_rating(self, test_client: TestClient):

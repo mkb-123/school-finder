@@ -7,7 +7,6 @@ import pytest
 from src.db.base import SchoolFilters
 from src.db.sqlite_repo import SQLiteSchoolRepository
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

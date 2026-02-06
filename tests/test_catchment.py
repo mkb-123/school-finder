@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from src.services.catchment import haversine_distance
 
-
 # ---------------------------------------------------------------------------
 # Known reference distances
 # ---------------------------------------------------------------------------

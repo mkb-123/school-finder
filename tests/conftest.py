@@ -15,7 +15,6 @@ from src.db.models import Base, School, SchoolClub
 from src.db.sqlite_repo import SQLiteSchoolRepository
 from src.main import app
 
-
 # ---------------------------------------------------------------------------
 # Test data helpers
 # ---------------------------------------------------------------------------
