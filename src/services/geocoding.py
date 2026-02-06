@@ -47,6 +47,17 @@ def _get_api_base_url() -> str:
 # ---------------------------------------------------------------------------
 
 
+def normalise_postcode(postcode: str) -> str:
+    """Normalise a UK postcode: uppercase, strip whitespace, ensure a space before the last 3 characters.
+
+    Examples: ``"mk58dx"`` -> ``"MK5 8DX"``, ``"MK5  8DX"`` -> ``"MK5 8DX"``.
+    """
+    cleaned = "".join(postcode.upper().split())
+    if len(cleaned) >= 4:
+        return f"{cleaned[:-3]} {cleaned[-3:]}"
+    return cleaned
+
+
 async def geocode_postcode(postcode: str) -> tuple[float, float]:
     """Geocode a UK postcode and return its latitude and longitude.
 
@@ -67,7 +78,7 @@ async def geocode_postcode(postcode: str) -> tuple[float, float]:
     GeocodingServiceError
         If there is a network or unexpected error communicating with the API.
     """
-    info = await get_postcode_info(postcode)
+    info = await get_postcode_info(normalise_postcode(postcode))
     return (info["latitude"], info["longitude"])
 
 

@@ -54,7 +54,7 @@ function ofstedColor(rating: string | null): string {
       return "#16a34a";
     case "Good":
       return "#2563eb";
-    case "Requires improvement":
+    case "Requires Improvement":
       return "#d97706";
     case "Inadequate":
       return "#dc2626";

@@ -52,8 +52,14 @@ _FALLBACK_POSTCODES: dict[str, tuple[float, float]] = {
 
 
 def _normalise_postcode(postcode: str) -> str:
-    """Upper-case and collapse whitespace so lookup keys are consistent."""
-    return " ".join(postcode.upper().split())
+    """Normalise a UK postcode: uppercase and ensure a space before the last 3 characters.
+
+    Handles input with or without spaces, e.g. ``"mk58dx"`` -> ``"MK5 8DX"``.
+    """
+    cleaned = "".join(postcode.upper().split())
+    if len(cleaned) >= 4:
+        return f"{cleaned[:-3]} {cleaned[-3:]}"
+    return cleaned
 
 
 def _fallback_lookup(postcode: str) -> GeocodeResponse | None:

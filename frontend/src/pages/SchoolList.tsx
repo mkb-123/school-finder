@@ -12,7 +12,7 @@ import { get } from "../api/client";
 const RATING_ORDER: Record<string, number> = {
   Outstanding: 4,
   Good: 3,
-  "Requires improvement": 2,
+  "Requires Improvement": 2,
   Inadequate: 1,
 };
 

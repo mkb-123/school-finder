@@ -40,7 +40,18 @@ async def _to_school_filters(params: SchoolFilterParams) -> SchoolFilters:
 
             lat, lng = await geocode_postcode(params.postcode)
         except Exception:
-            logger.warning("Failed to geocode postcode '%s' – skipping distance filters", params.postcode)
+            logger.warning("External geocoding failed for '%s' – trying local fallback", params.postcode)
+            # Fall back to the same local lookup table used by /api/geocode
+            try:
+                from src.api.geocode import _fallback_lookup
+
+                fallback = _fallback_lookup(params.postcode)
+                if fallback is not None:
+                    lat, lng = fallback.lat, fallback.lng
+                else:
+                    logger.warning("No local fallback for postcode '%s' – skipping distance filters", params.postcode)
+            except Exception:
+                logger.warning("Fallback lookup failed for '%s' – skipping distance filters", params.postcode)
 
     return SchoolFilters(
         council=params.council,

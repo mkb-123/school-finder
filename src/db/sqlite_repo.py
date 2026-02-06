@@ -104,11 +104,12 @@ class SQLiteSchoolRepository(SchoolRepository):
             stmt = stmt.where(School.faith == filters.faith)
 
         if filters.gender is not None:
-            # Exclude schools whose gender_policy is incompatible
+            # Exclude schools whose gender_policy is incompatible.
+            # GIAS data uses "Mixed" for co-ed schools, so accept both "co-ed" and "Mixed".
             if filters.gender == "male":
-                stmt = stmt.where(School.gender_policy.in_(["co-ed", "boys"]))
+                stmt = stmt.where(School.gender_policy.in_(["co-ed", "Mixed", "boys", "Boys"]))
             elif filters.gender == "female":
-                stmt = stmt.where(School.gender_policy.in_(["co-ed", "girls"]))
+                stmt = stmt.where(School.gender_policy.in_(["co-ed", "Mixed", "girls", "Girls"]))
 
         if filters.age is not None:
             stmt = stmt.where(School.age_range_from <= filters.age).where(School.age_range_to >= filters.age)

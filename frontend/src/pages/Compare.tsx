@@ -41,7 +41,7 @@ interface CompareResponse {
 const RATING_COLORS: Record<string, string> = {
   Outstanding: "text-green-700 font-semibold",
   Good: "text-blue-700 font-semibold",
-  "Requires improvement": "text-amber-700 font-semibold",
+  "Requires Improvement": "text-amber-700 font-semibold",
   Inadequate: "text-red-700 font-semibold",
 };
 
