@@ -27,3 +27,7 @@ Give parents an idea of what the uniform looks like and how much it costs. Show 
 ## Link to Prospectus
 
 Provide a direct link to each school's prospectus or welcome pack on the school detail page. Many schools publish a PDF prospectus on their website covering ethos, curriculum, facilities, and photos — surface this so parents can access it in one click rather than hunting through the school's website. Where no prospectus is available, link to the school's "About Us" or admissions page as a fallback.
+
+## School Demographics
+
+Show the demographic profile of each school using published DfE school census data. Include ethnic diversity breakdown, percentage of pupils with English as an additional language (EAL), percentage eligible for free school meals (a proxy for socioeconomic mix), and percentage with SEND support. Present this clearly and without judgement — some parents actively seek diverse, mixed environments while others want to understand the community their child will be part of. Allow comparison across shortlisted schools so parents can see how demographics differ between nearby options.
