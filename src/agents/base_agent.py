@@ -105,6 +105,10 @@ class BaseAgent(ABC):
         httpx.TransportError
             If a network-level error persists after all retries.
         """
+        # Normalize URL: prepend https:// if no protocol specified
+        if not url.startswith(("http://", "https://")):
+            url = f"https://{url}"
+
         # Check the disk cache first.
         cached = await self.fetch_cached(url)
         if cached is not None:
