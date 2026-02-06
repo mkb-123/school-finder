@@ -16,10 +16,6 @@ Not just term-time breakfast and after-school clubs, but what's available during
 
 How strict each school is about authorising absences during term time. Show whether the school issues fines for unauthorised absences (and at what threshold), their policy on holidays during term, and their overall unauthorised absence rate from published DfE data. Some schools fine after a single day, others use more discretion — this matters for families who need flexibility for religious observances, family events, or cheaper holiday bookings.
 
-## Admissions Criteria Breakdown
-
-Visualise each school's admissions priority order so parents can see exactly where they stand before applying. Show the oversubscription criteria in ranked order — looked-after children, siblings already at the school, distance, faith requirements, catchment zone, staff children, etc. Include the last distance offered for previous years so parents can gauge whether they're realistically in range. For faith schools, surface what level of religious practice is expected (regular attendance, baptism certificate, priest's reference). Flag any schools with supplementary information forms or additional steps beyond the standard council application.
-
 ## Uniform Cost & Appearance
 
 Give parents an idea of what the uniform looks like and how much it costs. Show images or a description of the required uniform (colours, style, whether a blazer or tie is needed). Indicate whether items must be bought from a specific supplier (often more expensive) or if supermarket/generic equivalents are acceptable. Include approximate costs for a full set — polo shirts, jumpers, trousers/skirts, PE kit, school bag, coat. Flag schools with expensive branded requirements versus those with a simple, affordable dress code.
