@@ -39,7 +39,13 @@
       "Bash(git pull:*)",
       "Bash(git push:*)",
       "Bash(gh auth:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(flyctl version:*)",
+      "Bash(fly version:*)",
+      "Bash(export PATH=\"/home/mitzb/.fly/bin:$PATH\")",
+      "Bash(flyctl auth:*)",
+      "Bash(npm install:*)",
+      "Bash(flyctl launch:*)"
     ]
   }
 }
