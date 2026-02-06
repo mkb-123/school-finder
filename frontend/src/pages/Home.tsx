@@ -17,8 +17,9 @@ export default function Home() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (!council || !postcode) return;
-    const params = new URLSearchParams({ council, postcode });
+    if (!council) return;
+    const params = new URLSearchParams({ council });
+    if (postcode) params.set("postcode", postcode);
     navigate(`/schools?${params.toString()}`);
   }
 
@@ -29,8 +30,8 @@ export default function Home() {
           School Finder
         </h1>
         <p className="mt-4 text-base text-gray-600 sm:text-lg">
-          Find and compare schools in your local council area. Search by
-          postcode to discover schools in your catchment, view Ofsted ratings,
+          Find and compare schools in your local council area. Browse all schools
+          or search by postcode to see distances, view Ofsted ratings,
           explore clubs, and plan the school run.
         </p>
       </div>
@@ -68,21 +69,24 @@ export default function Home() {
               htmlFor="postcode"
               className="block text-sm font-medium text-gray-700"
             >
-              Postcode
+              Postcode <span className="text-gray-500 font-normal">(optional)</span>
             </label>
             <input
               id="postcode"
               type="text"
-              placeholder="e.g. MK9 1AB"
+              placeholder="e.g. MK9 1AB (optional - for distance sorting)"
               value={postcode}
               onChange={(e) => setPostcode(e.target.value.toUpperCase())}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Enter a postcode to sort schools by distance and see catchment areas
+            </p>
           </div>
 
           <button
             type="submit"
-            disabled={!council || !postcode}
+            disabled={!council}
             className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Search Schools
