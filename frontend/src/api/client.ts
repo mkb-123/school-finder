@@ -35,6 +35,10 @@ async function request<T>(
     } as ApiError;
   }
 
+  // Handle empty 204 No Content responses
+  if (response.status === 204) {
+    return undefined as T;
+  }
   return response.json() as Promise<T>;
 }
 

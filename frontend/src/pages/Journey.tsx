@@ -1,4 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Route as RouteIcon,
+  Footprints,
+  Bike,
+  Car,
+  Bus,
+  Search,
+  Loader2,
+  MapPin,
+  AlertCircle,
+} from "lucide-react";
 import Map, { type School } from "../components/Map";
 import JourneyCard, { type SchoolJourney } from "../components/JourneyCard";
 import BusRouteCard, { type BusRoute, type NearbyBusStop } from "../components/BusRouteCard";
@@ -6,10 +17,10 @@ import { get } from "../api/client";
 
 /** Transport mode options displayed to the user. */
 const TRANSPORT_MODES = [
-  { label: "Walking", value: "walking" },
-  { label: "Cycling", value: "cycling" },
-  { label: "Driving", value: "driving" },
-  { label: "Public Transport", value: "transit" },
+  { label: "Walking", value: "walking", Icon: Footprints },
+  { label: "Cycling", value: "cycling", Icon: Bike },
+  { label: "Driving", value: "driving", Icon: Car },
+  { label: "Public Transport", value: "transit", Icon: Bus },
 ] as const;
 
 /** API response shape for the compare endpoint. */
@@ -114,7 +125,7 @@ export default function Journey() {
       }
     } catch (err: unknown) {
       const apiErr = err as { detail?: string };
-      setError(apiErr.detail ?? "Failed to calculate journeys");
+      setError(apiErr.detail ?? "Could not calculate journey times. Please check your postcode and try again.");
     } finally {
       setLoading(false);
     }
@@ -164,84 +175,113 @@ export default function Journey() {
     );
   }, [schools, schoolSearch]);
 
+  const canCalculate = postcode.trim().length > 0 && selectedSchoolIds.length > 0;
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
-      <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">
-        School Run Planner
-      </h1>
-      <p className="mt-1 text-sm text-stone-600 sm:text-base">
-        Plan the school run with realistic travel time estimates. Times are
-        calculated for drop-off (8:00-8:45am) and pick-up (5:00-5:30pm) to
-        account for peak traffic conditions.
-      </p>
+      {/* Page header */}
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 sm:h-12 sm:w-12">
+          <RouteIcon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
+        </div>
+        <div>
+          <h1 className="font-display text-2xl font-bold text-stone-900 sm:text-3xl">
+            School Run Planner
+          </h1>
+          <p className="mt-1 text-sm leading-relaxed text-stone-600 sm:text-base">
+            Compare realistic travel times to your shortlisted schools. Estimates
+            account for drop-off (8:00-8:45am) and pick-up (5:00-5:30pm) peak
+            traffic.
+          </p>
+        </div>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-12">
         {/* Controls */}
         <aside className="space-y-4 lg:col-span-4" aria-label="Journey settings">
           {/* Route Settings */}
-          <div className="rounded-lg border border-stone-200 bg-white p-4">
-            <h2 className="text-lg font-semibold text-stone-900">
-              Route Settings
+          <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-stone-900">
+              Route settings
             </h2>
 
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-5">
               {/* Postcode */}
               <div>
                 <label
                   htmlFor="journeyPostcode"
                   className="block text-sm font-medium text-stone-700"
                 >
-                  Your Postcode
+                  Your postcode
                 </label>
-                <input
-                  id="journeyPostcode"
-                  type="text"
-                  placeholder="e.g. MK9 1AB"
-                  value={postcode}
-                  onChange={(e) => setPostcode(e.target.value.toUpperCase())}
-                  className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                />
+                <div className="relative mt-1.5">
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
+                  <input
+                    id="journeyPostcode"
+                    type="text"
+                    placeholder="e.g. MK9 1AB"
+                    value={postcode}
+                    onChange={(e) => setPostcode(e.target.value.toUpperCase())}
+                    className="block w-full rounded-lg border border-stone-300 py-3 pl-9 pr-3 text-sm shadow-sm transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+                  />
+                </div>
               </div>
 
               {/* Transport Mode */}
               <div>
                 <label className="block text-sm font-medium text-stone-700">
-                  Transport Mode
+                  How will you travel?
                 </label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {TRANSPORT_MODES.map((m) => (
-                    <button
-                      key={m.value}
-                      onClick={() => setMode(m.value)}
-                      aria-pressed={mode === m.value}
-                      aria-label={`Transport mode: ${m.label}`}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 ${
-                        mode === m.value
-                          ? "bg-brand-600 text-white"
-                          : "bg-stone-100 text-stone-700 hover:bg-stone-200"
-                      }`}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
+                  {TRANSPORT_MODES.map((m) => {
+                    const isActive = mode === m.value;
+                    return (
+                      <button
+                        key={m.value}
+                        onClick={() => setMode(m.value)}
+                        aria-pressed={isActive}
+                        aria-label={`Transport mode: ${m.label}`}
+                        className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1 ${
+                          isActive
+                            ? "bg-brand-600 text-white shadow-sm"
+                            : "border border-stone-200 bg-white text-stone-700 hover:bg-stone-50"
+                        }`}
+                      >
+                        <m.Icon className="h-4 w-4" aria-hidden="true" />
+                        {m.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* School Selector */}
               <div>
                 <label className="block text-sm font-medium text-stone-700">
-                  Select Schools (up to 5)
+                  Pick schools to compare (up to 5)
                 </label>
-                <input
-                  type="text"
-                  placeholder="Search schools..."
-                  value={schoolSearch}
-                  onChange={(e) => setSchoolSearch(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                />
-                <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-stone-200">
+                <div className="relative mt-1.5">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
+                  <input
+                    type="text"
+                    placeholder="Search by name or postcode..."
+                    value={schoolSearch}
+                    onChange={(e) => setSchoolSearch(e.target.value)}
+                    aria-label="Search schools to add"
+                    className="block w-full rounded-lg border border-stone-300 py-2.5 pl-9 pr-3 text-sm shadow-sm transition-colors focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  />
+                </div>
+                <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-stone-200">
                   {loadingSchools && (
-                    <p className="p-2 text-xs text-stone-400">Loading schools...</p>
+                    <div className="flex items-center justify-center py-6 text-xs text-stone-400">
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      Loading schools...
+                    </div>
+                  )}
+                  {!loadingSchools && filteredSchools.length === 0 && (
+                    <p className="py-4 text-center text-xs text-stone-400">
+                      No schools match your search
+                    </p>
                   )}
                   {filteredSchools.map((school) => {
                     const isSelected = selectedSchoolIds.includes(school.id);
@@ -251,7 +291,7 @@ export default function Journey() {
                         key={school.id}
                         onClick={() => toggleSchool(school.id)}
                         disabled={isDisabled}
-                        className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition ${
+                        className={`flex w-full min-h-[44px] items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
                           isSelected
                             ? "bg-brand-50 font-medium text-brand-800"
                             : isDisabled
@@ -260,7 +300,7 @@ export default function Journey() {
                         }`}
                       >
                         <span
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
                             isSelected
                               ? "border-brand-600 bg-brand-600 text-white"
                               : "border-stone-300"
@@ -282,8 +322,9 @@ export default function Journey() {
                   })}
                 </div>
                 {selectedSchoolIds.length > 0 && (
-                  <p className="mt-1 text-xs text-stone-500">
+                  <p className="mt-1.5 text-xs text-stone-500">
                     {selectedSchoolIds.length} school{selectedSchoolIds.length !== 1 ? "s" : ""} selected
+                    {selectedSchoolIds.length >= 5 && " (maximum reached)"}
                   </p>
                 )}
               </div>
@@ -291,32 +332,55 @@ export default function Journey() {
               {/* Calculate button */}
               <button
                 onClick={handleCalculate}
-                disabled={loading || !postcode.trim() || selectedSchoolIds.length === 0}
+                disabled={loading || !canCalculate}
                 aria-label="Calculate journey times for selected schools"
-                className="w-full rounded-md bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-stone-300"
+                className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
               >
-                {loading ? "Calculating..." : "Calculate Journey Times"}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Calculating...
+                  </>
+                ) : (
+                  <>
+                    <RouteIcon className="h-4 w-4" aria-hidden="true" />
+                    Calculate journey times
+                  </>
+                )}
               </button>
+              {!canCalculate && !loading && (
+                <p className="text-xs text-stone-400">
+                  {!postcode.trim()
+                    ? "Enter your postcode above to get started."
+                    : "Select at least one school to compare."}
+                </p>
+              )}
             </div>
-          </div>
+          </section>
 
           {/* Error */}
           {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
-              {error}
+            <div
+              className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+              role="alert"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
+              <span>{error}</span>
             </div>
           )}
 
           {/* Journey Results */}
           {journeys.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-stone-900">
-                Travel Times
-              </h2>
-              <p className="text-xs text-stone-500">
-                Sorted by drop-off time (quickest first). Times estimated for
-                peak hours. Pick-up times are for 5:00-5:30pm (after work).
-              </p>
+            <section className="space-y-3">
+              <div>
+                <h2 className="text-lg font-semibold text-stone-900">
+                  Travel times
+                </h2>
+                <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
+                  Sorted by drop-off time (quickest first). Pick-up times are
+                  for 5:00-5:30pm after work.
+                </p>
+              </div>
               {journeys.map((journey, idx) => (
                 <JourneyCard
                   key={journey.school_id}
@@ -325,25 +389,28 @@ export default function Journey() {
                   rank={idx + 1}
                 />
               ))}
-              <p className="text-xs text-stone-400">
-                Note: estimates use straight-line distance with a route factor.
-                Actual times may vary based on road conditions, school
+              <p className="rounded-lg bg-stone-50 p-3 text-xs leading-relaxed text-stone-400">
+                These are estimates using straight-line distance with a route
+                factor. Actual times will vary based on road conditions, school
                 parking, and drop-off restrictions.
               </p>
-            </div>
+            </section>
           )}
 
           {/* Bus Routes Section */}
           {journeys.length > 0 && (
-            <div className="space-y-3">
+            <section className="space-y-3">
               <h2 className="text-lg font-semibold text-stone-900">
-                School Bus Routes
+                School bus routes
               </h2>
               {loadingBusData && (
-                <p className="text-sm text-stone-500">Loading bus route information...</p>
+                <div className="flex items-center gap-2 py-4 text-sm text-stone-500">
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  Loading bus route information...
+                </div>
               )}
               {!loadingBusData && Object.keys(busRoutes).length === 0 && (
-                <p className="text-sm text-stone-500">
+                <p className="rounded-lg border border-dashed border-stone-200 p-4 text-center text-sm text-stone-500">
                   No bus routes available for selected schools.
                 </p>
               )}
@@ -353,7 +420,7 @@ export default function Journey() {
                 if (!school || routes.length === 0) return null;
                 return (
                   <div key={schoolId} className="space-y-2">
-                    <h3 className="text-base font-semibold text-stone-800">
+                    <h3 className="text-sm font-semibold text-stone-800">
                       {school.name}
                     </h3>
                     {routes.map((route) => (
@@ -366,27 +433,32 @@ export default function Journey() {
                   </div>
                 );
               })}
-            </div>
+            </section>
           )}
 
           {/* Empty state */}
           {journeys.length === 0 && !loading && !error && (
-            <div className="rounded-lg border border-stone-200 bg-white p-4">
-              <h2 className="text-lg font-semibold text-stone-900">
-                Travel Times
+            <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
+              <h2 className="text-base font-semibold text-stone-900">
+                Travel times
               </h2>
-              <p className="mt-2 text-sm text-stone-500">
-                Enter your postcode, select up to 5 schools, and click
-                &quot;Calculate Journey Times&quot; to see estimates for
-                drop-off and pick-up.
-              </p>
-            </div>
+              <div className="mt-3 rounded-lg border-2 border-dashed border-stone-200 px-4 py-8 text-center">
+                <RouteIcon className="mx-auto h-8 w-8 text-stone-300" aria-hidden="true" />
+                <p className="mt-2 text-sm font-medium text-stone-600">
+                  Ready to plan your school run
+                </p>
+                <p className="mt-1 text-xs text-stone-400">
+                  Enter your postcode, pick up to 5 schools, and tap "Calculate
+                  journey times" to compare travel options.
+                </p>
+              </div>
+            </section>
           )}
         </aside>
 
         {/* Map */}
         <section
-          className="h-[350px] sm:h-[500px] lg:col-span-8 lg:h-auto lg:min-h-[600px]"
+          className="h-[400px] sm:h-[500px] lg:col-span-8 lg:h-auto lg:min-h-[600px]"
           aria-label="Journey map"
         >
           <Map

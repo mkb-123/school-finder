@@ -83,13 +83,27 @@ async def submit_parking_rating(
         raise HTTPException(status_code=404, detail="School not found")
 
     # Validate rating values (1-5 scale)
-    for field in ["dropoff_chaos", "pickup_chaos", "parking_availability", "road_congestion", "restrictions_hazards"]:
+    rating_fields = [
+        "dropoff_chaos",
+        "pickup_chaos",
+        "parking_availability",
+        "road_congestion",
+        "restrictions_hazards",
+    ]
+    for field in rating_fields:
         value = getattr(request, field)
         if value is not None and (value < 1 or value > 5):
             raise HTTPException(
                 status_code=400,
                 detail=f"{field} must be between 1 and 5",
             )
+
+    # Ensure at least one rating is provided
+    if all(getattr(request, f) is None for f in rating_fields):
+        raise HTTPException(
+            status_code=400,
+            detail="At least one rating field must be provided",
+        )
 
     # Create the rating
     rating = ParkingRating(

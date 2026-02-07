@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { Menu, X, GraduationCap } from "lucide-react";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
@@ -7,55 +8,98 @@ const NAV_LINKS = [
   { to: "/private-schools", label: "Private Schools" },
   { to: "/compare", label: "Compare" },
   { to: "/term-dates", label: "Term Dates" },
-  { to: "/decision-support", label: "Decision Support" },
+  { to: "/decision-support", label: "Help Me Decide" },
   { to: "/journey", label: "Journey" },
 ];
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const location = useLocation();
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        toggleRef.current &&
+        !toggleRef.current.contains(event.target as Node)
+      ) {
+        setMobileMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [mobileMenuOpen]);
+
+  // Trap focus within mobile menu and handle Escape key
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+        toggleRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileMenuOpen]);
 
   return (
     <nav
-      className="bg-white shadow-sm"
+      className="sticky top-0 z-40 border-b border-stone-200 bg-white/95 backdrop-blur-sm"
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="flex h-14 items-center justify-between">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="flex h-14 items-center justify-between sm:h-16">
           {/* Logo / brand */}
           <Link
             to="/"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg px-1 py-1 text-lg font-bold text-brand-600 transition-colors hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
             aria-label="School Finder home"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
-              SF
-            </span>
-            <span className="font-display text-xl text-stone-900">
-              School Finder
-            </span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">SF</span>
+            <span className="hidden font-display sm:inline">School Finder</span>
+            <span className="font-display sm:hidden">Schools</span>
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex md:items-center md:gap-1">
+          <div className="hidden items-center gap-0.5 md:flex">
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
                 end={link.to === "/"}
                 className={({ isActive }) =>
-                  `relative px-3 py-2 text-sm font-medium transition-colors ${
+                  `relative rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1 ${
                     isActive
-                      ? "text-brand-700"
-                      : "text-stone-500 hover:text-stone-900"
+                      ? "bg-brand-50 text-brand-700"
+                      : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
                     {link.label}
+                    {/* Active indicator bar */}
                     {isActive && (
-                      <span className="absolute inset-x-1 -bottom-[13px] h-0.5 rounded-full bg-brand-600" />
+                      <span
+                        className="absolute -bottom-[9px] left-2 right-2 h-0.5 rounded-full bg-brand-600"
+                        aria-hidden="true"
+                      />
                     )}
                   </>
                 )}
@@ -65,72 +109,62 @@ export default function Navbar() {
 
           {/* Mobile menu button */}
           <button
+            ref={toggleRef}
             type="button"
-            className="inline-flex items-center justify-center rounded-md p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-expanded={mobileMenuOpen}
-            aria-label="Open main menu"
+            aria-controls="mobile-nav-menu"
+            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
           >
-            <span className="sr-only">Open main menu</span>
             {mobileMenuOpen ? (
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <X className="h-5 w-5" aria-hidden="true" />
             ) : (
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
+              <Menu className="h-5 w-5" aria-hidden="true" />
             )}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <div className="border-t border-stone-100 md:hidden">
-          <div className="space-y-1 px-4 py-3">
-            {NAV_LINKS.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.to === "/"}
-                onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) =>
-                  `block rounded-md px-3 py-2 text-sm font-medium ${
-                    isActive
-                      ? "bg-brand-50 text-brand-700"
-                      : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
-                  }`
-                }
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </div>
+      {/* Mobile menu - slide down with transition */}
+      <div
+        ref={menuRef}
+        id="mobile-nav-menu"
+        className={`overflow-hidden border-t border-stone-200 transition-all duration-200 ease-in-out md:hidden ${
+          mobileMenuOpen ? "max-h-[420px] opacity-100" : "max-h-0 opacity-0 border-t-0"
+        }`}
+        aria-hidden={!mobileMenuOpen}
+      >
+        <div className="space-y-1 px-4 py-3">
+          {NAV_LINKS.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.to === "/"}
+              tabIndex={mobileMenuOpen ? 0 : -1}
+              className={({ isActive }) =>
+                `flex min-h-[44px] items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-brand-50 text-brand-700"
+                    : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <span className="flex items-center gap-2">
+                  {isActive && (
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-brand-600"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {link.label}
+                </span>
+              )}
+            </NavLink>
+          ))}
         </div>
-      )}
+      </div>
     </nav>
   );
 }

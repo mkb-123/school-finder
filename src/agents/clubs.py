@@ -294,7 +294,7 @@ class ClubsAgent(BaseAgent):
                     description=record.get("description"),
                     days_available=record.get("days_available"),
                     start_time=parse_time(record.get("start_time")),  # Convert string to time
-                    end_time=parse_time(record.get("end_time")),      # Convert string to time
+                    end_time=parse_time(record.get("end_time")),  # Convert string to time
                     cost_per_session=record.get("cost_per_session"),
                 )
                 session.add(club)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { get } from "../api/client";
 import Map, { type School } from "../components/Map";
 import WaitingListGauge from "../components/WaitingListGauge";
@@ -9,6 +9,17 @@ import type {
 } from "../components/WaitingListGauge";
 import SendToggle, { useSendEnabled, SendInfoPanel } from "../components/SendToggle";
 import { OfstedTrajectory } from "../components/OfstedTrajectory";
+import {
+  ArrowLeft,
+  Globe,
+  BookOpen,
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  ExternalLink,
+  AlertCircle,
+} from "lucide-react";
 
 interface Club {
   id: number;
@@ -106,10 +117,10 @@ const TABS = [
 type Tab = (typeof TABS)[number];
 
 const RATING_COLORS: Record<string, string> = {
-  Outstanding: "bg-green-100 text-green-800",
-  Good: "bg-blue-100 text-blue-800",
-  "Requires improvement": "bg-amber-100 text-amber-800",
-  Inadequate: "bg-red-100 text-red-800",
+  Outstanding: "bg-green-100 text-green-800 ring-1 ring-green-600/20",
+  Good: "bg-blue-100 text-blue-800 ring-1 ring-blue-600/20",
+  "Requires improvement": "bg-amber-100 text-amber-800 ring-1 ring-amber-600/20",
+  Inadequate: "bg-red-100 text-red-800 ring-1 ring-red-600/20",
 };
 
 function formatTime(t: string | null): string {
@@ -209,11 +220,15 @@ function academicYear(year: number): string {
 function PerformanceTab({ performance }: { performance: Performance[] }) {
   if (performance.length === 0) {
     return (
-      <div className="rounded-lg border border-stone-200 bg-white p-6">
-        <h2 className="text-xl font-semibold text-stone-900">
-          Performance &amp; Ratings
+      <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
+        <Users className="mx-auto h-10 w-10 text-stone-300" aria-hidden="true" />
+        <h2 className="mt-3 text-lg font-semibold text-stone-900">
+          No performance data available
         </h2>
-        <p className="mt-2 text-stone-600">No performance data available yet.</p>
+        <p className="mt-1 text-sm text-stone-500">
+          Academic results (SATs, GCSEs, Progress 8) are not available for this school.
+          Check the school&apos;s website or the DfE performance tables for the latest results.
+        </p>
       </div>
     );
   }
@@ -339,9 +354,14 @@ function PerformanceTab({ performance }: { performance: Performance[] }) {
 function ClassSizesTab({ classSizes }: { classSizes: ClassSize[] }) {
   if (classSizes.length === 0) {
     return (
-      <div className="rounded-lg border border-stone-200 bg-white p-6">
-        <h2 className="text-xl font-semibold text-stone-900">Class Size Trends</h2>
-        <p className="mt-2 text-stone-600">No class size data available yet.</p>
+      <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
+        <Users className="mx-auto h-10 w-10 text-stone-300" aria-hidden="true" />
+        <h2 className="mt-3 text-lg font-semibold text-stone-900">
+          No class size data available
+        </h2>
+        <p className="mt-1 text-sm text-stone-500">
+          Class size and enrollment information is not available for this school.
+        </p>
       </div>
     );
   }
@@ -490,11 +510,15 @@ function ClassSizesTab({ classSizes }: { classSizes: ClassSize[] }) {
 function ClubsTab({ clubs }: { clubs: Club[] }) {
   if (clubs.length === 0) {
     return (
-      <div className="rounded-lg border border-stone-200 bg-white p-6">
-        <h2 className="text-xl font-semibold text-stone-900">
-          Breakfast &amp; After-School Clubs
+      <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
+        <Clock className="mx-auto h-10 w-10 text-stone-300" aria-hidden="true" />
+        <h2 className="mt-3 text-lg font-semibold text-stone-900">
+          No club information available
         </h2>
-        <p className="mt-2 text-stone-600">No club data available yet.</p>
+        <p className="mt-1 text-sm text-stone-500">
+          We don&apos;t have breakfast or after-school club details for this school.
+          Contact the school directly for their wraparound care options.
+        </p>
       </div>
     );
   }
@@ -574,7 +598,32 @@ export default function SchoolDetail() {
   if (loading) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-        <p className="text-stone-500" aria-live="polite">Loading school details...</p>
+        {/* Skeleton loading state */}
+        <div className="animate-pulse" aria-live="polite" aria-label="Loading school details">
+          <div className="h-4 w-24 rounded bg-stone-200" />
+          <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="h-8 w-3/4 rounded bg-stone-200" />
+              <div className="mt-2 h-4 w-1/2 rounded bg-stone-200" />
+              <div className="mt-1 h-3 w-1/3 rounded bg-stone-200" />
+            </div>
+            <div className="h-8 w-24 rounded-full bg-stone-200" />
+          </div>
+          <div className="mt-4 flex gap-2">
+            <div className="h-6 w-20 rounded bg-stone-200" />
+            <div className="h-6 w-16 rounded bg-stone-200" />
+            <div className="h-6 w-24 rounded bg-stone-200" />
+          </div>
+          <div className="mt-6 flex gap-4 border-b border-stone-200 pb-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-4 w-16 rounded bg-stone-200" />
+            ))}
+          </div>
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <div className="h-64 rounded-lg bg-stone-200" />
+            <div className="h-64 rounded-lg bg-stone-200" />
+          </div>
+        </div>
       </main>
     );
   }
@@ -582,80 +631,127 @@ export default function SchoolDetail() {
   if (!school) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-        <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">School Not Found</h1>
-        <p className="mt-2 text-stone-600">
-          No school found with ID {id}.
-        </p>
+        <Link
+          to="/schools"
+          className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-700 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to schools
+        </Link>
+        <div className="mt-8 rounded-lg border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-stone-300" aria-hidden="true" />
+          <h1 className="mt-4 text-xl font-bold text-stone-900">School not found</h1>
+          <p className="mt-2 text-sm text-stone-500">
+            We couldn&apos;t find the school you&apos;re looking for. It may have been removed
+            or the link might be incorrect.
+          </p>
+          <Link
+            to="/schools"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+          >
+            Browse all schools
+          </Link>
+        </div>
       </main>
     );
   }
 
-  const badge = RATING_COLORS[school.ofsted_rating ?? ""] ?? "bg-stone-100 text-stone-800";
+  const badge = RATING_COLORS[school.ofsted_rating ?? ""] ?? "bg-stone-100 text-stone-700 ring-1 ring-stone-300/50";
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">{school.name}</h1>
-          <p className="mt-1 text-sm text-stone-600 sm:text-base">{school.address}</p>
-          <p className="text-xs text-stone-500 sm:text-sm">{school.postcode}</p>
+      {/* Back navigation */}
+      <Link
+        to="/schools"
+        className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-700 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        Back to schools
+      </Link>
+
+      {/* School header */}
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display text-2xl font-bold text-stone-900 sm:text-3xl">{school.name}</h1>
+          <div className="mt-1.5 flex items-center gap-1.5 text-sm text-stone-600">
+            <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-stone-400" aria-hidden="true" />
+            <span>{school.address}, {school.postcode}</span>
+          </div>
           {school.ethos && (
-            <p className="mt-2 text-sm italic text-stone-700">"{school.ethos}"</p>
+            <p className="mt-2.5 text-sm leading-relaxed text-stone-600">
+              {school.ethos}
+            </p>
           )}
         </div>
-        {school.ofsted_rating && (
-          <span className={`rounded-full px-3 py-1 text-sm font-medium ${badge}`}>
-            {school.ofsted_rating}
+        <div className="flex flex-shrink-0 flex-col items-end gap-2">
+          {school.ofsted_rating && (
+            <span className={`inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-semibold ${badge}`}>
+              {school.ofsted_rating}
+            </span>
+          )}
+          {school.ofsted_date && (
+            <span className="text-xs text-stone-400">
+              Inspected {school.ofsted_date}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Quick facts - parent-relevant info, no URN */}
+      <div className="mt-4 flex flex-wrap gap-2 text-xs sm:text-sm">
+        <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-700">
+          Ages {school.age_range_from}&ndash;{school.age_range_to}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-700">
+          {school.gender_policy}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-700 capitalize">
+          {school.type || (school.is_private ? "Independent" : "State")}
+        </span>
+        {school.faith && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-700">
+            {school.faith}
+          </span>
+        )}
+        {school.distance_km != null && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 font-medium text-brand-700">
+            <MapPin className="h-3 w-3" aria-hidden="true" />
+            {school.distance_km.toFixed(1)} km away
           </span>
         )}
       </div>
 
-      {/* Quick facts */}
-      <div className="mt-4 flex flex-wrap gap-2 text-xs text-stone-600 sm:gap-3 sm:text-sm">
-        <span className="rounded bg-stone-100 px-2 py-1">
-          Ages {school.age_range_from}&ndash;{school.age_range_to}
-        </span>
-        <span className="rounded bg-stone-100 px-2 py-1">
-          {school.gender_policy}
-        </span>
-        <span className="rounded bg-stone-100 px-2 py-1 capitalize">
-          {school.type || (school.is_private ? "Private" : "State")}
-        </span>
-        {school.faith && (
-          <span className="rounded bg-stone-100 px-2 py-1">{school.faith}</span>
-        )}
-        <span className="rounded bg-stone-100 px-2 py-1">
-          URN: {school.urn}
-        </span>
-      </div>
-
-      {/* Tab navigation - horizontal scroll on mobile */}
-      <div className="mt-6 border-b border-stone-200">
-        <nav
-          className="-mb-px flex overflow-x-auto"
-          role="tablist"
-          aria-label="School detail tabs"
-        >
-          {TABS.map((tab, idx) => (
-            <button
-              key={tab}
-              id={`school-tab-${tab}`}
-              role="tab"
-              aria-selected={activeTab === tab}
-              aria-controls={`school-tabpanel-${tab}`}
-              tabIndex={activeTab === tab ? 0 : -1}
-              onClick={() => setActiveTab(tab)}
-              onKeyDown={(e) => handleTabKeyDown(e, idx)}
-              className={`flex-shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:px-4 ${
-                activeTab === tab
-                  ? "border-brand-600 text-brand-600"
-                  : "border-transparent text-stone-500 hover:border-stone-300 hover:text-stone-700"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>
+      {/* Tab navigation - with scroll indicators on mobile */}
+      <div className="relative mt-6">
+        <div className="border-b border-stone-200">
+          <nav
+            className="-mb-px flex overflow-x-auto scrollbar-hide"
+            role="tablist"
+            aria-label="School information sections"
+          >
+            {TABS.map((tab, idx) => (
+              <button
+                key={tab}
+                id={`school-tab-${tab}`}
+                role="tab"
+                aria-selected={activeTab === tab}
+                aria-controls={`school-tabpanel-${tab}`}
+                tabIndex={activeTab === tab ? 0 : -1}
+                onClick={() => setActiveTab(tab)}
+                onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                className={`flex-shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:px-4 ${
+                  activeTab === tab
+                    ? "border-brand-600 text-brand-600"
+                    : "border-transparent text-stone-500 hover:border-stone-300 hover:text-stone-700"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </nav>
+        </div>
+        {/* Right-edge fade to indicate more tabs are scrollable on mobile */}
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-stone-50 to-transparent sm:hidden" aria-hidden="true" />
       </div>
 
       {/* Tab content */}
@@ -667,90 +763,88 @@ export default function SchoolDetail() {
       >
         {activeTab === "Overview" && (
           <div className="space-y-6">
-            {/* School Website */}
-            {school.website && (
-              <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <svg className="h-6 w-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-medium text-stone-900">School Website</p>
-                      <p className="text-xs text-stone-600">Visit the official school website</p>
-                    </div>
-                  </div>
+            {/* Quick links bar - compact, side-by-side */}
+            {(school.website || school.prospectus_url) && (
+              <div className="flex flex-wrap gap-3">
+                {school.website && (
                   <a
                     href={school.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                    className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 shadow-sm transition-all hover:border-stone-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                   >
-                    Visit Website
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 1 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
+                    <Globe className="h-4 w-4 text-brand-600" aria-hidden="true" />
+                    School website
+                    <ExternalLink className="h-3.5 w-3.5 text-stone-400" aria-hidden="true" />
                   </a>
-                </div>
-              </div>
-            )}
-            {/* Prospectus Link */}
-            {school.prospectus_url && (
-              <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <svg className="h-6 w-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-medium text-stone-900">School Prospectus</p>
-                      <p className="text-xs text-stone-600">View detailed information about the school</p>
-                    </div>
-                  </div>
+                )}
+                {school.prospectus_url && (
                   <a
                     href={school.prospectus_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                    className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 shadow-sm transition-all hover:border-stone-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                   >
-                    View Prospectus
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
+                    <BookOpen className="h-4 w-4 text-brand-600" aria-hidden="true" />
+                    View prospectus
+                    <ExternalLink className="h-3.5 w-3.5 text-stone-400" aria-hidden="true" />
                   </a>
-                </div>
+                )}
               </div>
             )}
+
             <div className="grid gap-6 lg:grid-cols-2">
+              {/* School details card */}
               <div className="rounded-lg border border-stone-200 bg-white p-6">
-                <h2 className="text-xl font-semibold text-stone-900">Details</h2>
+                <h2 className="text-lg font-semibold text-stone-900">School details</h2>
                 <dl className="mt-4 space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-stone-500">Type</dt>
-                    <dd className="font-medium text-stone-900 capitalize">{school.type}</dd>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-stone-500">School type</dt>
+                    <dd className="font-medium text-stone-900 capitalize text-right">{school.type}</dd>
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-stone-500">Council</dt>
-                    <dd className="font-medium text-stone-900">{school.council}</dd>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-stone-500">Local authority</dt>
+                    <dd className="font-medium text-stone-900 text-right">{school.council}</dd>
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-stone-500">Catchment Radius</dt>
-                    <dd className="font-medium text-stone-900">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-stone-500">Age range</dt>
+                    <dd className="font-medium text-stone-900 text-right">
+                      {school.age_range_from}&ndash;{school.age_range_to} years
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-stone-500">Catchment radius</dt>
+                    <dd className="font-medium text-stone-900 text-right">
                       {school.catchment_radius_km} km
                     </dd>
                   </div>
+                  {school.ofsted_rating && (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-stone-500">Ofsted rating</dt>
+                      <dd>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${badge}`}>
+                          {school.ofsted_rating}
+                        </span>
+                      </dd>
+                    </div>
+                  )}
                   {school.ofsted_date && (
-                    <div className="flex justify-between">
-                      <dt className="text-stone-500">Last Ofsted</dt>
-                      <dd className="font-medium text-stone-900">
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-stone-500">Last inspection</dt>
+                      <dd className="font-medium text-stone-900 text-right">
                         {school.ofsted_date}
                       </dd>
                     </div>
                   )}
                 </dl>
+                {/* URN - subtle reference info at bottom */}
+                <p className="mt-4 border-t border-stone-100 pt-3 text-xs text-stone-400">
+                  URN: {school.urn}
+                </p>
               </div>
+
               {/* Catchment map */}
-              <div className="h-[350px] rounded-lg border border-stone-200 bg-white">
+              <div className="h-[300px] overflow-hidden rounded-lg border border-stone-200 bg-white sm:h-[350px]">
                 {school.lat != null && school.lng != null ? (
                   <Map
                     center={[school.lat, school.lng]}
@@ -759,14 +853,22 @@ export default function SchoolDetail() {
                     selectedSchoolId={school.id}
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-stone-400">
-                    No location data
+                  <div className="flex h-full flex-col items-center justify-center text-center p-6">
+                    <MapPin className="h-8 w-8 text-stone-300" aria-hidden="true" />
+                    <p className="mt-2 text-sm text-stone-400">
+                      Location data not available for this school
+                    </p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* SEND information - hidden by default */}
+            {/* Ofsted Trajectory */}
+            {school.ofsted_trajectory && (
+              <OfstedTrajectory trajectory={school.ofsted_trajectory} />
+            )}
+
+            {/* SEND information - hidden by default, cleaner toggle */}
             {sendEnabled && (
               <SendInfoPanel
                 senProvision={null}
@@ -776,19 +878,14 @@ export default function SchoolDetail() {
               />
             )}
             {!sendEnabled && (
-              <div className="rounded-lg border border-stone-100 bg-stone-50 p-4">
-                <div className="flex items-center justify-between">
+              <div className="rounded-lg border border-stone-100 bg-stone-50/50 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
                   <p className="text-xs text-stone-500">
-                    SEND information is hidden. Enable it to see SEN provision details.
+                    Looking for SEND provision details? Enable below to see special educational needs information.
                   </p>
                   <SendToggle />
                 </div>
               </div>
-            )}
-
-            {/* Ofsted Trajectory */}
-            {school.ofsted_trajectory && (
-              <OfstedTrajectory trajectory={school.ofsted_trajectory} />
             )}
           </div>
         )}
@@ -802,11 +899,27 @@ export default function SchoolDetail() {
         )}
 
         {activeTab === "Term Dates" && (
-          <div className="rounded-lg border border-stone-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-stone-900">Term Dates</h2>
-            <p className="mt-2 text-stone-600">
-              Term dates will be populated by the term times agent.
+          <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
+            <Calendar className="mx-auto h-10 w-10 text-stone-300" aria-hidden="true" />
+            <h2 className="mt-3 text-lg font-semibold text-stone-900">
+              No term dates available
+            </h2>
+            <p className="mt-1 text-sm text-stone-500">
+              Term date information is not available for this school.
+              Check the school&apos;s website or your local council for published term dates.
             </p>
+            {school.website && (
+              <a
+                href={school.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm hover:border-stone-300 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+              >
+                <Globe className="h-4 w-4 text-brand-600" aria-hidden="true" />
+                Check school website
+                <ExternalLink className="h-3.5 w-3.5 text-stone-400" aria-hidden="true" />
+              </a>
+            )}
           </div>
         )}
 

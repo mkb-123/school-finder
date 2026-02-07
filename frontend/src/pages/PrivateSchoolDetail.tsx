@@ -48,7 +48,7 @@ interface PrivateSchoolResponse extends School {
 
 /** Format a time string like "08:15:00" to "8:15 AM". */
 function formatTime(timeStr: string | null): string {
-  if (!timeStr) return "--";
+  if (!timeStr) return "Not available";
   const parts = timeStr.split(":");
   if (parts.length < 2) return timeStr;
   const hours = parseInt(parts[0], 10);
@@ -60,7 +60,7 @@ function formatTime(timeStr: string | null): string {
 
 /** Format currency amount. */
 function formatFee(amount: number | null): string {
-  if (amount == null) return "--";
+  if (amount == null) return "Not available";
   return new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency: "GBP",
@@ -146,6 +146,37 @@ function calculateTrueAnnualCost(detail: PrivateDetail): {
   };
 }
 
+/** Skeleton loading state for the detail page. */
+function DetailSkeleton() {
+  return (
+    <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
+      <div className="animate-pulse">
+        {/* Back link skeleton */}
+        <div className="mb-6 h-4 w-40 rounded bg-stone-200" />
+
+        {/* Header skeleton */}
+        <div className="space-y-3">
+          <div className="h-8 w-3/4 rounded bg-stone-200" />
+          <div className="h-4 w-1/2 rounded bg-stone-100" />
+          <div className="flex gap-2">
+            <div className="h-7 w-20 rounded-full bg-stone-100" />
+            <div className="h-7 w-16 rounded-full bg-stone-100" />
+            <div className="h-7 w-24 rounded-full bg-violet-100" />
+          </div>
+        </div>
+
+        {/* Content grid skeleton */}
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="h-64 rounded-lg border border-stone-200 bg-white" />
+          <div className="h-64 rounded-lg border border-stone-200 bg-white" />
+          <div className="h-48 rounded-lg border border-stone-200 bg-white" />
+          <div className="h-48 rounded-lg border border-stone-200 bg-white" />
+        </div>
+      </div>
+    </main>
+  );
+}
+
 export default function PrivateSchoolDetail() {
   const { id } = useParams<{ id: string }>();
   const [school, setSchool] = useState<PrivateSchoolResponse | null>(null);
@@ -161,26 +192,32 @@ export default function PrivateSchoolDetail() {
   }, [id]);
 
   if (loading) {
-    return (
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-        <p className="text-stone-500" aria-live="polite">Loading school details...</p>
-      </main>
-    );
+    return <DetailSkeleton />;
   }
 
   if (!school) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-        <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">School Not Found</h1>
-        <p className="mt-2 text-stone-600">
-          No private school found with ID {id}.
-        </p>
-        <Link
-          to="/private-schools"
-          className="mt-4 inline-block text-brand-600 hover:underline"
-        >
-          Back to private schools
-        </Link>
+        <div className="flex flex-col items-center py-16 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-stone-100">
+            <svg className="h-8 w-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <h1 className="mt-4 text-xl font-bold text-stone-900 sm:text-2xl">School not found</h1>
+          <p className="mt-2 max-w-md text-sm text-stone-500">
+            We couldn't find this school. It may have been removed or the link may be incorrect.
+          </p>
+          <Link
+            to="/private-schools"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Browse private schools
+          </Link>
+        </div>
       </main>
     );
   }
@@ -201,17 +238,18 @@ export default function PrivateSchoolDetail() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-      {/* Back link */}
+      {/* Back link with proper touch target */}
       <Link
         to="/private-schools"
-        className="mb-4 inline-flex items-center text-sm text-brand-600 hover:underline"
+        className="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 -ml-3 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
         aria-label="Back to private schools list"
       >
         <svg
-          className="mr-1 h-4 w-4"
+          className="h-4 w-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"
@@ -226,72 +264,78 @@ export default function PrivateSchoolDetail() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">{school.name}</h1>
+          <h1 className="font-display text-2xl font-bold text-stone-900 sm:text-3xl">{school.name}</h1>
           <p className="mt-1 text-sm text-stone-600 sm:text-base">{school.address}</p>
           <p className="text-xs text-stone-500 sm:text-sm">{school.postcode}</p>
           {school.ethos && (
-            <p className="mt-2 text-sm italic text-stone-700">"{school.ethos}"</p>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600">
+              {school.ethos}
+            </p>
           )}
         </div>
       </div>
 
       {/* Quick facts */}
-      <div className="mt-4 flex flex-wrap gap-3 text-sm text-stone-600">
-        <span className="rounded bg-stone-100 px-2 py-1">
+      <div className="mt-4 flex flex-wrap gap-2 text-sm" aria-label="School quick facts">
+        <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">
           Ages {school.age_range_from}&ndash;{school.age_range_to}
         </span>
-        <span className="rounded bg-stone-100 px-2 py-1">
+        <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">
           {school.gender_policy}
         </span>
-        <span className="rounded bg-purple-100 px-2 py-1 text-purple-800">
+        <span className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1 font-medium text-violet-700 ring-1 ring-violet-600/20">
           Independent
         </span>
         {school.faith && (
-          <span className="rounded bg-stone-100 px-2 py-1">{school.faith}</span>
+          <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">{school.faith}</span>
         )}
-        <span className="rounded bg-stone-100 px-2 py-1">
+        <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-500 text-xs">
           URN: {school.urn}
         </span>
       </div>
 
+      {/* Fee summary banner */}
+      {feeMin != null && feeMax != null && (
+        <div className="mt-6 rounded-xl bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-200 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-brand-800">Termly fees</p>
+              <p className="mt-0.5 text-xl font-bold text-brand-900 sm:text-2xl">
+                {feeMin === feeMax
+                  ? `${formatFee(feeMin)} per term`
+                  : `${formatFee(feeMin)} -- ${formatFee(feeMax)} per term`}
+              </p>
+            </div>
+            {feeIncreasePct != null && (
+              <div className="rounded-lg bg-white/60 px-3 py-2 text-right">
+                <p className="text-xs text-brand-700">Est. annual increase</p>
+                <p className="text-sm font-semibold text-brand-900">~{feeIncreasePct}%</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Content grid */}
       <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Fees */}
-        <section className="rounded-lg border border-stone-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-stone-900">Fees</h2>
+        {/* Fees per age group */}
+        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+          <h2 className="text-lg font-semibold text-stone-900">Fee Breakdown</h2>
           <p className="mt-1 text-sm text-stone-500">
-            Termly and annual fee breakdowns by age group.
+            Fees by age group, shown per term and per year.
           </p>
-          {feeMin != null && feeMax != null && (
-            <div className="mt-3 rounded-md bg-brand-50 px-3 py-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-brand-800">Fee range</span>
-                <span className="font-semibold text-brand-900">
-                  {feeMin === feeMax
-                    ? `${formatFee(feeMin)}/term`
-                    : `${formatFee(feeMin)} - ${formatFee(feeMax)}/term`}
-                </span>
-              </div>
-              {feeIncreasePct != null && (
-                <div className="mt-1 flex items-center justify-between text-xs text-brand-700">
-                  <span>Est. annual increase</span>
-                  <span className="font-medium">~{feeIncreasePct}% per year</span>
-                </div>
-              )}
-            </div>
-          )}
           {details.length > 0 ? (
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 divide-y divide-stone-100">
               {details.map((d) => (
                 <div
                   key={d.id}
-                  className="flex items-center justify-between border-b border-stone-100 py-2 text-sm"
+                  className="flex items-center justify-between py-3 text-sm"
                 >
-                  <span className="text-stone-600">
+                  <span className="font-medium text-stone-700">
                     {d.fee_age_group ?? "General"}
                   </span>
                   <div className="text-right">
-                    <span className="font-medium text-stone-900">
+                    <span className="font-semibold text-stone-900">
                       {formatFee(d.termly_fee)}
                     </span>
                     <span className="ml-1 text-stone-400">/term</span>
@@ -305,27 +349,70 @@ export default function PrivateSchoolDetail() {
               ))}
             </div>
           ) : (
-            <p className="mt-4 text-sm text-stone-400">
+            <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
+              <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               No fee data available yet.
-            </p>
+            </div>
+          )}
+        </section>
+
+        {/* School Hours */}
+        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+          <h2 className="text-lg font-semibold text-stone-900">School Hours</h2>
+          <p className="mt-1 text-sm text-stone-500">
+            Daily start and end times for the school day.
+          </p>
+          {firstDetail && (firstDetail.school_day_start || firstDetail.school_day_end) ? (
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-center">
+                <p className="text-xs font-medium uppercase tracking-wide text-green-700">Start</p>
+                <p className="mt-1 text-xl font-bold text-green-900">
+                  {formatTime(firstDetail.school_day_start)}
+                </p>
+              </div>
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-center">
+                <p className="text-xs font-medium uppercase tracking-wide text-amber-700">End</p>
+                <p className="mt-1 text-xl font-bold text-amber-900">
+                  {formatTime(firstDetail.school_day_end)}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
+              <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              No hours data available yet.
+            </div>
           )}
         </section>
 
         {/* True Cost Breakdown */}
         {details.length > 0 && (
-          <section className="rounded-lg border border-orange-200 bg-orange-50 p-6 md:col-span-2">
-            <h2 className="text-xl font-semibold text-stone-900">True Annual Cost</h2>
-            <p className="mt-1 text-sm text-stone-600">
-              Headline fees don't tell the whole story. These are the additional costs that aren't included in the advertised fee.
-            </p>
+          <section className="rounded-xl border border-orange-200 bg-orange-50/50 p-5 sm:p-6 md:col-span-2">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-orange-100">
+                <svg className="h-5 w-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-stone-900">True Annual Cost</h2>
+                <p className="mt-0.5 text-sm text-stone-600">
+                  The headline fee is just the starting point. These are the additional compulsory and optional costs you should budget for.
+                </p>
+              </div>
+            </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {details.map((detail) => {
                 const costs = calculateTrueAnnualCost(detail);
                 return (
                   <div
                     key={detail.id}
-                    className="rounded-lg border border-orange-300 bg-white p-5"
+                    className="rounded-xl border border-orange-200 bg-white p-5"
                   >
                     <h3 className="font-semibold text-stone-900">
                       {detail.fee_age_group || "General"}
@@ -352,31 +439,49 @@ export default function PrivateSchoolDetail() {
 
                       <div className="space-y-1 text-xs text-stone-600">
                         {detail.lunches_compulsory && detail.lunches_per_term && (
-                          <div>• Lunches: {formatFee(detail.lunches_per_term * 3)}/yr</div>
+                          <div className="flex justify-between">
+                            <span>Lunches</span>
+                            <span>{formatFee(detail.lunches_per_term * 3)}/yr</span>
+                          </div>
                         )}
                         {detail.exam_fees_compulsory && detail.exam_fees_per_year && (
-                          <div>• Exam fees: {formatFee(detail.exam_fees_per_year)}/yr</div>
+                          <div className="flex justify-between">
+                            <span>Exam fees</span>
+                            <span>{formatFee(detail.exam_fees_per_year)}/yr</span>
+                          </div>
                         )}
                         {detail.textbooks_compulsory && detail.textbooks_per_year && (
-                          <div>• Textbooks: {formatFee(detail.textbooks_per_year)}/yr</div>
+                          <div className="flex justify-between">
+                            <span>Textbooks</span>
+                            <span>{formatFee(detail.textbooks_per_year)}/yr</span>
+                          </div>
                         )}
                         {detail.uniform_compulsory && detail.uniform_per_year && (
-                          <div>• Uniform: {formatFee(detail.uniform_per_year)}/yr</div>
+                          <div className="flex justify-between">
+                            <span>Uniform</span>
+                            <span>{formatFee(detail.uniform_per_year)}/yr</span>
+                          </div>
                         )}
                         {detail.insurance_compulsory && detail.insurance_per_year && (
-                          <div>• Insurance: {formatFee(detail.insurance_per_year)}/yr</div>
+                          <div className="flex justify-between">
+                            <span>Insurance</span>
+                            <span>{formatFee(detail.insurance_per_year)}/yr</span>
+                          </div>
                         )}
                         {detail.building_fund_compulsory && detail.building_fund_per_year && (
-                          <div>• Building fund: {formatFee(detail.building_fund_per_year)}/yr</div>
+                          <div className="flex justify-between">
+                            <span>Building fund</span>
+                            <span>{formatFee(detail.building_fund_per_year)}/yr</span>
+                          </div>
                         )}
                       </div>
                     </div>
 
                     {/* True annual cost */}
-                    <div className="mt-3 rounded-md bg-orange-100 px-3 py-2">
+                    <div className="mt-3 rounded-lg bg-orange-100 px-4 py-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-orange-900">True annual cost</span>
-                        <span className="text-lg font-bold text-orange-900">
+                        <span className="text-xl font-bold text-orange-900">
                           {formatFee(costs.total)}
                         </span>
                       </div>
@@ -384,46 +489,70 @@ export default function PrivateSchoolDetail() {
 
                     {/* Optional extras */}
                     {costs.optional > 0 && (
-                      <div className="mt-3 border-t border-stone-200 pt-3">
-                        <div className="mb-2 flex items-center justify-between text-xs">
-                          <span className="font-medium text-stone-600">Optional extras</span>
+                      <details className="mt-3 border-t border-stone-200 pt-3">
+                        <summary className="flex cursor-pointer items-center justify-between text-xs font-medium text-stone-600 hover:text-stone-900">
+                          <span>Optional extras</span>
                           <span className="font-medium text-stone-700">
                             +{formatFee(costs.optional)}
                           </span>
-                        </div>
-                        <div className="space-y-1 text-xs text-stone-500">
+                        </summary>
+                        <div className="mt-2 space-y-1 text-xs text-stone-500">
                           {!detail.lunches_compulsory && detail.lunches_per_term && (
-                            <div>• Lunches: {formatFee(detail.lunches_per_term * 3)}/yr</div>
+                            <div className="flex justify-between">
+                              <span>Lunches</span>
+                              <span>{formatFee(detail.lunches_per_term * 3)}/yr</span>
+                            </div>
                           )}
                           {detail.trips_per_term && (
-                            <div>• Trips: {formatFee(detail.trips_per_term * 3)}/yr</div>
+                            <div className="flex justify-between">
+                              <span>Trips</span>
+                              <span>{formatFee(detail.trips_per_term * 3)}/yr</span>
+                            </div>
                           )}
                           {detail.music_tuition_per_term && (
-                            <div>• Music tuition: {formatFee(detail.music_tuition_per_term * 3)}/yr</div>
+                            <div className="flex justify-between">
+                              <span>Music tuition</span>
+                              <span>{formatFee(detail.music_tuition_per_term * 3)}/yr</span>
+                            </div>
                           )}
                           {detail.sports_per_term && (
-                            <div>• Sports: {formatFee(detail.sports_per_term * 3)}/yr</div>
+                            <div className="flex justify-between">
+                              <span>Sports</span>
+                              <span>{formatFee(detail.sports_per_term * 3)}/yr</span>
+                            </div>
                           )}
                           {!detail.insurance_compulsory && detail.insurance_per_year && (
-                            <div>• Insurance: {formatFee(detail.insurance_per_year)}/yr</div>
+                            <div className="flex justify-between">
+                              <span>Insurance</span>
+                              <span>{formatFee(detail.insurance_per_year)}/yr</span>
+                            </div>
                           )}
                           {!detail.building_fund_compulsory && detail.building_fund_per_year && (
-                            <div>• Building fund: {formatFee(detail.building_fund_per_year)}/yr</div>
+                            <div className="flex justify-between">
+                              <span>Building fund</span>
+                              <span>{formatFee(detail.building_fund_per_year)}/yr</span>
+                            </div>
                           )}
                         </div>
-                      </div>
+                      </details>
                     )}
 
                     {/* One-time costs */}
                     {(detail.registration_fee || detail.deposit_fee) && (
                       <div className="mt-3 border-t border-stone-200 pt-3">
-                        <div className="text-xs font-medium text-stone-600">One-time costs (first year):</div>
+                        <p className="text-xs font-medium text-stone-600">One-time costs (first year)</p>
                         <div className="mt-1 space-y-1 text-xs text-stone-500">
                           {detail.registration_fee && (
-                            <div>• Registration: {formatFee(detail.registration_fee)}</div>
+                            <div className="flex justify-between">
+                              <span>Registration</span>
+                              <span>{formatFee(detail.registration_fee)}</span>
+                            </div>
                           )}
                           {detail.deposit_fee && (
-                            <div>• Deposit (often refundable): {formatFee(detail.deposit_fee)}</div>
+                            <div className="flex justify-between">
+                              <span>Deposit (often refundable)</span>
+                              <span>{formatFee(detail.deposit_fee)}</span>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -441,115 +570,94 @@ export default function PrivateSchoolDetail() {
           </section>
         )}
 
-        {/* School Hours */}
-        <section className="rounded-lg border border-stone-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-stone-900">School Hours</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            School day start and end times.
-          </p>
-          {firstDetail ? (
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-stone-600">School day starts</span>
-                <span className="font-medium text-stone-900">
-                  {formatTime(firstDetail.school_day_start)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-stone-600">School day ends</span>
-                <span className="font-medium text-stone-900">
-                  {formatTime(firstDetail.school_day_end)}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-stone-400">
-              No hours data available yet.
-            </p>
-          )}
-        </section>
-
         {/* Transport */}
-        <section className="rounded-lg border border-stone-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-stone-900">Transport</h2>
+        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+          <h2 className="text-lg font-semibold text-stone-900">Transport</h2>
           <p className="mt-1 text-sm text-stone-500">
-            School transport availability, routes, and eligibility.
+            School transport availability and details.
           </p>
           {providesTransport != null ? (
             <div className="mt-4 space-y-3">
-              <div className="flex items-center gap-2 text-sm">
+              <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${
+                providesTransport
+                  ? "bg-green-50 text-green-800 ring-1 ring-green-600/20"
+                  : "bg-stone-100 text-stone-700"
+              }`}>
                 <span
-                  className={`inline-block h-3 w-3 rounded-full ${providesTransport ? "bg-green-500" : "bg-red-400"}`}
+                  className={`inline-block h-2 w-2 rounded-full ${providesTransport ? "bg-green-500" : "bg-stone-400"}`}
+                  aria-hidden="true"
                 />
-                <span className="font-medium text-stone-900">
-                  {providesTransport
-                    ? "Transport provided"
-                    : "No school transport"}
-                </span>
+                {providesTransport ? "Transport provided" : "No school transport"}
               </div>
               {transportNotes && (
-                <p className="text-sm text-stone-600">{transportNotes}</p>
+                <p className="text-sm leading-relaxed text-stone-600">{transportNotes}</p>
               )}
             </div>
           ) : (
-            <p className="mt-4 text-sm text-stone-400">
+            <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
+              <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               No transport data available yet.
-            </p>
+            </div>
           )}
         </section>
 
         {/* Holiday Schedule */}
-        <section className="rounded-lg border border-stone-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-stone-900">
+        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+          <h2 className="text-lg font-semibold text-stone-900">
             Holiday Schedule
           </h2>
           <p className="mt-1 text-sm text-stone-500">
             Private schools often have different term dates from state schools.
           </p>
           {holidayNotes ? (
-            <p className="mt-4 text-sm text-stone-600">{holidayNotes}</p>
+            <p className="mt-4 text-sm leading-relaxed text-stone-600">{holidayNotes}</p>
           ) : (
-            <p className="mt-4 text-sm text-stone-400">
+            <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
+              <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
               No holiday schedule data available yet.
-            </p>
+            </div>
           )}
         </section>
 
         {/* General Information */}
-        <section className="rounded-lg border border-stone-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-stone-900">
+        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+          <h2 className="text-lg font-semibold text-stone-900">
             General Information
           </h2>
-          <dl className="mt-4 space-y-3 text-sm">
-            <div className="flex justify-between">
+          <dl className="mt-4 divide-y divide-stone-100 text-sm">
+            <div className="flex justify-between py-2.5">
               <dt className="text-stone-500">Address</dt>
-              <dd className="text-right font-medium text-stone-900">
+              <dd className="max-w-[60%] text-right font-medium text-stone-900">
                 {school.address}
               </dd>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between py-2.5">
               <dt className="text-stone-500">Postcode</dt>
               <dd className="font-medium text-stone-900">{school.postcode}</dd>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between py-2.5">
               <dt className="text-stone-500">Age Range</dt>
               <dd className="font-medium text-stone-900">
                 {school.age_range_from}&ndash;{school.age_range_to}
               </dd>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between py-2.5">
               <dt className="text-stone-500">Gender Policy</dt>
               <dd className="font-medium text-stone-900">
                 {school.gender_policy}
               </dd>
             </div>
             {school.faith && (
-              <div className="flex justify-between">
+              <div className="flex justify-between py-2.5">
                 <dt className="text-stone-500">Faith</dt>
                 <dd className="font-medium text-stone-900">{school.faith}</dd>
               </div>
             )}
-            <div className="flex justify-between">
+            <div className="flex justify-between py-2.5">
               <dt className="text-stone-500">Council</dt>
               <dd className="font-medium text-stone-900">{school.council}</dd>
             </div>
@@ -557,11 +665,11 @@ export default function PrivateSchoolDetail() {
         </section>
 
         {/* Location Map */}
-        <section className="rounded-lg border border-stone-200 bg-white">
-          <div className="p-4">
-            <h2 className="text-xl font-semibold text-stone-900">Location</h2>
+        <section className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+          <div className="p-5 sm:p-6 pb-0 sm:pb-0">
+            <h2 className="text-lg font-semibold text-stone-900">Location</h2>
           </div>
-          <div className="h-[300px]">
+          <div className="mt-4 h-[300px]">
             {school.lat != null && school.lng != null ? (
               <Map
                 center={[school.lat, school.lng]}
@@ -570,7 +678,7 @@ export default function PrivateSchoolDetail() {
                 selectedSchoolId={school.id}
               />
             ) : (
-              <div className="flex h-full items-center justify-center text-stone-400">
+              <div className="flex h-full items-center justify-center text-sm text-stone-400">
                 No location data available
               </div>
             )}

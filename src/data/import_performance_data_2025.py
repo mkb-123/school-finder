@@ -13,7 +13,6 @@ from pathlib import Path
 import httpx
 import polars as pl
 
-
 # Data set IDs from Explore Education Statistics API
 # Find more at: https://explore-education-statistics.service.gov.uk/data-catalogue
 KS2_DATASET_ID = "2ff21cfc-db60-413e-9b02-47dc91d12740"  # KS2 attainment by school location
@@ -71,6 +70,7 @@ def import_ks2_performance(db_path: Path, csv_path: Path, council_filter: str | 
     except Exception:
         # Try reading as gzip
         import gzip
+
         with gzip.open(csv_path, "rb") as f:
             df = pl.read_csv(f, encoding="utf8-lossy", ignore_errors=True, infer_schema_length=10000)
 
@@ -85,7 +85,6 @@ def import_ks2_performance(db_path: Path, csv_path: Path, council_filter: str | 
             print(f"Filtered to {council_filter}: {df.height} schools")
 
     conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
 
     imported = 0
 
@@ -117,6 +116,7 @@ def import_ks4_performance(db_path: Path, csv_path: Path, council_filter: str | 
         df = pl.read_csv(csv_path, encoding="utf8-lossy", ignore_errors=True, infer_schema_length=10000)
     except Exception:
         import gzip
+
         with gzip.open(csv_path, "rb") as f:
             df = pl.read_csv(f, encoding="utf8-lossy", ignore_errors=True, infer_schema_length=10000)
 
@@ -130,7 +130,6 @@ def import_ks4_performance(db_path: Path, csv_path: Path, council_filter: str | 
             print(f"Filtered to {council_filter}: {df.height} schools")
 
     conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
 
     imported = 0
 
@@ -154,7 +153,7 @@ if __name__ == "__main__":
     print("🏫 Importing 2024/2025 school performance data from Explore Education Statistics API")
     print("=" * 80)
     print(f"API: {API_BASE}")
-    print(f"Data Catalogue: https://explore-education-statistics.service.gov.uk/data-catalogue")
+    print("Data Catalogue: https://explore-education-statistics.service.gov.uk/data-catalogue")
     print()
 
     try:
@@ -179,5 +178,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         exit(1)

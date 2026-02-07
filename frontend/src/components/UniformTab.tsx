@@ -20,94 +20,135 @@ interface Uniform {
   notes: string | null;
 }
 
+interface CostItem {
+  label: string;
+  perItem: number;
+  quantity: number;
+  quantityLabel: string;
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
 function UniformTab({ uniform }: { uniform: Uniform[] }) {
   if (uniform.length === 0) {
     return (
-      <div className="rounded-lg border border-stone-200 bg-white p-6">
-        <h2 className="text-xl font-semibold text-stone-900">Uniform Cost & Appearance</h2>
-        <p className="mt-2 text-stone-600">No uniform information available yet.</p>
-      </div>
+      <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="uniform-heading">
+        <h2 id="uniform-heading" className="text-lg font-semibold text-stone-900">Uniform</h2>
+        <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
+          <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          No uniform information available yet.
+        </div>
+      </section>
     );
   }
 
   const uni = uniform[0]; // Usually only one uniform entry per school
 
+  // Build cost items list dynamically
+  const costItems: CostItem[] = [];
+  if (uni.polo_shirts_cost != null) {
+    costItems.push({ label: "Polo Shirts", perItem: uni.polo_shirts_cost, quantity: 2, quantityLabel: "2 items" });
+  }
+  if (uni.jumper_cost != null) {
+    costItems.push({ label: "Jumper / Sweatshirt", perItem: uni.jumper_cost, quantity: 2, quantityLabel: "2 items" });
+  }
+  if (uni.trousers_skirt_cost != null) {
+    costItems.push({ label: "Trousers / Skirt", perItem: uni.trousers_skirt_cost, quantity: 2, quantityLabel: "2 items" });
+  }
+  if (uni.pe_kit_cost != null) {
+    costItems.push({ label: "PE Kit", perItem: uni.pe_kit_cost, quantity: 1, quantityLabel: "1 set" });
+  }
+  if (uni.bag_cost != null) {
+    costItems.push({ label: "School Bag", perItem: uni.bag_cost, quantity: 1, quantityLabel: "1 item" });
+  }
+  if (uni.coat_cost != null) {
+    costItems.push({ label: "Coat", perItem: uni.coat_cost, quantity: 1, quantityLabel: "1 item" });
+  }
+  if (uni.other_items_cost != null) {
+    costItems.push({
+      label: uni.other_items_description || "Other Items",
+      perItem: uni.other_items_cost,
+      quantity: 1,
+      quantityLabel: "",
+    });
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Affordability indicator */}
-      {uni.is_expensive && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <div className="flex items-start gap-3">
-            <svg className="h-6 w-6 flex-shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div>
-              <p className="text-sm font-semibold text-amber-900">Expensive Branded Uniform</p>
-              <p className="mt-1 text-sm text-amber-800">
-                This school requires items to be purchased from a specific supplier. Total cost may be higher than schools that allow supermarket alternatives.
-              </p>
-            </div>
+      {uni.is_expensive ? (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4" role="alert">
+          <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-amber-900">Branded uniform required</p>
+            <p className="mt-0.5 text-sm text-amber-800">
+              This school requires items from a specific supplier. Total cost may be higher than schools that allow supermarket alternatives.
+            </p>
           </div>
         </div>
-      )}
-
-      {!uni.is_expensive && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-          <div className="flex items-start gap-3">
-            <svg className="h-6 w-6 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <p className="text-sm font-semibold text-green-900">Affordable Uniform</p>
-              <p className="mt-1 text-sm text-green-800">
-                Supermarket or generic alternatives are acceptable for this school. Parents can shop around for the best prices.
-              </p>
-            </div>
+      ) : (
+        <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
+          <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-green-900">Affordable uniform</p>
+            <p className="mt-0.5 text-sm text-green-800">
+              Supermarket or generic alternatives are acceptable. Parents can shop around for the best prices.
+            </p>
           </div>
         </div>
       )}
 
       {/* Main uniform details card */}
-      <div className="rounded-lg border border-stone-200 bg-white p-6">
-        <h2 className="text-xl font-semibold text-stone-900">Uniform Details</h2>
+      <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="uniform-detail-heading">
+        <h2 id="uniform-detail-heading" className="text-lg font-semibold text-stone-900">Uniform Details</h2>
 
         <div className="mt-4 space-y-4">
           {uni.description && (
-            <div>
-              <h3 className="text-sm font-medium text-stone-700">Description</h3>
-              <p className="mt-1 text-stone-900">{uni.description}</p>
-            </div>
+            <p className="text-sm leading-relaxed text-stone-700">{uni.description}</p>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             {uni.style && (
               <div>
-                <h3 className="text-sm font-medium text-stone-700">Style</h3>
-                <p className="mt-1 text-stone-900">{uni.style}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Style</p>
+                <p className="mt-1 text-sm text-stone-900">{uni.style}</p>
               </div>
             )}
 
             {uni.colors && (
               <div>
-                <h3 className="text-sm font-medium text-stone-700">Colors</h3>
-                <p className="mt-1 text-stone-900">{uni.colors}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Colours</p>
+                <p className="mt-1 text-sm text-stone-900">{uni.colors}</p>
               </div>
             )}
           </div>
 
           {uni.requires_specific_supplier && uni.supplier_name && (
-            <div>
-              <h3 className="text-sm font-medium text-stone-700">Supplier</h3>
-              <p className="mt-1 text-stone-900">{uni.supplier_name}</p>
+            <div className="rounded-lg bg-stone-50 border border-stone-100 p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Supplier</p>
+              <p className="mt-1 text-sm font-medium text-stone-900">{uni.supplier_name}</p>
               {uni.supplier_website && (
                 <a
                   href={uni.supplier_website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1 inline-flex items-center gap-1 text-sm text-brand-600 hover:text-brand-800"
+                  className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-800 transition-colors"
                 >
                   Visit supplier website
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
@@ -116,106 +157,55 @@ function UniformTab({ uniform }: { uniform: Uniform[] }) {
           )}
 
           {uni.notes && (
-            <div className="rounded-md bg-stone-50 p-3">
+            <div className="rounded-lg bg-stone-50 border border-stone-100 p-3">
               <p className="text-sm text-stone-700">{uni.notes}</p>
             </div>
           )}
         </div>
-      </div>
+      </section>
 
       {/* Cost breakdown card */}
-      <div className="rounded-lg border border-stone-200 bg-white p-6">
-        <h2 className="text-xl font-semibold text-stone-900">Cost Breakdown</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Estimated costs for a full uniform set (quantities shown are typical for a year)
-        </p>
+      {costItems.length > 0 && (
+        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="uniform-cost-heading">
+          <h2 id="uniform-cost-heading" className="text-lg font-semibold text-stone-900">Cost Breakdown</h2>
+          <p className="mt-1 text-sm text-stone-500">
+            Estimated costs for a full uniform set (typical quantities for a year)
+          </p>
 
-        <div className="mt-4 space-y-3">
-          {uni.polo_shirts_cost != null && (
-            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-              <div>
-                <p className="font-medium text-stone-900">Polo Shirts</p>
-                <p className="text-xs text-stone-500">2 items</p>
+          <div className="mt-4 divide-y divide-stone-100">
+            {costItems.map((item) => (
+              <div key={item.label} className="flex items-center justify-between py-3">
+                <div>
+                  <p className="text-sm font-medium text-stone-900">{item.label}</p>
+                  <p className="text-xs text-stone-500">
+                    {item.quantityLabel}
+                    {item.quantity > 1 && ` at ${formatCurrency(item.perItem)} each`}
+                  </p>
+                </div>
+                <p className="text-sm font-semibold text-stone-900">
+                  {formatCurrency(item.perItem * item.quantity)}
+                </p>
               </div>
-              <p className="text-stone-900">&pound;{(uni.polo_shirts_cost * 2).toFixed(2)}</p>
-            </div>
-          )}
+            ))}
 
-          {uni.jumper_cost != null && (
-            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-              <div>
-                <p className="font-medium text-stone-900">Jumper/Sweatshirt</p>
-                <p className="text-xs text-stone-500">2 items</p>
+            {/* Total */}
+            {uni.total_cost_estimate != null && (
+              <div className="flex items-center justify-between pt-4">
+                <p className="text-base font-bold text-stone-900">Total Estimate</p>
+                <div className="text-right">
+                  <p className="text-xl font-bold text-stone-900">
+                    {formatCurrency(uni.total_cost_estimate)}
+                  </p>
+                </div>
               </div>
-              <p className="text-stone-900">&pound;{(uni.jumper_cost * 2).toFixed(2)}</p>
-            </div>
-          )}
+            )}
+          </div>
 
-          {uni.trousers_skirt_cost != null && (
-            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-              <div>
-                <p className="font-medium text-stone-900">Trousers/Skirt</p>
-                <p className="text-xs text-stone-500">2 items</p>
-              </div>
-              <p className="text-stone-900">&pound;{(uni.trousers_skirt_cost * 2).toFixed(2)}</p>
-            </div>
-          )}
-
-          {uni.pe_kit_cost != null && (
-            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-              <div>
-                <p className="font-medium text-stone-900">PE Kit</p>
-                <p className="text-xs text-stone-500">1 set</p>
-              </div>
-              <p className="text-stone-900">&pound;{uni.pe_kit_cost.toFixed(2)}</p>
-            </div>
-          )}
-
-          {uni.bag_cost != null && (
-            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-              <div>
-                <p className="font-medium text-stone-900">School Bag</p>
-                <p className="text-xs text-stone-500">1 item</p>
-              </div>
-              <p className="text-stone-900">&pound;{uni.bag_cost.toFixed(2)}</p>
-            </div>
-          )}
-
-          {uni.coat_cost != null && (
-            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-              <div>
-                <p className="font-medium text-stone-900">Coat</p>
-                <p className="text-xs text-stone-500">1 item</p>
-              </div>
-              <p className="text-stone-900">&pound;{uni.coat_cost.toFixed(2)}</p>
-            </div>
-          )}
-
-          {uni.other_items_cost != null && (
-            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-              <div>
-                <p className="font-medium text-stone-900">Other Items</p>
-                {uni.other_items_description && (
-                  <p className="text-xs text-stone-500">{uni.other_items_description}</p>
-                )}
-              </div>
-              <p className="text-stone-900">&pound;{uni.other_items_cost.toFixed(2)}</p>
-            </div>
-          )}
-
-          {/* Total */}
-          {uni.total_cost_estimate != null && (
-            <div className="flex items-center justify-between border-t-2 border-stone-300 pt-3">
-              <p className="text-lg font-semibold text-stone-900">Total Estimate</p>
-              <p className="text-lg font-bold text-stone-900">&pound;{uni.total_cost_estimate.toFixed(2)}</p>
-            </div>
-          )}
-        </div>
-
-        <p className="mt-4 text-xs text-stone-500">
-          Costs are estimates and may vary. Always check with the school or supplier for current prices.
-        </p>
-      </div>
+          <p className="mt-4 text-xs text-stone-500">
+            Costs are estimates and may vary. Always check with the school or supplier for current prices.
+          </p>
+        </section>
+      )}
     </div>
   );
 }

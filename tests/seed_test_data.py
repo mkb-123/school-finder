@@ -10,12 +10,11 @@ since the old seed.py had already disabled them.
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
 from src.db.models import (
-    PrivateSchoolDetails,
     School,
     SchoolClub,
     SchoolTermDate,
@@ -107,8 +106,20 @@ def _generate_test_schools(council: str) -> list[School]:
     schools: list[School] = []
     for row in mk_schools:
         (
-            urn, name, postcode, lat, lng, age_from, age_to, phase,
-            gender, faith, ofsted, ofsted_date_str, is_private_val, _type_group,
+            urn,
+            name,
+            postcode,
+            lat,
+            lng,
+            age_from,
+            age_to,
+            phase,
+            gender,
+            faith,
+            ofsted,
+            ofsted_date_str,
+            is_private_val,
+            _type_group,
         ) = row
         ofsted_date_val = None
         if ofsted_date_str:

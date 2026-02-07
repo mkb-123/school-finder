@@ -25,103 +25,118 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
     return `${hours}:${minutes}`;
   };
 
-  const formatCurrency = (amount: number | null) => {
-    if (amount === null) return 'Contact for pricing';
-    return `£${amount.toFixed(2)}`;
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
   };
 
+  const hasAgeInfo = club.age_from !== null || club.age_to !== null;
+  const hasTimeInfo = club.start_time || club.end_time;
+  const hasCostInfo = club.cost_per_day !== null || club.cost_per_week !== null;
+
   return (
-    <div className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-3">
+    <article className="rounded-xl border border-stone-200 bg-white p-4 sm:p-5">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-semibold text-stone-900">
+          <h3 className="text-base font-semibold text-stone-900">
             {club.provider_name}
           </h3>
           <span
-            className={`inline-block px-2 py-1 text-xs font-medium rounded-full mt-1 ${
+            className={`mt-1.5 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
               club.is_school_run
-                ? 'bg-blue-100 text-blue-800'
-                : 'bg-purple-100 text-purple-800'
+                ? 'bg-brand-50 text-brand-800 ring-brand-600/20'
+                : 'bg-purple-50 text-purple-800 ring-purple-600/20'
             }`}
           >
-            {club.is_school_run ? 'School-run' : 'External Provider'}
+            {club.is_school_run ? 'School-run' : 'External provider'}
           </span>
         </div>
       </div>
 
       {club.description && (
-        <p className="text-sm text-stone-600 mb-3">{club.description}</p>
+        <p className="mt-3 text-sm leading-relaxed text-stone-600">{club.description}</p>
       )}
 
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        {/* Age Range */}
-        {(club.age_from !== null || club.age_to !== null) && (
-          <div>
-            <span className="font-medium text-stone-700">Ages:</span>{' '}
-            <span className="text-stone-900">
-              {club.age_from && club.age_to
-                ? `${club.age_from}-${club.age_to}`
-                : club.age_from
-                ? `${club.age_from}+`
-                : club.age_to
-                ? `Up to ${club.age_to}`
-                : 'All ages'}
-            </span>
-          </div>
-        )}
+      {/* Details grid */}
+      {(hasAgeInfo || hasTimeInfo || hasCostInfo) && (
+        <div className="mt-4 space-y-3">
+          {/* Age and Hours row */}
+          <div className="flex flex-wrap gap-4">
+            {hasAgeInfo && (
+              <div className="text-sm">
+                <span className="text-xs font-medium uppercase tracking-wide text-stone-500">Ages</span>
+                <p className="mt-0.5 font-medium text-stone-900">
+                  {club.age_from && club.age_to
+                    ? `${club.age_from}-${club.age_to}`
+                    : club.age_from
+                    ? `${club.age_from}+`
+                    : club.age_to
+                    ? `Up to ${club.age_to}`
+                    : 'All ages'}
+                </p>
+              </div>
+            )}
 
-        {/* Hours */}
-        {(club.start_time || club.end_time) && (
-          <div>
-            <span className="font-medium text-stone-700">Hours:</span>{' '}
-            <span className="text-stone-900">
-              {formatTime(club.start_time)} - {formatTime(club.end_time)}
-            </span>
+            {hasTimeInfo && (
+              <div className="text-sm">
+                <span className="text-xs font-medium uppercase tracking-wide text-stone-500">Hours</span>
+                <p className="mt-0.5 font-medium text-stone-900">
+                  {formatTime(club.start_time)} - {formatTime(club.end_time)}
+                </p>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Daily Cost */}
-        {club.cost_per_day !== null && (
-          <div>
-            <span className="font-medium text-stone-700">Daily:</span>{' '}
-            <span className="text-stone-900">{formatCurrency(club.cost_per_day)}</span>
-          </div>
-        )}
-
-        {/* Weekly Cost */}
-        {club.cost_per_week !== null && (
-          <div>
-            <span className="font-medium text-stone-700">Weekly:</span>{' '}
-            <span className="text-stone-900">
-              {formatCurrency(club.cost_per_week)}
-            </span>
-          </div>
-        )}
-      </div>
+          {/* Cost row */}
+          {hasCostInfo && (
+            <div className="flex flex-wrap gap-4 rounded-lg bg-stone-50 border border-stone-100 p-3">
+              {club.cost_per_day !== null && (
+                <div className="text-sm">
+                  <span className="text-xs font-medium text-stone-500">Daily</span>
+                  <p className="mt-0.5 font-semibold text-stone-900">{formatCurrency(club.cost_per_day)}</p>
+                </div>
+              )}
+              {club.cost_per_week !== null && (
+                <div className="text-sm">
+                  <span className="text-xs font-medium text-stone-500">Weekly</span>
+                  <p className="mt-0.5 font-semibold text-stone-900">{formatCurrency(club.cost_per_week)}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Available Weeks */}
       {club.available_weeks && (
-        <div className="mt-3 pt-3 border-t">
-          <span className="font-medium text-stone-700 text-sm">Available:</span>
-          <p className="text-sm text-stone-900 mt-1">{club.available_weeks}</p>
+        <div className="mt-4 border-t border-stone-100 pt-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Availability</p>
+          <p className="mt-1 text-sm text-stone-700">{club.available_weeks}</p>
         </div>
       )}
 
       {/* Booking Link */}
       {club.booking_url && (
-        <div className="mt-3">
+        <div className="mt-4">
           <a
             href={club.booking_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+            aria-label={`Book online with ${club.provider_name}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-700 transition hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
-            Book Online
+            Book online
             <svg
-              className="ml-1 w-4 h-4"
+              className="h-4 w-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -133,6 +148,6 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
           </a>
         </div>
       )}
-    </div>
+    </article>
   );
 }
