@@ -147,15 +147,20 @@ class BaseAgent(ABC):
             except httpx.HTTPStatusError as exc:
                 # Don't retry client errors (4xx) - they won't succeed on retry
                 if 400 <= exc.response.status_code < 500:
+                    self._logger.debug(
+                        "Client error %d for %s – not retrying",
+                        exc.response.status_code,
+                        url,
+                    )
                     raise
                 last_exc = exc
                 backoff = _BACKOFF_BASE**attempt
                 self._logger.warning(
-                    "Request to %s failed (attempt %d/%d): %s – retrying in %.1fs",
+                    "Server error %d for %s (attempt %d/%d) – retrying in %.1fs",
+                    exc.response.status_code,
                     url,
                     attempt + 1,
                     _MAX_RETRIES,
-                    exc,
                     backoff,
                 )
                 await asyncio.sleep(backoff)
@@ -163,7 +168,7 @@ class BaseAgent(ABC):
                 last_exc = exc
                 backoff = _BACKOFF_BASE**attempt
                 self._logger.warning(
-                    "Request to %s failed (attempt %d/%d): %s – retrying in %.1fs",
+                    "Transport error for %s (attempt %d/%d): %s – retrying in %.1fs",
                     url,
                     attempt + 1,
                     _MAX_RETRIES,
