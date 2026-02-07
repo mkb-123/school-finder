@@ -69,6 +69,42 @@ def _fallback_lookup(postcode: str) -> GeocodeResponse | None:
     return None
 
 
+async def geocode_to_coords(postcode: str) -> tuple[float, float]:
+    """Geocode a postcode to (lat, lng) via API or fallback.
+
+    Raises HTTPException(404) if the postcode cannot be resolved.
+    Shared by the geocode endpoint and internal callers (e.g. journey API).
+    """
+    settings = get_settings()
+    clean = _normalise_postcode(postcode)
+    url = f"{settings.POSTCODES_IO_BASE}/postcodes/{clean}"
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            result = data.get("result") or {}
+            lat = result.get("latitude")
+            lng = result.get("longitude")
+            if lat is not None and lng is not None:
+                return (lat, lng)
+        logger.warning("postcodes.io returned %s for %s", response.status_code, clean)
+    except httpx.HTTPError:
+        logger.warning("postcodes.io request failed for %s", clean)
+    except Exception:
+        logger.warning("Unexpected error geocoding %s – using local fallback", clean, exc_info=True)
+
+    fallback = _fallback_lookup(clean)
+    if fallback is not None:
+        return (fallback.lat, fallback.lng)
+
+    raise HTTPException(
+        status_code=404,
+        detail=f"Postcode '{clean}' not found (external API unavailable and no local fallback)",
+    )
+
+
 @router.get("/api/geocode", response_model=GeocodeResponse)
 async def geocode_postcode(
     postcode: str = Query(..., description="UK postcode to geocode"),
@@ -78,46 +114,6 @@ async def geocode_postcode(
     Falls back to a small built-in lookup table when the external service is
     unavailable (offline development, CI, firewalled environments, etc.).
     """
-    settings = get_settings()
     clean = _normalise_postcode(postcode)
-    url = f"{settings.POSTCODES_IO_BASE}/postcodes/{clean}"
-
-    # --- Try the external API first ---
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(url)
-
-        if response.status_code == 200:
-            data = response.json()
-            result = data.get("result") or {}
-            lat = result.get("latitude")
-            lng = result.get("longitude")
-            if lat is None or lng is None:
-                logger.warning("postcodes.io returned 200 but missing coordinates for %s", clean)
-            else:
-                return GeocodeResponse(
-                    postcode=result.get("postcode", clean),
-                    lat=lat,
-                    lng=lng,
-                )
-
-        # Non-200 from postcodes.io – fall through to local lookup
-        logger.warning("postcodes.io returned %s for %s", response.status_code, clean)
-    except httpx.HTTPError:
-        logger.warning("postcodes.io request failed for %s", clean)
-    except Exception:
-        logger.warning(
-            "Unexpected error geocoding %s – using local fallback",
-            clean,
-            exc_info=True,
-        )
-
-    # --- Fallback to local data ---
-    fallback = _fallback_lookup(clean)
-    if fallback is not None:
-        return fallback
-
-    raise HTTPException(
-        status_code=404,
-        detail=f"Postcode '{clean}' not found (external API unavailable and no local fallback)",
-    )
+    lat, lng = await geocode_to_coords(clean)
+    return GeocodeResponse(postcode=clean, lat=lat, lng=lng)

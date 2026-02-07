@@ -93,37 +93,10 @@ def _school_journey_to_response(sj: SchoolJourneyResult) -> SingleJourneyRespons
 
 
 async def _geocode_postcode(postcode: str) -> tuple[float, float]:
-    """Geocode a postcode, reusing the logic from the geocode API module."""
-    import httpx
+    """Geocode a postcode via the shared geocoding helper."""
+    from src.api.geocode import geocode_to_coords
 
-    from src.api.geocode import _fallback_lookup, _normalise_postcode
-    from src.config import get_settings
-
-    settings = get_settings()
-    clean = _normalise_postcode(postcode)
-    url = f"{settings.POSTCODES_IO_BASE}/postcodes/{clean}"
-
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            result = data.get("result") or {}
-            lat = result.get("latitude")
-            lng = result.get("longitude")
-            if lat is not None and lng is not None:
-                return (lat, lng)
-    except Exception:
-        logger.warning("postcodes.io unreachable for journey geocoding – using fallback")
-
-    fallback = _fallback_lookup(clean)
-    if fallback is not None:
-        return (fallback.lat, fallback.lng)
-
-    raise HTTPException(
-        status_code=404,
-        detail=f"Could not geocode postcode '{clean}'",
-    )
+    return await geocode_to_coords(postcode)
 
 
 def _parse_mode(mode: str) -> TravelMode:

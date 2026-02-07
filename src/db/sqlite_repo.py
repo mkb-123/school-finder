@@ -87,20 +87,6 @@ class SQLiteSchoolRepository(SchoolRepository):
     # Catchment / spatial
     # ------------------------------------------------------------------
 
-    async def find_schools_in_catchment(self, lat: float, lng: float, council: str) -> list[School]:
-        stmt = (
-            select(School)
-            .where(School.council == council)
-            .where(School.lat.is_not(None))
-            .where(School.lng.is_not(None))
-            .where(School.catchment_radius_km.is_not(None))
-            .where(text("haversine(schools.lat, schools.lng, :lat, :lng) <= schools.catchment_radius_km"))
-            .order_by(text("haversine(schools.lat, schools.lng, :lat, :lng)"))
-        )
-        async with self._session_factory() as session:
-            result = await session.execute(stmt, {"lat": lat, "lng": lng})
-            return list(result.scalars().all())
-
     async def find_schools_by_filters(self, filters: SchoolFilters) -> list[School]:  # noqa: C901
         stmt = select(School)
 

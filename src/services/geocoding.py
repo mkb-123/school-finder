@@ -28,16 +28,11 @@ _DEFAULT_API_BASE_URL = "https://api.postcodes.io"
 
 
 def _get_api_base_url() -> str:
-    """Return the postcodes.io API base URL from config (if available) or the default.
-
-    Tries to import ``src.config.settings`` and read ``POSTCODES_IO_BASE_URL``.
-    Falls back to the hard-coded default when the config module is not yet set up.
-    """
+    """Return the postcodes.io API base URL from config or the default."""
     try:
-        from src.config import settings  # type: ignore[import-untyped]
+        from src.config import get_settings
 
-        url: str = getattr(settings, "POSTCODES_IO_BASE_URL", _DEFAULT_API_BASE_URL)
-        return url
+        return get_settings().POSTCODES_IO_BASE
     except Exception:  # noqa: BLE001
         return _DEFAULT_API_BASE_URL
 
