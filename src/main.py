@@ -15,13 +15,13 @@ from src.api.compare import router as compare_router
 from src.api.councils import router as councils_router
 from src.api.decision import router as decision_router
 from src.api.geocode import router as geocode_router
+from src.api.health import router as health_router
 from src.api.holiday_clubs import router as holiday_clubs_router
 from src.api.journey import router as journey_router
 from src.api.parking import router as parking_router
 from src.api.private_schools import router as private_schools_router
 from src.api.schools import router as schools_router
 from src.config import get_settings
-from src.api.health import router as health_router
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 

@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import logging
 import sys
+from datetime import date
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -203,7 +204,7 @@ class TermTimesAgent(BaseAgent):
 
         return records
 
-    def _parse_uk_date(self, date_str: str) -> date_cls:
+    def _parse_uk_date(self, date_str: str) -> date:
         """Parse a UK format date string (DD/MM/YYYY or DD-MM-YYYY)."""
         from datetime import datetime
 

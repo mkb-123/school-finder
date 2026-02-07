@@ -9,7 +9,6 @@ from src.db.models import (
     BusRoute,
     BusStop,
     HolidayClub,
-    OfstedHistory,
     ParkingRating,
     PrivateSchoolDetails,
     School,

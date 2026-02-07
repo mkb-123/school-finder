@@ -14,7 +14,6 @@ from pydantic import BaseModel
 
 from src.db.base import SchoolRepository
 from src.db.factory import get_school_repository
-from src.services.catchment import haversine_distance
 
 logger = logging.getLogger(__name__)
 

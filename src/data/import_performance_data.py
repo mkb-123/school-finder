@@ -8,7 +8,6 @@ Source: https://www.compare-school-performance.service.gov.uk/download-data
 """
 
 import sqlite3
-from datetime import datetime
 from pathlib import Path
 
 import httpx
@@ -33,25 +32,29 @@ def download_performance_data(year: int = 2024) -> tuple[Path, Path]:
     # Secondary school performance (KS4 GCSEs, Progress 8)
     secondary_url = f"https://www.compare-school-performance.service.gov.uk/download-data?download=true&year={year}&phase=secondary&fileformat=csv"
 
-    print(f"📥 Downloading DfE school performance data for {year-1}/{year}...")
+    print(f"📥 Downloading DfE school performance data for {year - 1}/{year}...")
 
     primary_path = data_dir / f"primary_performance_{year}.csv"
     secondary_path = data_dir / f"secondary_performance_{year}.csv"
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     }
 
     # Download primary
-    print(f"  Downloading primary (KS2) data...")
+    print("  Downloading primary (KS2) data...")
     response = httpx.get(primary_url, headers=headers, follow_redirects=True, timeout=120.0)
     response.raise_for_status()
     primary_path.write_bytes(response.content)
     print(f"  ✅ Primary: {len(response.content) / 1024 / 1024:.1f} MB")
 
     # Download secondary
-    print(f"  Downloading secondary (KS4) data...")
+    print("  Downloading secondary (KS4) data...")
     response = httpx.get(secondary_url, headers=headers, follow_redirects=True, timeout=120.0)
     response.raise_for_status()
     secondary_path.write_bytes(response.content)
@@ -115,28 +118,28 @@ def import_primary_performance(db_path: Path, csv_path: Path, council_filter: st
         if reading_exp and reading_exp not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "SATs_Reading_Expected", f"{reading_exp}%", int(year) if year else None)
+                (school_id, "SATs_Reading_Expected", f"{reading_exp}%", int(year) if year else None),
             )
             imported += 1
 
         if writing_exp and writing_exp not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "SATs_Writing_Expected", f"{writing_exp}%", int(year) if year else None)
+                (school_id, "SATs_Writing_Expected", f"{writing_exp}%", int(year) if year else None),
             )
             imported += 1
 
         if maths_exp and maths_exp not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "SATs_Maths_Expected", f"{maths_exp}%", int(year) if year else None)
+                (school_id, "SATs_Maths_Expected", f"{maths_exp}%", int(year) if year else None),
             )
             imported += 1
 
         if rwm_exp and rwm_exp not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "SATs", f"Expected standard: {rwm_exp}%", int(year) if year else None)
+                (school_id, "SATs", f"Expected standard: {rwm_exp}%", int(year) if year else None),
             )
             imported += 1
 
@@ -144,21 +147,21 @@ def import_primary_performance(db_path: Path, csv_path: Path, council_filter: st
         if reading_high and reading_high not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "SATs_Reading_Higher", f"{reading_high}%", int(year) if year else None)
+                (school_id, "SATs_Reading_Higher", f"{reading_high}%", int(year) if year else None),
             )
             imported += 1
 
         if writing_high and writing_high not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "SATs_Writing_Higher", f"{writing_high}%", int(year) if year else None)
+                (school_id, "SATs_Writing_Higher", f"{writing_high}%", int(year) if year else None),
             )
             imported += 1
 
         if maths_high and maths_high not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "SATs_Maths_Higher", f"{maths_high}%", int(year) if year else None)
+                (school_id, "SATs_Maths_Higher", f"{maths_high}%", int(year) if year else None),
             )
             imported += 1
 
@@ -211,7 +214,7 @@ def import_secondary_performance(db_path: Path, csv_path: Path, council_filter: 
         if progress8 and progress8 not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "Progress8", str(progress8), int(year) if year else None)
+                (school_id, "Progress8", str(progress8), int(year) if year else None),
             )
             imported += 1
 
@@ -220,7 +223,7 @@ def import_secondary_performance(db_path: Path, csv_path: Path, council_filter: 
         if attainment8 and attainment8 not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "Attainment8", str(attainment8), int(year) if year else None)
+                (school_id, "Attainment8", str(attainment8), int(year) if year else None),
             )
             imported += 1
 
@@ -229,7 +232,7 @@ def import_secondary_performance(db_path: Path, csv_path: Path, council_filter: 
         if eng_maths_95 and eng_maths_95 not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "GCSE", f"English & Maths 9-5: {eng_maths_95}%", int(year) if year else None)
+                (school_id, "GCSE", f"English & Maths 9-5: {eng_maths_95}%", int(year) if year else None),
             )
             imported += 1
 
@@ -238,7 +241,7 @@ def import_secondary_performance(db_path: Path, csv_path: Path, council_filter: 
         if eng_maths_94 and eng_maths_94 not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "GCSE_94", f"English & Maths 9-4: {eng_maths_94}%", int(year) if year else None)
+                (school_id, "GCSE_94", f"English & Maths 9-4: {eng_maths_94}%", int(year) if year else None),
             )
             imported += 1
 
@@ -247,7 +250,7 @@ def import_secondary_performance(db_path: Path, csv_path: Path, council_filter: 
         if ebacc_entered and ebacc_entered not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "EBacc_Entered", f"{ebacc_entered}%", int(year) if year else None)
+                (school_id, "EBacc_Entered", f"{ebacc_entered}%", int(year) if year else None),
             )
             imported += 1
 
@@ -256,7 +259,7 @@ def import_secondary_performance(db_path: Path, csv_path: Path, council_filter: 
         if ebacc_achieved and ebacc_achieved not in ["NE", "SUPP", "NA"]:
             cursor.execute(
                 "INSERT INTO school_performance (school_id, metric_type, metric_value, year) VALUES (?, ?, ?, ?)",
-                (school_id, "EBacc_Achieved", f"{ebacc_achieved}%", int(year) if year else None)
+                (school_id, "EBacc_Achieved", f"{ebacc_achieved}%", int(year) if year else None),
             )
             imported += 1
 
@@ -290,7 +293,8 @@ if __name__ == "__main__":
             # Import secondary (GCSEs, Progress 8)
             secondary_count = import_secondary_performance(db_path, secondary_csv, council_filter="Milton Keynes")
 
-            print(f"\n✅ Done! Imported {primary_count + secondary_count} total performance metrics from DfE (year {year})")
+            total = primary_count + secondary_count
+            print(f"\n✅ Done! Imported {total} total performance metrics from DfE (year {year})")
             break
         except Exception as e:
             print(f"Failed for year {year}: {e}")

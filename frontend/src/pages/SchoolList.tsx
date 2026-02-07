@@ -119,7 +119,10 @@ export default function SchoolList() {
     if (!postcode) return;
     get<{ lat: number; lng: number }>("/geocode", { postcode })
       .then((data) => setUserLocation([data.lat, data.lng]))
-      .catch(() => {});
+      .catch(() => {
+        // Geocoding is optional — map falls back to default MK center
+        console.warn("Could not geocode postcode for map centering:", postcode);
+      });
   }, [postcode]);
 
   // Apply client-side filters

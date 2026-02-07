@@ -263,7 +263,10 @@ class SchoolClassSize(Base):
     school: Mapped[School] = relationship("School", back_populates="class_sizes")
 
     def __repr__(self) -> str:
-        return f"<SchoolClassSize(school_id={self.school_id}, year={self.academic_year!r}, year_group={self.year_group!r})>"
+        return (
+            f"<SchoolClassSize(school_id={self.school_id}, "
+            f"year={self.academic_year!r}, year_group={self.year_group!r})>"
+        )
 
 
 class ParkingRating(Base):
