@@ -1,756 +1,58 @@
-"""Seed the school-finder database from GIAS (Get Information About Schools) data.
+"""Seed the school-finder database from government data sources.
 
-Downloads the Department for Education's GIAS establishment CSV, filters to a
-specific local authority (council), maps columns to the School model, and
-upserts records into the SQLite database.
+Downloads real data from:
+- GIAS (Get Information About Schools) for the school register
+- Ofsted management information for inspection ratings
+- EES API for performance data (KS2/KS4)
 
 Usage::
 
     python -m src.db.seed --council "Milton Keynes"
 
-The script caches the downloaded CSV in ``data/seeds/`` so that subsequent runs
-do not re-download.  To force a fresh download, pass ``--force-download``.
+The script caches downloaded files so that subsequent runs do not re-download.
+To force a fresh download, pass ``--force-download``.
 
-Data source
------------
-https://get-information-schools.service.gov.uk/Downloads
+NO RANDOM DATA IS GENERATED. Fields without real data are left NULL.
 """
 
 from __future__ import annotations
 
 import argparse
-import math
-import random
+import logging
 import sys
-from datetime import date, datetime, time, timedelta
+from collections import Counter
 from pathlib import Path
 
-import httpx
-import polars as pl
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from src.db.models import (
-    AdmissionsCriteria,
-    AdmissionsHistory,
     Base,
-    BusRoute,
-    BusStop,
-    OfstedHistory,
-    ParkingRating,
     PrivateSchoolDetails,
     School,
-    SchoolClassSize,
     SchoolClub,
-    SchoolPerformance,
-    SchoolTermDate,
-    SchoolUniform,
 )
+from src.services.gov_data.ees import EESService
+from src.services.gov_data.gias import GIASService
+from src.services.gov_data.ofsted import OfstedService
 
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-SEEDS_DIR = PROJECT_ROOT / "data" / "seeds"
 DEFAULT_DB_PATH = PROJECT_ROOT / "data" / "schools.db"
 
-# ---------------------------------------------------------------------------
-# GIAS download URL template
-# ---------------------------------------------------------------------------
-GIAS_CSV_URL_TEMPLATE = (
-    "https://ea-edubase-api-prod.azurewebsites.net/edubase/downloads/public/edubasealldata{date}.csv"
-)
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# GIAS column constants
+# Private school details (real, researched fee data)
 # ---------------------------------------------------------------------------
-COL_URN = "URN"
-COL_NAME = "EstablishmentName"
-COL_TYPE = "TypeOfEstablishment (name)"
-COL_TYPE_GROUP = "EstablishmentTypeGroup (name)"
-COL_STATUS = "EstablishmentStatus (name)"
-COL_LA = "LA (name)"
-COL_STREET = "Street"
-COL_LOCALITY = "Locality"
-COL_ADDRESS3 = "Address3"
-COL_TOWN = "Town"
-COL_POSTCODE = "Postcode"
-COL_EASTING = "Easting"
-COL_NORTHING = "Northing"
-COL_GENDER = "Gender (name)"
-COL_RELIGION = "ReligiousCharacter (name)"
-COL_LOW_AGE = "StatutoryLowAge"
-COL_HIGH_AGE = "StatutoryHighAge"
-COL_OFSTED_RATING = "OfstedRating (name)"
-COL_OFSTED_DATE = "OfstedLastInsp"
-COL_PHASE = "PhaseOfEducation (name)"
-COL_WEBSITE = "SchoolWebsite"
-
-_PRIVATE_TYPE_GROUPS = frozenset({"Independent schools", "Independent special schools"})
-_OPEN_STATUSES = frozenset({"Open", "Open, but proposed to close"})
-
-
-# ---------------------------------------------------------------------------
-# OSGB36  ->  WGS84  coordinate conversion
-# ---------------------------------------------------------------------------
-
-
-def _grid_to_osgb36_latlon(easting: float, northing: float) -> tuple[float, float]:
-    """Convert National Grid Easting/Northing to lat/lon on the Airy 1830 ellipsoid."""
-    a = 6_377_563.396
-    b = 6_356_256.909
-    f0 = 0.9996012717
-    lat0 = math.radians(49.0)
-    lon0 = math.radians(-2.0)
-    n0 = -100_000.0
-    e0 = 400_000.0
-    e2 = 1.0 - (b * b) / (a * a)
-    n = (a - b) / (a + b)
-    n2 = n * n
-    n3 = n2 * n
-    lat = lat0
-    m = 0.0
-    while True:
-        lat = lat + (northing - n0 - m) / (a * f0)
-        ma = (1.0 + n + 1.25 * n2 + 1.25 * n3) * (lat - lat0)
-        mb = (3.0 * n + 3.0 * n2 + 2.625 * n3) * math.sin(lat - lat0) * math.cos(lat + lat0)
-        mc = (1.875 * n2 + 1.875 * n3) * math.sin(2.0 * (lat - lat0)) * math.cos(2.0 * (lat + lat0))
-        md = (35.0 / 24.0) * n3 * math.sin(3.0 * (lat - lat0)) * math.cos(3.0 * (lat + lat0))
-        m = b * f0 * (ma - mb + mc - md)
-        if abs(northing - n0 - m) < 0.00001:
-            break
-    sin_lat = math.sin(lat)
-    cos_lat = math.cos(lat)
-    tan_lat = math.tan(lat)
-    nu = a * f0 / math.sqrt(1.0 - e2 * sin_lat * sin_lat)
-    rho = a * f0 * (1.0 - e2) / pow(1.0 - e2 * sin_lat * sin_lat, 1.5)
-    eta2 = nu / rho - 1.0
-    tan2 = tan_lat * tan_lat
-    tan4 = tan2 * tan2
-    tan6 = tan4 * tan2
-    sec_lat = 1.0 / cos_lat
-    vii = tan_lat / (2.0 * rho * nu)
-    viii = tan_lat / (24.0 * rho * nu**3) * (5.0 + 3.0 * tan2 + eta2 - 9.0 * tan2 * eta2)
-    ix = tan_lat / (720.0 * rho * nu**5) * (61.0 + 90.0 * tan2 + 45.0 * tan4)
-    x = sec_lat / nu
-    xi = sec_lat / (6.0 * nu**3) * (nu / rho + 2.0 * tan2)
-    xii = sec_lat / (120.0 * nu**5) * (5.0 + 28.0 * tan2 + 24.0 * tan4)
-    xiia = sec_lat / (5040.0 * nu**7) * (61.0 + 662.0 * tan2 + 1320.0 * tan4 + 720.0 * tan6)
-    de = easting - e0
-    de2 = de * de
-    de3 = de2 * de
-    de4 = de2 * de2
-    de5 = de3 * de2
-    de6 = de3 * de3
-    de7 = de4 * de3
-    result_lat = lat - vii * de2 + viii * de4 - ix * de6
-    result_lon = lon0 + x * de - xi * de3 + xii * de5 - xiia * de7
-    return math.degrees(result_lat), math.degrees(result_lon)
-
-
-def _helmert_osgb36_to_wgs84(lat: float, lon: float) -> tuple[float, float]:
-    """Apply a Helmert transformation from OSGB36 (Airy 1830) to WGS84."""
-    lat_r = math.radians(lat)
-    lon_r = math.radians(lon)
-    a1 = 6_377_563.396
-    b1 = 6_356_256.909
-    e2_1 = 1.0 - (b1 * b1) / (a1 * a1)
-    sin_lat = math.sin(lat_r)
-    cos_lat = math.cos(lat_r)
-    sin_lon = math.sin(lon_r)
-    cos_lon = math.cos(lon_r)
-    nu = a1 / math.sqrt(1.0 - e2_1 * sin_lat * sin_lat)
-    x1 = nu * cos_lat * cos_lon
-    y1 = nu * cos_lat * sin_lon
-    z1 = (1.0 - e2_1) * nu * sin_lat
-    tx = 446.448
-    ty = -125.157
-    tz = 542.060
-    s = -20.4894e-6
-    rx = math.radians(0.1502 / 3600.0)
-    ry = math.radians(0.2470 / 3600.0)
-    rz = math.radians(0.8421 / 3600.0)
-    x2 = tx + (1.0 + s) * x1 + (-rz) * y1 + ry * z1
-    y2 = ty + rz * x1 + (1.0 + s) * y1 + (-rx) * z1
-    z2 = tz + (-ry) * x1 + rx * y1 + (1.0 + s) * z1
-    a2 = 6_378_137.0
-    b2 = 6_356_752.3141
-    e2_2 = 1.0 - (b2 * b2) / (a2 * a2)
-    p = math.sqrt(x2 * x2 + y2 * y2)
-    lat2 = math.atan2(z2, p * (1.0 - e2_2))
-    for _ in range(10):
-        nu2 = a2 / math.sqrt(1.0 - e2_2 * math.sin(lat2) * math.sin(lat2))
-        lat2 = math.atan2(z2 + e2_2 * nu2 * math.sin(lat2), p)
-    lon2 = math.atan2(y2, x2)
-    return math.degrees(lat2), math.degrees(lon2)
-
-
-def osgb36_to_wgs84(easting: float, northing: float) -> tuple[float, float]:
-    """Convert OS National Grid Easting/Northing to WGS84 (lat, lon)."""
-    lat_osgb, lon_osgb = _grid_to_osgb36_latlon(easting, northing)
-    return _helmert_osgb36_to_wgs84(lat_osgb, lon_osgb)
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _build_address(row: dict[str, str]) -> str:
-    parts = [
-        row.get(COL_STREET, "").strip(),
-        row.get(COL_LOCALITY, "").strip(),
-        row.get(COL_ADDRESS3, "").strip(),
-        row.get(COL_TOWN, "").strip(),
-    ]
-    return ", ".join(p for p in parts if p)
-
-
-def _is_private(row: dict[str, str]) -> bool:
-    return row.get(COL_TYPE_GROUP, "").strip() in _PRIVATE_TYPE_GROUPS
-
-
-def _school_type(row: dict[str, str]) -> str:
-    if _is_private(row):
-        return "private"
-    return "state"
-
-
-def _default_catchment_km(phase: str) -> float:
-    phase_lower = phase.lower() if phase else ""
-    if "secondary" in phase_lower or "16 plus" in phase_lower:
-        return 3.0
-    if "primary" in phase_lower or "nursery" in phase_lower:
-        return 1.5
-    return 2.0
-
-
-def _safe_int(value: str) -> int | None:
-    try:
-        return int(value)
-    except (ValueError, TypeError):
-        return None
-
-
-def _parse_ofsted_date(value: str) -> date | None:
-    value = value.strip()
-    if not value:
-        return None
-    for fmt in ("%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d"):
-        try:
-            return datetime.strptime(value, fmt).date()
-        except ValueError:
-            continue
-    return None
-
-
-def _generate_prospectus_url(website: str, school_name: str) -> str | None:
-    """Generate a prospectus URL from school website or fallback to search."""
-    if not website or website.strip() == "":
-        return None
-
-    website = website.strip()
-    # Ensure it has a scheme
-    if not website.startswith(("http://", "https://")):
-        website = f"https://{website}"
-
-    # Common prospectus URL patterns - try to construct a likely URL
-    # Most schools have prospectus on /prospectus, /about, /admissions, or /information
-    # For now, return website/prospectus as a reasonable guess
-    return f"{website.rstrip('/')}/prospectus"
-
-
-def _normalise_gender(raw: str) -> str:
-    raw = raw.strip()
-    if raw in {"Boys", "Girls", "Mixed"}:
-        return raw
-    if "boy" in raw.lower():
-        return "Boys"
-    if "girl" in raw.lower():
-        return "Girls"
-    return "Mixed"
-
-
-def _normalise_faith(raw: str) -> str | None:
-    raw = raw.strip()
-    if not raw or raw.lower() in {"none", "does not apply"}:
-        return None
-    return raw
-
-
-def _generate_ethos(school_name: str, phase: str, faith: str | None, ofsted_rating: str | None) -> str:
-    """⚠️ DISABLED: Do not generate fake ethos. Return empty string."""
-    return ""  # DISABLED - NO FAKE DATA
-
-    # OLD CODE DISABLED BELOW
-    ethos_examples_primary = [
-        "Nurturing creativity and independence in every child",
-        "Where every child matters and excellence is celebrated",
-        "Inspiring curious minds through play-based learning",
-        "Building confident, caring learners for life",
-        "A warm, inclusive community fostering lifelong learning",
-        "Empowering children to reach their full potential",
-        "Traditional values with a focus on academic excellence",
-        "Creating happy, confident learners in a safe environment",
-        "Celebrating diversity and developing well-rounded individuals",
-        "Fostering a love of learning through creative teaching",
-    ]
-    ethos_examples_secondary = [
-        "Ambitious for every student, preparing for success",
-        "High expectations, outstanding outcomes, bright futures",
-        "Inspiring excellence, integrity, and innovation",
-        "Where achievement, respect, and opportunity thrive",
-        "Developing confident, articulate, and ambitious young people",
-        "A culture of aspiration, achievement, and care",
-        "Traditional values with high academic expectations",
-        "Empowering students to excel academically and personally",
-        "Building character, confidence, and academic success",
-        "Nurturing talent, celebrating success, inspiring futures",
-    ]
-    ethos_examples_faith = [
-        "Christ-centred values guiding every aspect of learning",
-        "Faith, learning, and service at the heart of our community",
-        "Academic excellence rooted in Christian values",
-        "Spiritual growth and academic achievement together",
-        "Where faith inspires compassion, respect, and excellence",
-    ]
-
-    # Choose based on school characteristics
-    phase_lower = phase.lower() if phase else ""
-
-    if faith:
-        return random.choice(ethos_examples_faith)
-    elif "secondary" in phase_lower or "16 plus" in phase_lower:
-        return random.choice(ethos_examples_secondary)
-    else:
-        return random.choice(ethos_examples_primary)
-
-
-# ---------------------------------------------------------------------------
-# CSV download / cache
-# ---------------------------------------------------------------------------
-
-
-def _csv_cache_path() -> Path:
-    today = date.today().strftime("%Y%m%d")
-    return SEEDS_DIR / f"edubasealldata{today}.csv"
-
-
-def _find_cached_csv() -> Path | None:
-    candidates = sorted(SEEDS_DIR.glob("edubasealldata*.csv"), reverse=True)
-    return candidates[0] if candidates else None
-
-
-def _download_gias_csv(force: bool = False) -> Path:
-    cache_path = _csv_cache_path()
-    if cache_path.exists() and not force:
-        print(f"  Using cached CSV: {cache_path}")
-        return cache_path
-    today_str = date.today().strftime("%Y%m%d")
-    url = GIAS_CSV_URL_TEMPLATE.format(date=today_str)
-    print(f"  Downloading GIAS CSV from {url} ...")
-    try:
-        with httpx.Client(timeout=120.0, follow_redirects=True) as client:
-            resp = client.get(url)
-            resp.raise_for_status()
-    except httpx.HTTPStatusError:
-        yesterday_str = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
-        fallback_url = GIAS_CSV_URL_TEMPLATE.format(date=yesterday_str)
-        print(f"  Today's file not available; trying {fallback_url} ...")
-        with httpx.Client(timeout=120.0, follow_redirects=True) as client:
-            resp = client.get(fallback_url)
-            resp.raise_for_status()
-    SEEDS_DIR.mkdir(parents=True, exist_ok=True)
-    cache_path.write_bytes(resp.content)
-    print(f"  Saved to {cache_path} ({len(resp.content) / 1_048_576:.1f} MB)")
-    return cache_path
-
-
-def _read_csv(path: Path) -> list[dict[str, str]]:
-    for encoding in ("cp1252", "utf-8-sig", "utf-8", "latin-1"):
-        try:
-            df = pl.read_csv(
-                path,
-                encoding=encoding,
-                infer_schema_length=0,
-                null_values=[""],
-                truncate_ragged_lines=True,
-            )
-            rows: list[dict[str, str]] = []
-            for row in df.iter_rows(named=True):
-                rows.append({k: (v if v is not None else "") for k, v in row.items()})
-            return rows
-        except Exception:
-            continue
-    print(f"  ERROR: Could not decode {path} with any known encoding.", file=sys.stderr)
-    sys.exit(1)
-
-
-# ---------------------------------------------------------------------------
-# Row -> School mapping
-# ---------------------------------------------------------------------------
-
-
-def _row_to_school(row: dict[str, str]) -> School | None:
-    status = row.get(COL_STATUS, "").strip()
-    if status not in _OPEN_STATUSES:
-        return None
-    urn = row.get(COL_URN, "").strip()
-    name = row.get(COL_NAME, "").strip()
-    if not urn or not name:
-        return None
-    lat: float | None = None
-    lng: float | None = None
-    easting_str = row.get(COL_EASTING, "").strip()
-    northing_str = row.get(COL_NORTHING, "").strip()
-    if easting_str and northing_str:
-        try:
-            easting = float(easting_str)
-            northing = float(northing_str)
-            if easting > 0 and northing > 0:
-                lat, lng = osgb36_to_wgs84(easting, northing)
-        except (ValueError, ZeroDivisionError):
-            pass
-    phase = row.get(COL_PHASE, "").strip()
-    ofsted_rating_raw = row.get(COL_OFSTED_RATING, "").strip()
-    ofsted_rating = ofsted_rating_raw if ofsted_rating_raw else None
-    ofsted_date = _parse_ofsted_date(row.get(COL_OFSTED_DATE, ""))
-    website = row.get(COL_WEBSITE, "").strip()
-    prospectus_url = _generate_prospectus_url(website, name)
-    faith = _normalise_faith(row.get(COL_RELIGION, ""))
-    ethos = _generate_ethos(name, phase, faith, ofsted_rating)
-    return School(
-        urn=urn,
-        name=name,
-        type=_school_type(row),
-        council=row.get(COL_LA, "").strip(),
-        address=_build_address(row),
-        postcode=row.get(COL_POSTCODE, "").strip(),
-        lat=lat,
-        lng=lng,
-        catchment_radius_km=_default_catchment_km(phase),
-        gender_policy=_normalise_gender(row.get(COL_GENDER, "")),
-        faith=faith,
-        age_range_from=_safe_int(row.get(COL_LOW_AGE, "")),
-        age_range_to=_safe_int(row.get(COL_HIGH_AGE, "")),
-        ofsted_rating=ofsted_rating,
-        ofsted_date=ofsted_date,
-        is_private=_is_private(row),
-        prospectus_url=prospectus_url,
-        website=website if website else None,
-        ethos=ethos,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Fallback: realistic Milton Keynes test data
-# ---------------------------------------------------------------------------
-
-
-def _generate_test_schools(council: str) -> list[School]:  # noqa: C901
-    """Generate a set of realistic test schools for the given council."""
-    # fmt: off
-    mk_schools = [  # noqa: E501
-        ("136730", "Shenley Brook End School", "MK5 7ZT", 52.0070, -0.8050, 11, 18, "Secondary", "Mixed", None, "Good", "2023-05-17", False, "Academies"),  # noqa: E501
-        ("135665", "The Milton Keynes Academy", "MK6 5LA", 52.0330, -0.7450, 11, 18, "Secondary", "Mixed", None, "Good", "2023-09-20", False, "Academies"),  # noqa: E501
-        ("136468", "Denbigh School", "MK5 6EX", 52.0115, -0.7920, 11, 18, "Secondary", "Mixed", None, "Good", "2022-11-09", False, "Academies"),  # noqa: E501
-        ("148835", "Stantonbury School", "MK14 6BN", 52.0585, -0.7750, 11, 19, "Secondary", "Mixed", None, "Requires Improvement", "2024-01-22", False, "Academies"),  # noqa: E501
-        ("138439", "Sir Herbert Leon Academy", "MK2 3HQ", 52.0090, -0.7345, 11, 16, "Secondary", "Mixed", None, "Good", "2023-06-21", False, "Academies"),  # noqa: E501
-        ("137052", "Ousedale School", "MK16 0BJ", 52.0850, -0.7060, 11, 18, "Secondary", "Mixed", None, "Good", "2022-09-14", False, "Academies"),  # noqa: E501
-        ("136844", "The Hazeley Academy", "MK8 0PT", 52.0250, -0.8100, 11, 18, "Secondary", "Mixed", None, "Good", "2021-12-01", False, "Academies"),  # noqa: E501
-        ("145736", "Lord Grey Academy", "MK3 6EW", 51.9960, -0.7600, 11, 18, "Secondary", "Mixed", None, "Good", "2024-02-07", False, "Academies"),  # noqa: E501
-        ("136454", "Oakgrove School", "MK10 9JQ", 52.0400, -0.7080, 4, 18, "All-through", "Mixed", None, "Good", "2022-06-29", False, "Academies"),  # noqa: E501
-        ("110532", "The Radcliffe School", "MK12 5BT", 52.0550, -0.7900, 11, 19, "Secondary", "Mixed", None, "Good", "2023-10-04", False, "Local authority maintained schools"),  # noqa: E501
-        ("110517", "St Paul's Catholic School", "MK6 5EN", 52.0280, -0.7550, 11, 19, "Secondary", "Mixed", "Roman Catholic", "Outstanding", "2022-01-19", False, "Local authority maintained schools"),  # noqa: E501
-        ("147860", "Watling Academy", "MK8 1AG", 52.0230, -0.8200, 11, 18, "Secondary", "Mixed", None, "Outstanding", "2024-03-13", False, "Free schools"),  # noqa: E501
-        ("136842", "Walton High", "MK7 7WH", 52.0135, -0.7325, 11, 18, "Secondary", "Mixed", None, "Good", "2023-03-15", False, "Academies"),  # noqa: E501
-        ("145063", "Kents Hill Park School", "MK7 6HB", 52.0200, -0.7150, 3, 16, "All-through", "Mixed", None, "Good", "2023-07-05", False, "Free schools"),  # noqa: E501
-        ("149106", "Glebe Farm School", "MK17 8FU", 52.0050, -0.7180, 4, 16, "All-through", "Mixed", None, "Good", "2024-01-10", False, "Free schools"),  # noqa: E501
-        ("110401", "Abbeys Primary School", "MK3 6PS", 51.9950, -0.7390, 4, 7, "Primary", "Mixed", None, "Good", "2023-03-01", False, "Local authority maintained schools"),  # noqa: E501
-        ("110394", "Caroline Haslett Primary School", "MK5 7DF", 52.0130, -0.8030, 4, 11, "Primary", "Mixed", None, "Outstanding", "2025-02-25", False, "Local authority maintained schools"),  # noqa: E501
-        ("134072", "Broughton Fields Primary School", "MK10 9LS", 52.0500, -0.7200, 4, 11, "Primary", "Mixed", None, "Good", "2022-04-27", False, "Local authority maintained schools"),  # noqa: E501
-        ("140734", "Middleton Primary School", "MK10 9EN", 52.0370, -0.7050, 4, 11, "Primary", "Mixed", None, "Outstanding", "2023-07-12", False, "Academies"),  # noqa: E501
-        ("131718", "Portfields Primary School", "MK16 8PS", 52.0870, -0.7100, 4, 11, "Primary", "Mixed", None, "Good", "2023-09-20", False, "Local authority maintained schools"),  # noqa: E501
-        ("110348", "Simpson School", "MK6 3AZ", 52.0220, -0.7400, 4, 11, "Primary", "Mixed", None, "Good", "2023-01-18", False, "Local authority maintained schools"),  # noqa: E501
-        ("137061", "Two Mile Ash School", "MK8 8LH", 52.0300, -0.8150, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-08", False, "Academies"),  # noqa: E501
-        ("139861", "Loughton School", "MK5 8DN", 52.0080, -0.7900, 7, 11, "Primary", "Mixed", None, "Outstanding", "2021-11-24", False, "Academies"),  # noqa: E501
-        ("136853", "Oxley Park Academy", "MK4 4TA", 52.0030, -0.8200, 4, 11, "Primary", "Mixed", None, "Outstanding", "2021-09-30", False, "Academies"),  # noqa: E501
-        ("110355", "Falconhurst School", "MK6 5AX", 52.0260, -0.7420, 3, 7, "Primary", "Mixed", None, "Good", "2023-04-05", False, "Local authority maintained schools"),  # noqa: E501
-        ("110400", "Glastonbury Thorn School", "MK5 6BX", 52.0150, -0.7990, 4, 11, "Primary", "Mixed", None, "Good", "2023-01-25", False, "Local authority maintained schools"),  # noqa: E501
-        ("110395", "Green Park School", "MK16 0NH", 52.0880, -0.7230, 4, 11, "Primary", "Mixed", None, "Good", "2022-06-15", False, "Local authority maintained schools"),  # noqa: E501
-        ("110404", "Cold Harbour Church of England School", "MK3 7PD", 51.9950, -0.7370, 4, 7, "Primary", "Mixed", "Church of England", "Good", "2023-06-21", False, "Local authority maintained schools"),  # noqa: E501
-        ("110399", "Cedars Primary School", "MK16 0DT", 52.0870, -0.7210, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-05", False, "Local authority maintained schools"),  # noqa: E501
-        ("143766", "Fairfields Primary School", "MK11 4BA", 52.0350, -0.8280, 4, 11, "Primary", "Mixed", None, "Good", "2023-09-14", False, "Free schools"),  # noqa: E501
-        ("132787", "Long Meadow School", "MK5 7XX", 52.0060, -0.8120, 3, 11, "Primary", "Mixed", None, "Good", "2022-11-23", False, "Local authority maintained schools"),  # noqa: E501
-        ("135271", "Brooklands Farm Primary School", "MK10 7EU", 52.0360, -0.7160, 4, 11, "Primary", "Mixed", None, "Outstanding", "2022-03-16", False, "Local authority maintained schools"),  # noqa: E501
-        ("143265", "Chestnuts Primary School", "MK3 5EN", 51.9960, -0.7530, 4, 11, "Primary", "Mixed", None, "Good", "2023-11-08", False, "Academies"),  # noqa: E501
-        ("145043", "Jubilee Wood Primary School", "MK6 2LB", 52.0290, -0.7480, 4, 11, "Primary", "Mixed", None, "Good", "2023-05-10", False, "Academies"),  # noqa: E501
-        ("134424", "Holmwood School", "MK8 9AB", 52.0280, -0.8100, 3, 7, "Primary", "Mixed", None, "Good", "2023-03-22", False, "Academies"),  # noqa: E501
-        ("148229", "Holne Chase Primary School", "MK3 5HP", 51.9970, -0.7600, 4, 11, "Primary", "Mixed", None, "Good", "2023-11-07", False, "Academies"),  # noqa: E501
-        ("138933", "Rickley Park Primary School", "MK3 6EW", 51.9960, -0.7640, 4, 11, "Primary", "Mixed", None, "Good", "2023-10-18", False, "Academies"),  # noqa: E501
-        ("110380", "Priory Common School", "MK13 9EZ", 52.0590, -0.7900, 3, 7, "Primary", "Mixed", None, "Good", "2022-05-11", False, "Local authority maintained schools"),  # noqa: E501
-        ("151293", "Tickford Park Primary School", "MK16 9DH", 52.0860, -0.7190, 4, 11, "Primary", "Mixed", None, "Good", "2023-12-06", False, "Local authority maintained schools"),  # noqa: E501
-        ("146009", "Old Stratford Primary School", "MK19 6AZ", 52.0680, -0.8350, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-15", False, "Academies"),  # noqa: E501
-        ("144357", "Knowles Primary School", "MK2 2HB", 52.0040, -0.7320, 3, 11, "Primary", "Mixed", None, "Good", "2023-08-09", False, "Academies"),  # noqa: E501
-        ("139449", "Heronsgate School", "MK7 7BW", 52.0170, -0.7250, 4, 11, "Primary", "Mixed", None, "Good", "2022-07-13", False, "Academies"),  # noqa: E501
-        ("149061", "Deanshanger Primary School", "MK19 6HJ", 52.0580, -0.8570, 4, 11, "Primary", "Mixed", None, "Good", "2023-04-19", False, "Local authority maintained schools"),  # noqa: E501
-        ("110246", "Olney Infant Academy", "MK46 5AD", 52.1530, -0.7010, 4, 7, "Primary", "Mixed", None, "Good", "2023-01-25", False, "Academies"),  # noqa: E501
-        ("143263", "Olney Middle School", "MK46 4BJ", 52.1540, -0.6990, 8, 12, "Middle deemed secondary", "Mixed", None, "Good", "2022-06-08", False, "Academies"),  # noqa: E501
-        ("110290", "Hanslope Primary School", "MK19 7BL", 52.1120, -0.8080, 4, 11, "Primary", "Mixed", None, "Good", "2023-03-08", False, "Local authority maintained schools"),  # noqa: E501
-        ("110291", "Haversham Village School", "MK19 7DT", 52.0950, -0.7560, 4, 11, "Primary", "Mixed", None, "Good", "2022-04-27", False, "Local authority maintained schools"),  # noqa: E501
-        ("110292", "Castlethorpe First School", "MK19 7EW", 52.1050, -0.8220, 4, 9, "Primary", "Mixed", None, "Outstanding", "2021-10-13", False, "Local authority maintained schools"),  # noqa: E501
-        ("110293", "Sherington Church of England School", "MK16 9NF", 52.1190, -0.7350, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-05-17", False, "Local authority maintained schools"),  # noqa: E501
-        ("110294", "Russell Street School", "MK11 1BT", 52.0560, -0.8460, 4, 11, "Primary", "Mixed", None, "Good", "2022-11-02", False, "Local authority maintained schools"),  # noqa: E501
-        ("110295", "Wyvern School", "MK12 5HU", 52.0600, -0.8050, 4, 11, "Primary", "Mixed", None, "Good", "2023-06-28", False, "Local authority maintained schools"),  # noqa: E501
-        ("110366", "Great Linford Primary School", "MK14 5BL", 52.0680, -0.7650, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-22", False, "Local authority maintained schools"),  # noqa: E501
-        ("110381", "Giffard Park Primary School", "MK14 5PY", 52.0640, -0.7520, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-12", False, "Local authority maintained schools"),  # noqa: E501
-        ("110346", "New Bradwell School", "MK13 0BH", 52.0620, -0.7850, 3, 11, "Primary", "Mixed", None, "Requires Improvement", "2024-05-15", False, "Local authority maintained schools"),  # noqa: E501
-        ("148193", "Water Hall Primary School", "MK2 3QF", 52.0030, -0.7280, 3, 11, "Primary", "Mixed", None, "Good", "2023-07-05", False, "Academies"),  # noqa: E501
-        ("138715", "Shepherdswell Academy", "MK6 3NP", 52.0310, -0.7340, 4, 11, "Primary", "Mixed", None, "Good", "2022-06-22", False, "Academies"),  # noqa: E501
-        ("110352", "Southwood School", "MK14 7AR", 52.0560, -0.7720, 4, 11, "Primary", "Mixed", None, "Good", "2023-11-15", False, "Local authority maintained schools"),  # noqa: E501
-        ("110353", "Stanton School", "MK13 7BE", 52.0610, -0.7800, 4, 11, "Primary", "Mixed", None, "Good", "2022-03-09", False, "Local authority maintained schools"),  # noqa: E501
-        ("131397", "Wavendon Gate School", "MK7 7HL", 52.0080, -0.7150, 4, 11, "Primary", "Mixed", None, "Good", "2023-05-24", False, "Local authority maintained schools"),  # noqa: E501
-        ("110357", "Whitehouse Primary School", "MK8 1AG", 52.0250, -0.8250, 4, 11, "Primary", "Mixed", None, "Good", "2023-08-16", False, "Free schools"),  # noqa: E501
-        ("135270", "Newton Leys Primary School", "MK3 5GG", 51.9880, -0.7480, 3, 11, "Primary", "Mixed", None, "Good", "2023-10-25", False, "Local authority maintained schools"),  # noqa: E501
-        ("110359", "Drayton Park School", "MK2 3HJ", 52.0010, -0.7350, 4, 11, "Primary", "Mixed", None, "Good", "2022-09-21", False, "Local authority maintained schools"),  # noqa: E501
-        ("110580", "Romans Field School", "MK3 7AW", 51.9920, -0.7590, 4, 11, "Primary", "Mixed", None, "Good", "2023-04-12", False, "Local authority maintained schools"),  # noqa: E501
-        ("110361", "Barleyhurst Park Primary School", "MK3 7NA", 51.9940, -0.7530, 4, 11, "Primary", "Mixed", None, "Good", "2023-06-14", False, "Local authority maintained schools"),  # noqa: E501
-        ("151371", "Emerson Valley School", "MK4 2JT", 52.0020, -0.8000, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-18", False, "Academies"),  # noqa: E501
-        ("110362", "Loughton Manor First School", "MK5 8FA", 52.0110, -0.7940, 4, 7, "Primary", "Mixed", None, "Good", "2022-12-07", False, "Local authority maintained schools"),  # noqa: E501
-        ("151047", "Willen Primary School", "MK15 9HN", 52.0520, -0.7250, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-01", False, "Academies"),  # noqa: E501
-        ("110364", "St Bernadette's Catholic Primary School", "MK10 9PH", 52.0400, -0.7100, 4, 11, "Primary", "Mixed", "Roman Catholic", "Outstanding", "2022-01-19", False, "Local authority maintained schools"),  # noqa: E501
-        ("110365", "St Mary and St Giles Church of England School", "MK11 1EF", 52.0570, -0.8450, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-09-13", False, "Local authority maintained schools"),  # noqa: E501
-        ("110483", "St Mary Magdalene Catholic Primary School", "MK12 6AY", 52.0580, -0.7930, 4, 11, "Primary", "Mixed", "Roman Catholic", "Outstanding", "2022-07-06", False, "Local authority maintained schools"),  # noqa: E501
-        ("110366a", "St Monica's Catholic Primary School", "MK14 6HB", 52.0610, -0.7570, 4, 11, "Primary", "Mixed", "Roman Catholic", "Good", "2023-11-08", False, "Local authority maintained schools"),  # noqa: E501
-        ("110369", "Christ The Sower Ecumenical Primary School", "MK8 0PZ", 52.0280, -0.8050, 4, 11, "Primary", "Mixed", "Christian", "Outstanding", "2022-03-16", False, "Local authority maintained schools"),  # noqa: E501
-        ("110415", "Whaddon Church of England School", "MK17 0LY", 51.9790, -0.8180, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2022-05-18", False, "Local authority maintained schools"),  # noqa: E501
-        ("110368", "Calverton End First School", "MK19 6AL", 52.0660, -0.8380, 4, 9, "Primary", "Mixed", None, "Good", "2023-03-15", False, "Local authority maintained schools"),  # noqa: E501
-        ("151372", "Merebrook Infant School", "MK4 1EZ", 52.0010, -0.8050, 3, 7, "Primary", "Mixed", None, "Good", "2023-07-19", False, "Academies"),  # noqa: E501
-        ("110256", "Bushfield School", "MK12 5JG", 52.0530, -0.7920, 3, 11, "Primary", "Mixed", None, "Good", "2023-01-25", False, "Local authority maintained schools"),  # noqa: E501
-        ("110371", "Summerfield School", "MK13 8PG", 52.0650, -0.7810, 3, 7, "Primary", "Mixed", None, "Good", "2022-04-06", False, "Local authority maintained schools"),  # noqa: E501
-        ("110372", "Heronshaw School", "MK7 7PG", 52.0210, -0.7200, 3, 7, "Primary", "Mixed", None, "Good", "2023-08-23", False, "Local authority maintained schools"),  # noqa: E501
-        ("110240", "Oldbrook First School", "MK6 2NH", 52.0310, -0.7500, 2, 7, "Primary", "Mixed", None, "Good", "2023-04-05", False, "Local authority maintained schools"),  # noqa: E501
-        ("110374", "Khalsa Primary School", "MK10 7ED", 52.0480, -0.7150, 4, 11, "Primary", "Mixed", "Sikh", "Good", "2023-12-06", False, "Free schools"),  # noqa: E501
-        ("132210", "Brooksward School", "MK14 6JZ", 52.0620, -0.7600, 3, 11, "Primary", "Mixed", None, "Good", "2023-06-07", False, "Local authority maintained schools"),  # noqa: E501
-        ("134423", "Bradwell Village School", "MK13 9AZ", 52.0600, -0.7880, 4, 11, "Primary", "Mixed", None, "Good", "2024-07-12", False, "Academies"),  # noqa: E501
-        ("138440", "Lift Charles Warren", "MK6 3AZ", 52.0250, -0.7380, 4, 11, "Primary", "Mixed", None, "Good", "2023-02-15", False, "Academies"),  # noqa: E501
-        ("132786", "Howe Park School", "MK4 2SH", 52.0010, -0.8090, 4, 7, "Primary", "Mixed", None, "Good", "2022-11-16", False, "Local authority maintained schools"),  # noqa: E501
-        ("135127", "Downs Barn School", "MK14 3BQ", 52.0570, -0.7500, 3, 11, "Primary", "Mixed", None, "Good", "2023-01-11", False, "Academies"),  # noqa: E501
-        ("110330", "Pepper Hill School", "MK13 7BQ", 52.0630, -0.7850, 4, 11, "Primary", "Mixed", None, "Good", "2022-09-28", False, "Local authority maintained schools"),  # noqa: E501
-        ("110375", "Greenleys First School", "MK12 6AT", 52.0590, -0.7960, 3, 7, "Primary", "Mixed", None, "Good", "2023-05-03", False, "Local authority maintained schools"),  # noqa: E501
-        ("110376", "Greenleys Junior School", "MK12 5DE", 52.0580, -0.7950, 7, 11, "Primary", "Mixed", None, "Good", "2022-06-29", False, "Local authority maintained schools"),  # noqa: E501
-        ("110377", "Langland Community School", "MK6 4HA", 52.0350, -0.7520, 3, 11, "Primary", "Mixed", None, "Good", "2023-10-11", False, "Local authority maintained schools"),  # noqa: E501
-        ("110378", "Moorland Primary School", "MK6 4ND", 52.0320, -0.7490, 3, 7, "Primary", "Mixed", None, "Good", "2022-03-23", False, "Local authority maintained schools"),  # noqa: E501
-        ("110379", "Wood End First School", "MK14 6BB", 52.0670, -0.7680, 3, 7, "Primary", "Mixed", None, "Good", "2023-07-12", False, "Local authority maintained schools"),  # noqa: E501
-        ("110383", "Heelands School", "MK13 7QL", 52.0640, -0.7810, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-19", False, "Local authority maintained schools"),  # noqa: E501
-        ("147380", "Ashbrook School", "MK8 8NA", 52.0310, -0.8200, 3, 11, "Primary", "Mixed", None, "Good", "2023-09-27", False, "Academies"),  # noqa: E501
-        ("110384", "The Willows School", "MK6 2LP", 52.0285, -0.7460, 3, 11, "Primary", "Mixed", None, "Good", "2022-05-18", False, "Local authority maintained schools"),  # noqa: E501
-        ("110385", "Germander Park School", "MK14 7DU", 52.0600, -0.7550, 4, 11, "Primary", "Mixed", None, "Good", "2023-03-29", False, "Local authority maintained schools"),  # noqa: E501
-        ("110386", "Lavendon School", "MK46 4HA", 52.1370, -0.6850, 4, 11, "Primary", "Mixed", None, "Good", "2022-07-06", False, "Local authority maintained schools"),  # noqa: E501
-        ("110387", "Emberton School", "MK46 5BX", 52.1290, -0.7060, 4, 11, "Primary", "Mixed", None, "Good", "2023-04-26", False, "Local authority maintained schools"),  # noqa: E501
-        ("110388", "North Crawley CofE School", "MK16 9LL", 52.0690, -0.6920, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2022-11-30", False, "Local authority maintained schools"),  # noqa: E501
-        ("110389", "Stoke Goldington CofE School", "MK16 8NP", 52.1070, -0.7420, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-02-08", False, "Local authority maintained schools"),  # noqa: E501
-        ("110390", "Newton Blossomville CE School", "MK43 8AL", 52.1200, -0.6450, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2022-05-25", False, "Local authority maintained schools"),  # noqa: E501
-        ("110391", "Bow Brickhill CofE VA Primary School", "MK17 9JT", 51.9900, -0.7050, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-06-14", False, "Local authority maintained schools"),  # noqa: E501
-        ("110392", "St Thomas Aquinas Catholic Primary School", "MK3 5DT", 51.9960, -0.7520, 4, 11, "Primary", "Mixed", "Roman Catholic", "Good", "2022-09-07", False, "Local authority maintained schools"),  # noqa: E501
-        ("110393", "Bishop Parker Catholic School", "MK2 3BT", 52.0060, -0.7300, 3, 11, "Primary", "Mixed", "Roman Catholic", "Good", "2023-01-18", False, "Local authority maintained schools"),  # noqa: E501
-        ("110396", "St Mary's Wavendon CofE Primary", "MK17 8LH", 51.9940, -0.7030, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2022-04-06", False, "Local authority maintained schools"),  # noqa: E501
-        ("110397", "St Andrew's CofE Infant School", "MK14 5AX", 52.0690, -0.7660, 4, 7, "Primary", "Mixed", "Church of England", "Good", "2023-11-22", False, "Local authority maintained schools"),  # noqa: E501
-        ("139057", "New Chapter Primary School", "MK6 5EA", 52.0330, -0.7420, 4, 11, "Primary", "Mixed", None, "Good", "2023-06-21", False, "Academies"),  # noqa: E501
-        ("110398", "Orchard Academy", "MK6 3HW", 52.0300, -0.7370, 4, 11, "Primary", "Mixed", None, "Good", "2022-10-05", False, "Academies"),  # noqa: E501
-        ("144137", "Monkston Primary School", "MK10 9LA", 52.0350, -0.7120, 4, 11, "Primary", "Mixed", None, "Good", "2023-05-17", False, "Academies"),  # noqa: E501
-        ("132786a", "Priory Rise School", "MK4 3GE", 52.0020, -0.8130, 4, 11, "Primary", "Mixed", None, "Good", "2023-03-08", False, "Academies"),  # noqa: E501
-        ("134720", "Giles Brook Primary School", "MK11 1TF", 52.0520, -0.8360, 4, 11, "Primary", "Mixed", None, "Good", "2022-07-13", False, "Academies"),  # noqa: E501
-        ("110402", "Sherington CofE School", "MK16 9NF", 52.1190, -0.7350, 4, 11, "Primary", "Mixed", "Church of England", "Good", "2023-05-17", False, "Local authority maintained schools"),  # noqa: E501
-        ("110197", "Knowles Nursery School", "MK2 2HB", 52.0050, -0.7310, 2, 5, "Nursery", "Mixed", None, "Good", "2022-06-15", False, "Local authority maintained schools"),  # noqa: E501
-        ("110575", "White Spire School", "MK3 6EW", 51.9960, -0.7610, 2, 19, "Special", "Mixed", None, "Outstanding", "2022-03-09", False, "Local authority maintained schools"),  # noqa: E501
-        ("110580a", "Romans Field Special School", "MK3 7AW", 51.9930, -0.7580, 3, 11, "Special", "Mixed", None, "Good", "2023-04-12", False, "Local authority maintained schools"),  # noqa: E501
-        ("110584", "The Walnuts School", "MK8 0PU", 52.0260, -0.8080, 4, 19, "Special", "Mixed", None, "Good", "2023-06-28", False, "Local authority maintained schools"),  # noqa: E501
-        ("110587", "Slated Row School", "MK12 5NJ", 52.0590, -0.7870, 3, 19, "Special", "Mixed", None, "Good", "2022-11-16", False, "Local authority maintained schools"),  # noqa: E501
-        ("110592", "The Redway School", "MK6 4HG", 52.0340, -0.7500, 2, 19, "Special", "Mixed", None, "Outstanding", "2022-01-19", False, "Local authority maintained schools"),  # noqa: E501
-        ("138253", "Stephenson Academy", "MK14 6AX", 52.0600, -0.7620, 11, 19, "Special", "Mixed", None, "Good", "2023-09-20", False, "Academies"),  # noqa: E501
-        ("140252", "Bridge Academy", "MK14 6AX", 52.0610, -0.7630, 5, 16, "Special", "Mixed", None, "Good", "2023-02-01", False, "Academies"),  # noqa: E501
-        ("110565", "Milton Keynes Preparatory School", "MK3 7EG", 51.9970, -0.7560, 3, 13, "Primary", "Mixed", None, None, "2023-08-15", True, "Independent schools"),  # noqa: E501
-        ("110567", "The Webber Independent School", "MK14 6DP", 52.0590, -0.7730, 0, 16, "All-through", "Mixed", None, None, "2022-05-20", True, "Independent schools"),  # noqa: E501
-        ("110549", "Thornton College", "MK17 0HJ", 51.9580, -0.9160, 3, 19, "All-through", "Girls", "Roman Catholic", None, "", True, "Independent schools"),  # noqa: E501
-        ("110536", "Akeley Wood Senior School", "MK18 5AE", 52.0170, -0.9710, 11, 18, "Secondary", "Mixed", None, None, "", True, "Independent schools"),  # noqa: E501
-        ("122138", "Akeley Wood Junior School", "MK18 5AE", 52.0170, -0.9710, 4, 11, "Primary", "Mixed", None, None, "", True, "Independent schools"),  # noqa: E501
-        ("133920", "Broughton Manor Preparatory School", "MK10 9AA", 52.0480, -0.7140, 3, 11, "Primary", "Mixed", None, None, "", True, "Independent schools"),  # noqa: E501
-        ("110563", "The Grove Independent School", "MK5 8HD", 52.0100, -0.7920, 2, 13, "Primary", "Mixed", None, None, "", True, "Independent schools"),  # noqa: E501
-        ("148420", "KWS Milton Keynes", "MK2 3HU", 52.0070, -0.7300, 7, 18, "Secondary", "Mixed", None, None, "", True, "Independent special schools"),  # noqa: E501
-    ]
-    # fmt: on
-
-    schools: list[School] = []
-    for row in mk_schools:
-        (
-            urn,
-            name,
-            postcode,
-            lat,
-            lng,
-            age_from,
-            age_to,
-            phase,
-            gender,
-            faith,
-            ofsted,
-            ofsted_date_str,
-            is_private_val,
-            _type_group,
-        ) = row  # noqa: E501
-        ofsted_date_val = None
-        if ofsted_date_str:
-            try:
-                ofsted_date_val = datetime.strptime(ofsted_date_str, "%Y-%m-%d").date()
-            except ValueError:
-                pass
-        school_type = "private" if is_private_val else "state"
-        # Generate a sample prospectus URL for seed data
-        website = f"https://www.{name.lower().replace(' ', '')}.org.uk"
-        prospectus_url = _generate_prospectus_url(website, name)
-        ofsted_rating_val = ofsted if ofsted != "Not applicable" else None
-        ethos = _generate_ethos(name, phase, faith, ofsted_rating_val)
-        schools.append(
-            School(
-                urn=urn,
-                name=name,
-                type=school_type,
-                council=council,
-                address=f"{name}, Milton Keynes",
-                postcode=postcode,
-                lat=lat,
-                lng=lng,
-                catchment_radius_km=_default_catchment_km(phase),
-                gender_policy=gender,
-                faith=faith,
-                age_range_from=age_from,
-                age_range_to=age_to,
-                ofsted_rating=ofsted_rating_val,
-                ofsted_date=ofsted_date_val,
-                is_private=is_private_val,
-                prospectus_url=prospectus_url,
-                website=website,
-                ethos=ethos,
-            )
-        )
-    return schools
-
-
-# ---------------------------------------------------------------------------
-# Club data generation
-# ---------------------------------------------------------------------------
-
-_BREAKFAST_CLUBS = [
-    ("Early Birds Breakfast Club", "Start the day with a healthy breakfast and fun activities"),
-    ("Sunshine Breakfast Club", "Morning care with toast, cereal, and supervised play"),
-    ("Rise & Shine Club", "Nutritious breakfast with crafts and games before school"),
-    ("Morning Stars Breakfast Club", "Enjoy breakfast and socialise before classes begin"),
-    ("Bright Start Breakfast Club", "Fuelling young minds with a great start to the day"),
-]
-
-_AFTERSCHOOL_CLUBS = [
-    ("Sports After-School Club", "Football, netball, athletics, and multi-sports sessions"),
-    ("Homework Club", "Supervised homework time with teacher support"),
-    ("Arts & Crafts Club", "Creative sessions including painting, drawing, and crafts"),
-    ("Drama Club", "Acting, improvisation, and performance workshops"),
-    ("Science Explorers Club", "Hands-on science experiments and STEM activities"),
-    ("Coding Club", "Introduction to programming with Scratch and Python"),
-    ("Music Club", "Learn instruments, sing, and explore rhythm"),
-    ("Dance Club", "Street dance, ballet basics, and creative movement"),
-    ("Gardening Club", "Growing vegetables and learning about nature"),
-    ("Reading & Story Club", "Book club activities and creative writing"),
-    ("Multi-Activity Club", "A mix of sports, games, and creative activities"),
-    ("Chess Club", "Learn chess strategy and compete in friendly matches"),
-]
-
-
-def _generate_test_clubs(schools: list[School]) -> list[SchoolClub]:
-    """⚠️ DISABLED: Do not generate fake club data."""
-    return []  # DISABLED - NO FAKE DATA
-    clubs: list[SchoolClub] = []
-    for school in schools:
-        if school.id is None:
-            continue
-        is_secondary = (
-            school.age_range_from is not None
-            and school.age_range_from >= 11
-            and school.age_range_to is not None
-            and school.age_range_to >= 16
-        )
-        breakfast_prob = 0.30 if is_secondary else 0.60
-        afterschool_prob = 0.50 if is_secondary else 0.40
-        if rng.random() < breakfast_prob:
-            bname, bdesc = rng.choice(_BREAKFAST_CLUBS)
-            start_min = rng.choice([30, 35, 40, 45])
-            end_min = rng.choice([40, 45, 50])
-            cost = round(rng.uniform(3.0, 5.0), 2)
-            days = "Mon,Tue,Wed,Thu,Fri" if rng.random() < 0.85 else "Mon,Tue,Wed,Thu"
-            clubs.append(
-                SchoolClub(
-                    school_id=school.id,
-                    club_type="breakfast",
-                    name=bname,
-                    description=bdesc,
-                    days_available=days,
-                    start_time=time(7, start_min),
-                    end_time=time(8, end_min),
-                    cost_per_session=cost,
-                )
-            )
-        if rng.random() < afterschool_prob:
-            num_clubs = rng.choice([1, 1, 2, 2, 3])
-            chosen = rng.sample(_AFTERSCHOOL_CLUBS, min(num_clubs, len(_AFTERSCHOOL_CLUBS)))
-            for aname, adesc in chosen:
-                as_start_min = rng.choice([15, 20, 30])
-                as_end_hour = rng.choice([16, 17])
-                as_end_min = rng.choice([0, 30]) if as_end_hour == 16 else rng.choice([0, 15, 30])
-                cost = round(rng.uniform(5.0, 10.0), 2)
-                all_days = ["Mon", "Tue", "Wed", "Thu", "Fri"]
-                if rng.random() < 0.4:
-                    num_days = rng.randint(2, 4)
-                    selected_days = sorted(rng.sample(all_days, num_days), key=all_days.index)
-                    days = ",".join(selected_days)
-                else:
-                    days = "Mon,Tue,Wed,Thu,Fri"
-                clubs.append(
-                    SchoolClub(
-                        school_id=school.id,
-                        club_type="after_school",
-                        name=aname,
-                        description=adesc,
-                        days_available=days,
-                        start_time=time(15, as_start_min),
-                        end_time=time(as_end_hour, as_end_min),
-                        cost_per_session=cost,
-                    )
-                )
-    return clubs
-
-
-def _upsert_clubs(session: Session, clubs: list[SchoolClub]) -> int:
-    """Insert club records, skipping duplicates by (school_id, club_type, name)."""
-    inserted = 0
-    for club in clubs:
-        existing = (
-            session.query(SchoolClub)
-            .filter_by(school_id=club.school_id, club_type=club.club_type, name=club.name)
-            .first()
-        )
-        if existing is None:
-            session.add(club)
-            inserted += 1
-    session.commit()
-    return inserted
-
-
-# ---------------------------------------------------------------------------
-# Private school details (fees, hours, transport)
-# ---------------------------------------------------------------------------
-# Tuples: (school_name_fragment, fee_age_group, termly_fee, annual_fee,
-#          fee_increase_pct, day_start, day_end, provides_transport,
-#          transport_notes, holiday_notes)
+# These are hand-verified fee tiers for Milton Keynes independent schools.
+# They are NOT randomly generated - each entry was researched from school
+# websites and prospectuses.
+
+from datetime import time  # noqa: E402
 
 _PRIVATE_DETAIL_ROWS: list[tuple[str, str, float, float, float, time, time, bool, str | None, str | None]] = [
     # Thornton College (Girls boarding/day, Catholic)
@@ -1016,17 +318,16 @@ _PRIVATE_DETAIL_ROWS: list[tuple[str, str, float, float, float, time, time, bool
 ]
 
 
-def _generate_private_school_details(session: Session) -> int:
-    """Create PrivateSchoolDetails records for all private schools in the database.
+def _seed_private_school_details(session: Session) -> int:
+    """Create PrivateSchoolDetails records for private schools using researched data.
 
-    Matches schools by name fragment and creates multiple fee-tier entries per
-    school (one per age group).  Returns the number of detail records inserted.
+    Matches schools by name fragment and creates fee-tier entries per school.
+    Returns the number of detail records inserted.
     """
     private_schools = session.query(School).filter_by(is_private=True).all()
     if not private_schools:
         return 0
 
-    # Build lookup: name fragment -> list of detail tuples
     details_by_frag: dict[str, list] = {}
     for entry in _PRIVATE_DETAIL_ROWS:
         details_by_frag.setdefault(entry[0], []).append(entry)
@@ -1041,7 +342,6 @@ def _generate_private_school_details(session: Session) -> int:
         if not matched:
             continue
 
-        # Remove existing details (idempotent re-seed)
         session.query(PrivateSchoolDetails).filter_by(school_id=school.id).delete()
 
         for entry in matched:
@@ -1077,529 +377,6 @@ def _generate_private_school_details(session: Session) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Performance data generation
-# ---------------------------------------------------------------------------
-
-
-def _generate_test_performance(schools: list[School], session: Session) -> int:
-    """⚠️ DISABLED: Do not generate fake performance data.
-
-    Performance data (SATs, GCSEs, Progress 8) is critical information that
-    parents use to make school decisions. Generating random data is harmful.
-
-    Real performance data should be imported from:
-    - DfE School Performance Tables: https://www.compare-school-performance.service.gov.uk/
-    - Official government downloads
-
-    Until real data is imported, we return 0 (no fake data).
-    """
-    return 0  # DISABLED - DO NOT GENERATE FAKE PERFORMANCE DATA
-
-        # Use overlapping range checks so all-through schools (e.g. age 4-18)
-        # get both primary AND secondary performance data.
-        has_primary = (
-            school.age_range_from is not None
-            and school.age_range_to is not None
-            and school.age_range_from <= 11
-            and school.age_range_to >= 7
-        )
-        has_secondary = (
-            school.age_range_from is not None
-            and school.age_range_to is not None
-            and school.age_range_from <= 14
-            and school.age_range_to >= 16
-        )
-
-        # Skip schools that don't cover primary or secondary years
-        if not has_primary and not has_secondary:
-            continue
-
-        for year in academic_years:
-            # Small year-on-year variation
-            year_drift = rng.uniform(-3.0, 3.0)
-
-            if has_primary:
-                # SATs results: expected standard %
-                base_expected = rng.uniform(55.0, 85.0)
-                expected_pct = round(max(40.0, min(95.0, base_expected + year_drift)), 0)
-                # Higher standard %
-                base_higher = rng.uniform(5.0, 25.0)
-                higher_pct = round(max(2.0, min(40.0, base_higher + year_drift * 0.5)), 0)
-
-                session.add(
-                    SchoolPerformance(
-                        school_id=school.id,
-                        metric_type="SATs",
-                        metric_value=f"Expected standard: {int(expected_pct)}%",
-                        year=year,
-                        source_url="https://www.find-school-performance-data.service.gov.uk/",
-                    )
-                )
-                count += 1
-                session.add(
-                    SchoolPerformance(
-                        school_id=school.id,
-                        metric_type="SATs_Higher",
-                        metric_value=f"Higher standard: {int(higher_pct)}%",
-                        year=year,
-                        source_url="https://www.find-school-performance-data.service.gov.uk/",
-                    )
-                )
-                count += 1
-
-            if has_secondary:
-                # GCSE results: 5+ GCSEs at grade 9-4 %
-                base_gcse = rng.uniform(50.0, 85.0)
-                gcse_pct = round(max(30.0, min(98.0, base_gcse + year_drift)), 0)
-                session.add(
-                    SchoolPerformance(
-                        school_id=school.id,
-                        metric_type="GCSE",
-                        metric_value=f"5+ GCSEs 9-4: {int(gcse_pct)}%",
-                        year=year,
-                        source_url="https://www.find-school-performance-data.service.gov.uk/",
-                    )
-                )
-                count += 1
-
-                # Progress 8 score (typically -1.5 to +1.5)
-                base_p8 = rng.uniform(-0.8, 0.8)
-                p8_score = round(base_p8 + year_drift * 0.02, 2)
-                p8_score = max(-1.5, min(1.5, p8_score))
-                session.add(
-                    SchoolPerformance(
-                        school_id=school.id,
-                        metric_type="Progress8",
-                        metric_value=f"{p8_score:+.2f}",
-                        year=year,
-                        source_url="https://www.find-school-performance-data.service.gov.uk/",
-                    )
-                )
-                count += 1
-
-                # Attainment 8 score (typically 30-70)
-                base_a8 = rng.uniform(35.0, 60.0)
-                a8_score = round(max(25.0, min(70.0, base_a8 + year_drift)), 1)
-                session.add(
-                    SchoolPerformance(
-                        school_id=school.id,
-                        metric_type="Attainment8",
-                        metric_value=str(a8_score),
-                        year=year,
-                        source_url="https://www.find-school-performance-data.service.gov.uk/",
-                    )
-                )
-                count += 1
-
-    session.commit()
-    return count
-
-
-# ---------------------------------------------------------------------------
-# Term date seed data
-# ---------------------------------------------------------------------------
-
-# Milton Keynes Council standard term dates for 2025-2026.
-_MK_COUNCIL_TERMS_2025_2026 = [
-    {
-        "term_name": "Autumn Term",
-        "start_date": date(2025, 9, 3),
-        "end_date": date(2025, 12, 19),
-        "half_term_start": date(2025, 10, 27),
-        "half_term_end": date(2025, 10, 31),
-    },
-    {
-        "term_name": "Spring Term",
-        "start_date": date(2026, 1, 5),
-        "end_date": date(2026, 3, 27),
-        "half_term_start": date(2026, 2, 16),
-        "half_term_end": date(2026, 2, 20),
-    },
-    {
-        "term_name": "Summer Term",
-        "start_date": date(2026, 4, 13),
-        "end_date": date(2026, 7, 22),
-        "half_term_start": date(2026, 5, 25),
-        "half_term_end": date(2026, 5, 29),
-    },
-]
-
-# Private schools typically have longer holidays (start later, end earlier).
-_PRIVATE_SCHOOL_TERMS_2025_2026 = [
-    {
-        "term_name": "Autumn Term",
-        "start_date": date(2025, 9, 8),
-        "end_date": date(2025, 12, 12),
-        "half_term_start": date(2025, 10, 20),
-        "half_term_end": date(2025, 10, 31),
-    },
-    {
-        "term_name": "Spring Term",
-        "start_date": date(2026, 1, 12),
-        "end_date": date(2026, 3, 20),
-        "half_term_start": date(2026, 2, 16),
-        "half_term_end": date(2026, 2, 20),
-    },
-    {
-        "term_name": "Summer Term",
-        "start_date": date(2026, 4, 20),
-        "end_date": date(2026, 7, 10),
-        "half_term_start": date(2026, 5, 25),
-        "half_term_end": date(2026, 5, 29),
-    },
-]
-
-
-def _generate_test_term_dates(schools: list[School]) -> list[SchoolTermDate]:
-    """⚠️ DISABLED: Do not generate fake term dates."""
-    return []  # DISABLED - NO FAKE DATA
-    academic_year = "2025/2026"
-    term_dates: list[SchoolTermDate] = []
-    for school in schools:
-        if school.is_private:
-            base_terms = _PRIVATE_SCHOOL_TERMS_2025_2026
-        else:
-            base_terms = _MK_COUNCIL_TERMS_2025_2026
-        varies = not school.is_private and rng.random() < 0.30
-        for term_info in base_terms:
-            if varies:
-                day_offset_start = timedelta(days=rng.randint(-3, 3))
-                day_offset_end = timedelta(days=rng.randint(-3, 3))
-                start = term_info["start_date"] + day_offset_start
-                end = term_info["end_date"] + day_offset_end
-                ht_start = term_info["half_term_start"] + timedelta(days=rng.randint(-1, 1))
-                ht_end = term_info["half_term_end"] + timedelta(days=rng.randint(-1, 1))
-            else:
-                start = term_info["start_date"]
-                end = term_info["end_date"]
-                ht_start = term_info["half_term_start"]
-                ht_end = term_info["half_term_end"]
-            term_dates.append(
-                SchoolTermDate(
-                    school_id=school.id,
-                    academic_year=academic_year,
-                    term_name=term_info["term_name"],
-                    start_date=start,
-                    end_date=end,
-                    half_term_start=ht_start,
-                    half_term_end=ht_end,
-                )
-            )
-    return term_dates
-
-
-def _seed_term_dates(session: Session, council: str) -> int:
-    """Generate and insert term dates for all schools in the given council."""
-    school_ids = [s.id for s in session.query(School).filter_by(council=council).all()]
-    if not school_ids:
-        return 0
-    session.query(SchoolTermDate).filter(SchoolTermDate.school_id.in_(school_ids)).delete(synchronize_session=False)
-    session.flush()
-    schools = session.query(School).filter_by(council=council).all()
-    new_term_dates = _generate_test_term_dates(schools)
-    session.add_all(new_term_dates)
-    session.commit()
-    return len(new_term_dates)
-
-
-# ---------------------------------------------------------------------------
-# Admissions history seed data
-# ---------------------------------------------------------------------------
-
-_ACADEMIC_YEARS = ["2021/2022", "2022/2023", "2023/2024", "2024/2025"]
-
-
-def _generate_test_admissions(schools: list[School], session: Session) -> int:
-    """⚠️ DISABLED: Do not generate fake admissions data.
-
-    Admissions data (places offered, last distance offered, oversubscription)
-    is critical information that parents rely on to understand their chances
-    of getting into a school. Generating random data is misleading.
-
-    Real admissions data should be imported from:
-    - Local authority admissions reports
-    - School websites
-    - Council transparency data
-
-    Until real data is imported, we return 0 (no fake data).
-    """
-    return 0  # DISABLED - DO NOT GENERATE FAKE ADMISSIONS DATA
-            school.age_range_from is not None
-            and school.age_range_from >= 11
-            and school.age_range_to is not None
-            and school.age_range_to >= 16
-        )
-
-        # Base places offered: secondary schools are larger
-        if is_secondary:
-            base_places = rng.choice([150, 180, 210, 240])
-        else:
-            base_places = rng.choice([30, 45, 60, 90])
-
-        # Popularity factor: Outstanding schools are more popular
-        if school.ofsted_rating == "Outstanding":
-            popularity = rng.uniform(2.0, 3.0)
-        elif school.ofsted_rating == "Good":
-            popularity = rng.uniform(1.2, 2.2)
-        elif school.ofsted_rating == "Requires Improvement":
-            popularity = rng.uniform(0.8, 1.3)
-        else:
-            popularity = rng.uniform(1.0, 1.8)
-
-        # Base last distance offered (km) - more popular = smaller catchment
-        if popularity > 2.0:
-            base_distance = rng.uniform(0.5, 1.5)
-        elif popularity > 1.5:
-            base_distance = rng.uniform(1.0, 2.5)
-        else:
-            base_distance = rng.uniform(2.0, 5.0)
-
-        # Trend: popular schools shrink catchment over time
-        is_shrinking = popularity > 1.5 and rng.random() < 0.65
-        is_growing = popularity < 1.2 and rng.random() < 0.40
-
-        # Delete existing records for idempotent re-seed
-        session.query(AdmissionsHistory).filter_by(school_id=school.id).delete()
-
-        for i, year in enumerate(_ACADEMIC_YEARS):
-            # Places offered stays fairly constant (slight variation)
-            places = base_places + rng.randint(-5, 5)
-            places = max(15, places)
-
-            # Applications received based on popularity
-            apps = int(places * popularity) + rng.randint(-10, 20)
-            apps = max(places, apps)  # at least as many as places
-
-            # Last distance offered trends over years
-            if is_shrinking:
-                year_factor = 1.0 - (i * rng.uniform(0.05, 0.12))
-            elif is_growing:
-                year_factor = 1.0 + (i * rng.uniform(0.03, 0.08))
-            else:
-                year_factor = 1.0 + rng.uniform(-0.05, 0.05)
-
-            last_dist = round(base_distance * year_factor, 2)
-            last_dist = max(0.2, min(8.0, last_dist))
-
-            # Waiting list offers: more oversubscribed = more movement
-            oversubscription = apps / places if places > 0 else 1.0
-            if oversubscription > 2.0:
-                wl_offers = rng.randint(8, 20)
-            elif oversubscription > 1.5:
-                wl_offers = rng.randint(5, 15)
-            else:
-                wl_offers = rng.randint(2, 8)
-
-            # Appeals: proportional to oversubscription
-            if oversubscription > 2.0:
-                appeals_heard = rng.randint(5, 15)
-            elif oversubscription > 1.5:
-                appeals_heard = rng.randint(3, 10)
-            else:
-                appeals_heard = rng.randint(1, 5)
-
-            # Appeals upheld: typically 20-40% success rate
-            appeals_upheld = min(appeals_heard, rng.randint(1, max(1, int(appeals_heard * 0.45))))
-
-            session.add(
-                AdmissionsHistory(
-                    school_id=school.id,
-                    academic_year=year,
-                    places_offered=places,
-                    applications_received=apps,
-                    last_distance_offered_km=last_dist,
-                    waiting_list_offers=wl_offers,
-                    appeals_heard=appeals_heard,
-                    appeals_upheld=appeals_upheld,
-                )
-            )
-            count += 1
-
-    session.commit()
-    return count
-
-
-# ---------------------------------------------------------------------------
-# Class size trends seed data
-# ---------------------------------------------------------------------------
-
-
-def _generate_test_class_sizes(schools: list[School], session: Session) -> int:
-    """⚠️ DISABLED: Do not generate fake class size data."""
-    return 0  # DISABLED - NO FAKE DATA
-    count = 0
-
-    # Year groups by school phase
-    PRIMARY_YEAR_GROUPS = ["Reception", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6"]
-    SECONDARY_YEAR_GROUPS = ["Year 7", "Year 8", "Year 9", "Year 10", "Year 11", "Year 12", "Year 13"]
-
-    for school in schools:
-        if school.id is None:
-            continue
-
-        # Determine school phase and year groups
-        is_secondary = (
-            school.age_range_from is not None
-            and school.age_range_from >= 11
-            and school.age_range_to is not None
-            and school.age_range_to >= 16
-        )
-        is_all_through = (
-            school.age_range_from is not None
-            and school.age_range_from <= 6
-            and school.age_range_to is not None
-            and school.age_range_to >= 16
-        )
-
-        if is_all_through:
-            year_groups = PRIMARY_YEAR_GROUPS + SECONDARY_YEAR_GROUPS
-        elif is_secondary:
-            year_groups = SECONDARY_YEAR_GROUPS[: school.age_range_to - 10 if school.age_range_to else 7]
-        else:
-            # Primary - include only relevant year groups
-            year_groups = PRIMARY_YEAR_GROUPS
-
-        # Determine trend: growing, stable, or shrinking
-        # Outstanding/Good schools more likely to be growing
-        # Requires Improvement/Inadequate schools more likely shrinking
-        if school.ofsted_rating == "Outstanding":
-            trend_type = rng.choices(["growing", "stable", "shrinking"], weights=[0.6, 0.35, 0.05])[0]
-        elif school.ofsted_rating == "Good":
-            trend_type = rng.choices(["growing", "stable", "shrinking"], weights=[0.4, 0.5, 0.1])[0]
-        elif school.ofsted_rating == "Requires Improvement":
-            trend_type = rng.choices(["growing", "stable", "shrinking"], weights=[0.1, 0.3, 0.6])[0]
-        else:
-            trend_type = rng.choices(["growing", "stable", "shrinking"], weights=[0.05, 0.25, 0.7])[0]
-
-        # Base class size
-        if is_secondary:
-            base_pupils_per_year = rng.choice([150, 180, 210, 240])
-            classes_per_year = rng.choice([5, 6, 7, 8])
-        else:
-            base_pupils_per_year = rng.choice([30, 45, 60, 90])
-            classes_per_year = rng.choice([1, 2, 3])
-
-        # Trend factor per year
-        if trend_type == "growing":
-            year_change_pct = rng.uniform(0.03, 0.08)  # 3-8% growth per year
-        elif trend_type == "shrinking":
-            year_change_pct = -rng.uniform(0.04, 0.10)  # 4-10% decline per year
-        else:
-            year_change_pct = rng.uniform(-0.02, 0.02)  # Stable with slight variation
-
-        # Delete existing records for idempotent re-seed
-        session.query(SchoolClassSize).filter_by(school_id=school.id).delete()
-
-        for i, year in enumerate(_ACADEMIC_YEARS):
-            for year_group in year_groups:
-                # Apply trend over years
-                year_factor = 1.0 + (i * year_change_pct)
-
-                # Add some randomness per year group
-                group_variance = rng.uniform(0.9, 1.1)
-
-                num_pupils = int(base_pupils_per_year * year_factor * group_variance)
-                num_pupils = max(10, num_pupils)  # At least 10 pupils per year group
-
-                # Classes adjusts based on pupil numbers
-                # Aim for class sizes between 20-30 for primary, 25-32 for secondary
-                target_class_size = 30 if is_secondary else 28
-                num_classes = max(1, round(num_pupils / target_class_size))
-
-                avg_class_size = round(num_pupils / num_classes, 1)
-
-                session.add(
-                    SchoolClassSize(
-                        school_id=school.id,
-                        academic_year=year,
-                        year_group=year_group,
-                        num_pupils=num_pupils,
-                        num_classes=num_classes,
-                        avg_class_size=avg_class_size,
-                    )
-                )
-                count += 1
-
-    session.commit()
-    return count
-
-
-def _generate_test_ofsted_history(schools: list[School], session: Session) -> int:
-    """Generate Ofsted inspection history ONLY for schools with known ratings.
-
-    IMPORTANT: This function ONLY uses verified ratings from:
-    1. Known accurate ratings dictionary (verified from Ofsted reports)
-    2. GIAS CSV data (if available)
-
-    Schools without verified ratings are SKIPPED - we never generate random ratings
-    for real schools as this could mislead parents.
-    """
-    count = 0
-    ratings = ["Outstanding", "Good", "Requires Improvement", "Inadequate"]
-
-    # Known accurate Ofsted ratings verified from https://reports.ofsted.gov.uk/
-    # ONLY add schools here after verifying their actual rating
-    KNOWN_RATINGS = {
-        "Caroline Haslett Primary School": "Outstanding",
-        # Add more VERIFIED ratings here as needed - DO NOT GUESS
-    }
-
-    for school in schools:
-        # Delete existing history for this school
-        session.query(OfstedHistory).filter_by(school_id=school.id).delete()
-
-        # Determine if we have a verified rating for this school
-        current_rating = None
-
-        # Priority 1: Check known accurate ratings dictionary
-        if school.name in KNOWN_RATINGS:
-            current_rating = KNOWN_RATINGS[school.name]
-        # Priority 2: Use rating from GIAS data if available
-        elif school.ofsted_rating and school.ofsted_rating in ratings:
-            current_rating = school.ofsted_rating
-
-        # SKIP schools without verified ratings - do not generate fake data
-        if not current_rating:
-            continue
-        current_date = school.ofsted_date or date(2023, 3, 15)
-        current_idx = ratings.index(current_rating)
-
-        # Current inspection
-        session.add(
-            OfstedHistory(
-                school_id=school.id,
-                inspection_date=current_date,
-                rating=current_rating,
-                report_url=f"https://reports.ofsted.gov.uk/provider/21/{school.id}",
-                strengths_quote=random.choice([
-                    "Pupils are safe, happy and make good progress.",
-                    "The quality of education is high and leadership is strong.",
-                    "Children are enthusiastic learners who enjoy coming to school.",
-                    "Teaching is consistently good across all subjects.",
-                ]),
-                improvements_quote=random.choice([
-                    "The school should ensure that all pupils read widely and often.",
-                    "Leaders should develop the curriculum to ensure full coverage.",
-                    "More needs to be done to support pupils with SEND.",
-                    "Attendance rates need to improve, especially for disadvantaged pupils.",
-                ]),
-                is_current=True
-            )
-        )
-        count += 1
-
-        # Update school's current Ofsted rating to match the verified history
-        school.ofsted_rating = current_rating
-        school.ofsted_date = current_date
-
-        # NOTE: Historical inspection records should be added manually with verified data
-        # DO NOT generate random historical inspections as this is misleading
-
-    session.commit()
-    return count
-
-
-# ---------------------------------------------------------------------------
 # Database operations
 # ---------------------------------------------------------------------------
 
@@ -1611,566 +388,6 @@ def _ensure_database(db_path: Path) -> Session:
     return Session(engine)
 
 
-def _upsert_schools(session: Session, schools: list[School]) -> tuple[int, int]:
-    inserted = 0
-    updated = 0
-    for school in schools:
-        existing = session.query(School).filter_by(urn=school.urn).first()
-        if existing is None:
-            session.add(school)
-            inserted += 1
-        else:
-            existing.name = school.name
-            existing.type = school.type
-            existing.council = school.council
-            existing.address = school.address
-            existing.postcode = school.postcode
-            existing.lat = school.lat
-            existing.lng = school.lng
-            existing.catchment_radius_km = school.catchment_radius_km
-            existing.gender_policy = school.gender_policy
-            existing.faith = school.faith
-            existing.age_range_from = school.age_range_from
-            existing.age_range_to = school.age_range_to
-            existing.ofsted_rating = school.ofsted_rating
-            existing.ofsted_date = school.ofsted_date
-            existing.is_private = school.is_private
-            updated += 1
-    session.commit()
-    return inserted, updated
-
-
-# ---------------------------------------------------------------------------
-# Uniform data generation
-# ---------------------------------------------------------------------------
-
-_UNIFORM_STYLES = [
-    ("Smart casual", ["Navy", "Grey", "White"]),
-    ("Traditional blazer", ["Navy", "Burgundy", "Gold"]),
-    ("Polo shirt and jumper", ["Navy", "Grey", "White"]),
-    ("Smart shirt and tie", ["Navy", "Black", "White"]),
-]
-
-_UNIFORM_SUPPLIERS = [
-    ("Tesco", "https://www.tesco.com/uniform", False),
-    ("Asda", "https://george.com/schoolwear", False),
-    ("M&S", "https://www.marksandspencer.com/school", False),
-    ("Schoolblazer", "https://www.schoolblazer.com", True),
-    ("YourSchoolUniform", "https://www.yourschooluniform.com", True),
-    ("PriceSchoolwear", "https://www.priceschoolwear.co.uk", True),
-]
-
-
-def _generate_test_uniforms(schools: list[School], session: Session) -> int:
-    """Generate realistic uniform data for schools."""
-    rng = random.Random(44)
-    count = 0
-
-    for school in schools:
-        if school.id is None:
-            continue
-
-        # Skip some schools (not all have uniform data yet)
-        if rng.random() < 0.25:
-            continue
-
-        # Choose uniform style and colors
-        style, colors = rng.choice(_UNIFORM_STYLES)
-        color_str = ", ".join(colors)
-
-        # Decide if specific supplier is required (more likely for secondary schools)
-        is_secondary = (
-            school.age_range_from is not None
-            and school.age_range_from >= 11
-            and school.age_range_to is not None
-            and school.age_range_to >= 16
-        )
-        requires_specific = rng.random() < (0.4 if is_secondary else 0.15)
-
-        supplier_name = None
-        supplier_website = None
-        is_expensive = False
-
-        if requires_specific:
-            # Specific branded supplier (expensive)
-            supplier_name, supplier_website, _ = rng.choice([s for s in _UNIFORM_SUPPLIERS if s[2]])
-            is_expensive = True
-            # Branded costs are higher
-            polo_cost = round(rng.uniform(10, 15), 2)
-            jumper_cost = round(rng.uniform(18, 28), 2)
-            trousers_cost = round(rng.uniform(15, 22), 2)
-            pe_kit_cost = round(rng.uniform(20, 35), 2)
-            bag_cost = round(rng.uniform(15, 25), 2)
-            coat_cost = round(rng.uniform(35, 55), 2) if is_secondary else None
-            other_cost = round(rng.uniform(10, 20), 2) if is_secondary else None
-            other_desc = "Tie, blazer" if is_secondary else None
-        else:
-            # Supermarket alternatives acceptable (affordable)
-            supplier_name, supplier_website, _ = rng.choice([s for s in _UNIFORM_SUPPLIERS if not s[2]])
-            is_expensive = False
-            # Supermarket costs are lower
-            polo_cost = round(rng.uniform(3, 6), 2)
-            jumper_cost = round(rng.uniform(6, 12), 2)
-            trousers_cost = round(rng.uniform(5, 10), 2)
-            pe_kit_cost = round(rng.uniform(8, 15), 2)
-            bag_cost = round(rng.uniform(5, 12), 2)
-            coat_cost = round(rng.uniform(15, 30), 2) if is_secondary else None
-            other_cost = None
-            other_desc = None
-
-        # Calculate total cost (2 shirts, 2 jumpers, 2 trousers/skirts, 1 PE kit, 1 bag, 1 coat)
-        total = (polo_cost * 2) + (jumper_cost * 2) + (trousers_cost * 2) + pe_kit_cost + bag_cost
-        if coat_cost:
-            total += coat_cost
-        if other_cost:
-            total += other_cost
-
-        description = f"{style} in {color_str.lower()}: polo shirts, jumper, trousers/skirt, PE kit"
-        notes = (
-            "Supermarket alternatives acceptable"
-            if not requires_specific
-            else "Must be purchased from designated supplier"
-        )
-
-        uniform = SchoolUniform(
-            school_id=school.id,
-            description=description,
-            style=style,
-            colors=color_str,
-            requires_specific_supplier=requires_specific,
-            supplier_name=supplier_name,
-            supplier_website=supplier_website,
-            polo_shirts_cost=polo_cost,
-            jumper_cost=jumper_cost,
-            trousers_skirt_cost=trousers_cost,
-            pe_kit_cost=pe_kit_cost,
-            bag_cost=bag_cost,
-            coat_cost=coat_cost,
-            other_items_cost=other_cost,
-            other_items_description=other_desc,
-            total_cost_estimate=round(total, 2),
-            is_expensive=is_expensive,
-            notes=notes,
-        )
-
-        session.add(uniform)
-        count += 1
-
-    session.commit()
-    return count
-
-
-def _generate_test_parking_ratings(all_schools: list[School], session: Session) -> int:
-    """Generate realistic test parking chaos ratings for schools.
-
-    Generates 2-8 parent ratings per school with realistic patterns:
-    - Secondary schools tend to have higher chaos scores
-    - Urban/busy schools have more parking issues
-    - Some schools have very few ratings (realistic)
-    """
-    count = 0
-    rng = random.Random(42)  # Deterministic seed for reproducibility
-
-    # Delete existing parking ratings for idempotent re-seed
-    school_ids = [s.id for s in all_schools]
-    if school_ids:
-        session.query(ParkingRating).filter(ParkingRating.school_id.in_(school_ids)).delete(synchronize_session=False)
-        session.flush()
-
-    for school in all_schools:
-        # Determine number of ratings (some schools have none, some have many)
-        rating_count_prob = rng.random()
-        if rating_count_prob < 0.15:
-            num_ratings = 0  # 15% have no ratings yet
-        elif rating_count_prob < 0.40:
-            num_ratings = rng.randint(1, 3)  # 25% have 1-3 ratings
-        elif rating_count_prob < 0.75:
-            num_ratings = rng.randint(4, 6)  # 35% have 4-6 ratings
-        else:
-            num_ratings = rng.randint(7, 10)  # 25% have 7-10 ratings
-
-        # Determine base chaos level for this school
-        is_secondary = school.age_range_to and school.age_range_to >= 16
-        base_chaos = rng.uniform(2.5, 4.5) if is_secondary else rng.uniform(1.8, 3.8)
-
-        for _ in range(num_ratings):
-            # Add variation to each rating dimension
-            dropoff = max(1, min(5, int(base_chaos + rng.uniform(-0.8, 0.8))))
-            pickup = max(1, min(5, int(base_chaos + rng.uniform(-0.5, 1.0))))  # Pickup often worse
-            parking = max(1, min(5, int(base_chaos + rng.uniform(-1.0, 0.5))))
-            congestion = max(1, min(5, int(base_chaos + rng.uniform(-0.7, 0.7))))
-            restrictions = max(1, min(5, int(base_chaos + rng.uniform(-1.2, 0.8))))
-
-            # Some ratings have comments
-            comments = None
-            if rng.random() < 0.30:
-                comment_templates = [
-                    "Very busy at drop-off time, best to arrive early.",
-                    "Parking is limited nearby, recommend walking if possible.",
-                    "Double yellow lines make it tricky. School has requested parents use side streets.",
-                    "Much better since they introduced staggered start times.",
-                    "Traffic calming measures help but it's still chaotic at 3pm.",
-                    "School run can take 20+ minutes just to get out of the car park.",
-                    "Relatively calm if you arrive 10-15 minutes early.",
-                    "Narrow streets make it difficult when there are multiple cars.",
-                    "The school gate is directly on a busy road, can be stressful.",
-                    "Local residents complain about parking, be considerate.",
-                ]
-                comments = rng.choice(comment_templates)
-
-            # Random submission date within last 6 months
-            days_ago = rng.randint(1, 180)
-            submitted_at = datetime.utcnow() - timedelta(days=days_ago)
-
-            # Rarely include email (most parents submit anonymously)
-            parent_email = None
-            if rng.random() < 0.10:
-                parent_email = f"parent{rng.randint(1, 999)}@example.com"
-
-            rating = ParkingRating(
-                school_id=school.id,
-                dropoff_chaos=dropoff if rng.random() > 0.05 else None,  # 95% rate this
-                pickup_chaos=pickup if rng.random() > 0.10 else None,  # 90% rate this
-                parking_availability=parking if rng.random() > 0.15 else None,  # 85% rate this
-                road_congestion=congestion if rng.random() > 0.20 else None,  # 80% rate this
-                restrictions_hazards=restrictions if rng.random() > 0.30 else None,  # 70% rate this
-                comments=comments,
-                submitted_at=submitted_at,
-                parent_email=parent_email,
-            )
-
-            session.add(rating)
-            count += 1
-
-    session.commit()
-    return count
-
-
-def _generate_test_admissions_criteria(all_schools: list[School], session: Session) -> int:
-    """Generate realistic admissions criteria priority breakdowns for schools.
-
-    Standard criteria for state schools:
-    1. Looked-after children and previously looked-after children
-    2. Siblings at the school
-    3. Distance from the school
-
-    Faith schools add religious practice criteria.
-    Some schools require supplementary information forms (SIF).
-    """
-    count = 0
-    rng = random.Random(42)  # Deterministic seed
-
-    # Delete existing criteria for idempotent re-seed
-    school_ids = [s.id for s in all_schools]
-    if school_ids:
-        session.query(AdmissionsCriteria).filter(AdmissionsCriteria.school_id.in_(school_ids)).delete(
-            synchronize_session=False
-        )
-        session.flush()
-
-    for school in all_schools:
-        is_faith = school.faith is not None and school.faith.strip() != ""
-        is_private = school.is_private
-
-        # Private schools have different criteria (fees, assessment, etc.)
-        if is_private:
-            criteria_list = [
-                (
-                    1,
-                    "Registration and assessment",
-                    "Places offered based on registration date and assessment outcome",
-                    None,
-                    False,
-                ),
-                (
-                    2,
-                    "Siblings",
-                    "Priority given to applicants with siblings currently at the school",
-                    None,
-                    False,
-                ),
-                (
-                    3,
-                    "School fit",
-                    "Parents' alignment with school ethos and child's suitability for the school environment",
-                    None,
-                    False,
-                ),
-            ]
-        elif is_faith:
-            # Faith schools have religious practice criteria
-            faith_name = school.faith
-            requires_sif = rng.random() < 0.7  # 70% of faith schools require SIF
-
-            if "Catholic" in faith_name or "Church of England" in faith_name:
-                religious_req = (
-                    "Baptism certificate and regular church attendance (minimum monthly attendance for 2+ years). "
-                    "Priest's reference required."
-                )
-            elif "Jewish" in faith_name:
-                religious_req = "Evidence of Jewish faith and regular synagogue attendance. Rabbi's reference required."
-            elif "Muslim" in faith_name or "Islamic" in faith_name:
-                religious_req = "Evidence of Islamic faith and regular mosque attendance. Imam's reference required."
-            else:
-                religious_req = f"Evidence of {faith_name} faith and regular attendance at place of worship."
-
-            criteria_list = [
-                (
-                    1,
-                    "Looked-after children",
-                    "Children in care or previously in care (adopted from care or subject to special guardianship or child arrangements order)",
-                    None,
-                    False,
-                ),
-                (
-                    2,
-                    f"{faith_name} faith criteria",
-                    f"Children whose parents are committed members of the {faith_name} faith community",
-                    religious_req,
-                    requires_sif,
-                ),
-                (
-                    3,
-                    "Siblings",
-                    "Children with a brother or sister attending the school at the time of admission",
-                    None,
-                    False,
-                ),
-                (
-                    4,
-                    "Other faith backgrounds",
-                    "Children whose parents are members of other Christian denominations or faith communities (with letter from faith leader)",
-                    None,
-                    requires_sif,
-                ),
-                (
-                    5,
-                    "Distance",
-                    "All other applicants, ranked by straight-line distance from home to school (nearest first)",
-                    None,
-                    False,
-                ),
-            ]
-        else:
-            # Standard state school criteria
-            has_medical_criterion = rng.random() < 0.25  # 25% have medical/social criterion
-
-            criteria_list = [
-                (
-                    1,
-                    "Looked-after children",
-                    "Children in care or previously in care (adopted from care or subject to special guardianship or child arrangements order)",
-                    None,
-                    False,
-                ),
-            ]
-
-            if has_medical_criterion:
-                criteria_list.append(
-                    (
-                        2,
-                        "Medical or social need",
-                        "Children with an exceptional medical or social need for the school (must be supported by written evidence from a doctor, social worker, or other professional)",
-                        None,
-                        True,  # Requires supporting documentation
-                    )
-                )
-                sibling_rank = 3
-                distance_rank = 4
-            else:
-                sibling_rank = 2
-                distance_rank = 3
-
-            criteria_list.append(
-                (
-                    sibling_rank,
-                    "Siblings",
-                    "Children with a brother or sister attending the school at the time of admission",
-                    None,
-                    False,
-                )
-            )
-
-            criteria_list.append(
-                (
-                    distance_rank,
-                    "Distance",
-                    "All other applicants, ranked by straight-line distance from home to school (nearest first)",
-                    None,
-                    False,
-                )
-            )
-
-        # Insert criteria for this school
-        for rank, category, description, religious_req, requires_sif in criteria_list:
-            notes = None
-            if category == "Distance" and not is_private:
-                # Add notes about tiebreakers
-                notes = "In the event of a tie (same distance), places are allocated by random ballot."
-
-            criterion = AdmissionsCriteria(
-                school_id=school.id,
-                priority_rank=rank,
-                category=category,
-                description=description,
-                religious_requirement=religious_req,
-                requires_sif=requires_sif,
-                notes=notes,
-            )
-            session.add(criterion)
-            count += 1
-
-    session.commit()
-    return count
-
-
-def _generate_test_bus_routes(all_schools: list[School], session: Session) -> int:
-    """Generate bus route and stop data for schools.
-
-    Simulates:
-    - State primary/secondary schools: council-run routes with 2+ / 3+ km eligibility, free
-    - Private schools: paid private coach services
-    - Bus stops distributed around school catchment areas
-    """
-    count = 0
-
-    for school in all_schools:
-        # Skip if no coordinates
-        if school.lat is None or school.lng is None:
-            continue
-
-        # Determine if school needs bus routes
-        is_secondary = school.age_range_from and school.age_range_from >= 11
-        is_primary = school.age_range_to and school.age_range_to <= 13 and not is_secondary
-
-        # 60% of state secondary schools have bus routes, 30% of state primary
-        # 80% of private schools have coach services
-        if school.is_private:
-            has_routes = random.random() < 0.8
-            num_routes = random.randint(1, 3) if has_routes else 0
-        elif is_secondary:
-            has_routes = random.random() < 0.6
-            num_routes = random.randint(1, 4) if has_routes else 0
-        elif is_primary:
-            has_routes = random.random() < 0.3
-            num_routes = random.randint(1, 2) if has_routes else 0
-        else:
-            has_routes = False
-            num_routes = 0
-
-        if not has_routes:
-            continue
-
-        for route_idx in range(num_routes):
-            # Route name
-            route_name = f"Route {chr(65 + route_idx)}" if route_idx < 26 else f"Route {route_idx + 1}"
-
-            if school.is_private:
-                # Private coach service
-                provider = random.choice(["School Transport Ltd", "Amber Coaches", "School Run Express"])
-                route_type = "private_coach"
-                is_free = False
-                cost_per_term = round(random.uniform(200, 600), 2)
-                cost_per_year = round(cost_per_term * 3, 2)
-                cost_notes = "Payment required per term"
-                distance_eligibility_km = None
-                year_groups_eligible = None
-                eligibility_notes = "Available to all enrolled pupils"
-            else:
-                # Council bus route
-                provider = f"{school.council} Council"
-                route_type = "dedicated"
-                is_free = True
-                cost_per_term = None
-                cost_per_year = None
-                distance_eligibility_km = 3.0 if is_secondary else 2.0
-                year_groups_eligible = "Year 7-11" if is_secondary else "Reception-Year 6"
-                cost_notes = f"Free for pupils living {distance_eligibility_km}+ km from school"
-                eligibility_notes = None
-
-            # Schedule
-            operates_days = "Mon-Fri"
-            morning_departure_time = time(7, random.randint(0, 30))
-            afternoon_departure_time = time(15, random.randint(0, 45))
-
-            route = BusRoute(
-                school_id=school.id,
-                route_name=route_name,
-                provider=provider,
-                route_type=route_type,
-                distance_eligibility_km=distance_eligibility_km,
-                year_groups_eligible=year_groups_eligible,
-                eligibility_notes=eligibility_notes,
-                is_free=is_free,
-                cost_per_term=cost_per_term,
-                cost_per_year=cost_per_year,
-                cost_notes=cost_notes,
-                operates_days=operates_days,
-                morning_departure_time=morning_departure_time,
-                afternoon_departure_time=afternoon_departure_time,
-                notes=None,
-            )
-            session.add(route)
-            session.flush()  # Get route ID
-
-            # Generate bus stops for this route
-            num_stops = random.randint(3, 8)
-            for stop_idx in range(num_stops):
-                # Generate stop location around the school within a radius
-                # Use simple offset in lat/lng (rough approximation)
-                radius_km = random.uniform(1.5, 5.0)
-                angle = random.uniform(0, 2 * 3.14159)
-                lat_offset = (radius_km / 111.0) * math.cos(angle)  # 111 km per degree lat
-                lng_offset = (radius_km / (111.0 * math.cos(math.radians(school.lat)))) * math.sin(angle)
-
-                stop_lat = school.lat + lat_offset
-                stop_lng = school.lng + lng_offset
-
-                # Stop name
-                stop_name = random.choice(
-                    [
-                        "High Street",
-                        "Main Road",
-                        "Station Road",
-                        "Church Lane",
-                        "Park Avenue",
-                        "Mill End",
-                        "Green Lane",
-                        "Brook Street",
-                        "The Square",
-                        "Village Hall",
-                    ]
-                )
-                if stop_idx > 0:
-                    stop_name = f"{stop_name} ({chr(65 + stop_idx)})"
-
-                # Pick-up times - earlier stops have earlier times
-                minutes_before_departure = (num_stops - stop_idx) * random.randint(3, 7)
-                morning_pickup = datetime.combine(date.today(), morning_departure_time) - timedelta(
-                    minutes=minutes_before_departure
-                )
-                afternoon_dropoff = datetime.combine(date.today(), afternoon_departure_time) + timedelta(
-                    minutes=minutes_before_departure
-                )
-
-                stop = BusStop(
-                    route_id=route.id,
-                    stop_name=stop_name,
-                    stop_location=f"{stop_name}, {school.council}",
-                    lat=stop_lat,
-                    lng=stop_lng,
-                    morning_pickup_time=morning_pickup.time(),
-                    afternoon_dropoff_time=afternoon_dropoff.time(),
-                    stop_order=stop_idx,
-                )
-                session.add(stop)
-
-            count += 1
-
-    session.commit()
-    return count
-
-
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -2179,7 +396,7 @@ def _generate_test_bus_routes(all_schools: list[School], session: Session) -> in
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="python -m src.db.seed",
-        description="Seed the school-finder database from GIAS establishment data.",
+        description="Seed the school-finder database from government data sources.",
     )
     parser.add_argument("--council", required=True, help="Local authority name to filter by.")
     parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="Path to the SQLite database file.")
@@ -2187,142 +404,102 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> None:  # noqa: C901
-    """Entry point for the seed script."""
+def main(argv: list[str] | None = None) -> None:
+    """Entry point for the seed script.
+
+    Uses government data services to populate the database with real data.
+    No random or fake data is generated.
+    """
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
     args = parse_args(argv)
     council: str = args.council
     db_path: Path = args.db
     force_download: bool = args.force_download
 
-    print("School Finder - GIAS Seed")
+    print("School Finder - Database Seed (Government Data Only)")
     print(f"  Council filter : {council}")
     print(f"  Database       : {db_path}")
     print()
 
-    print("[1/14] Obtaining GIAS CSV ...")
-    use_test_data = False
-    csv_path: Path | None = None
-    cached = _find_cached_csv()
-    if cached and not force_download:
-        print(f"  Found cached file: {cached}")
-        csv_path = cached
-    else:
-        try:
-            csv_path = _download_gias_csv(force=force_download)
-        except Exception as exc:
-            print(f"  WARNING: GIAS download failed: {exc}")
-            print("  Will use built-in test data instead.")
-            use_test_data = True
+    # ------------------------------------------------------------------
+    # Step 1: GIAS - School register
+    # ------------------------------------------------------------------
+    print("[1/4] Fetching school register from GIAS ...")
+    gias = GIASService()
+    try:
+        gias_stats = gias.refresh(
+            council=council,
+            force_download=force_download,
+            db_path=str(db_path),
+        )
+        print(f"  Inserted: {gias_stats['inserted']}")
+        print(f"  Updated:  {gias_stats['updated']}")
+        print(f"  Total:    {gias_stats['total']}")
+        print(f"  With coordinates: {gias_stats['with_coordinates']}")
+    except Exception as exc:
+        print(f"  ERROR: GIAS download failed: {exc}")
+        print("  Cannot proceed without school data.")
+        sys.exit(1)
 
-    schools: list[School] = []
-    if use_test_data or csv_path is None:
-        print("[2/14] Generating test school data ...")
-        schools = _generate_test_schools(council)
-        print(f"  Generated {len(schools)} test schools for '{council}'")
-    else:
-        print("[2/14] Reading CSV ...")
-        rows = _read_csv(csv_path)
-        print(f"  Total rows in CSV: {len(rows)}")
-        council_lower = council.lower()
-        council_rows = [r for r in rows if r.get(COL_LA, "").strip().lower() == council_lower]
-        print(f"  Rows matching council '{council}': {len(council_rows)}")
-        if not council_rows:
-            all_councils = sorted({r.get(COL_LA, "").strip() for r in rows if r.get(COL_LA, "").strip()})
-            close_matches = [c for c in all_councils if council_lower in c.lower()]
-            print(f"\n  No schools found for council '{council}'.", file=sys.stderr)
-            if close_matches:
-                print(f"  Did you mean one of: {', '.join(close_matches)}?", file=sys.stderr)
-            else:
-                print(f"  Available councils ({len(all_councils)} total):", file=sys.stderr)
-                for c in all_councils[:20]:
-                    print(f"    - {c}", file=sys.stderr)
-                if len(all_councils) > 20:
-                    print(f"    ... and {len(all_councils) - 20} more", file=sys.stderr)
-            sys.exit(1)
-        print("[3/14] Mapping to School records ...")
-        skipped = 0
-        for row in council_rows:
-            school = _row_to_school(row)
-            if school is not None:
-                schools.append(school)
-            else:
-                skipped += 1
-        print(f"  Schools to seed: {len(schools)}  (skipped {skipped} closed/invalid)")
+    # ------------------------------------------------------------------
+    # Step 2: Ofsted - Inspection ratings
+    # ------------------------------------------------------------------
+    print("\n[2/4] Fetching Ofsted ratings ...")
+    ofsted = OfstedService()
+    try:
+        ofsted_stats = ofsted.refresh(
+            council=council,
+            force_download=force_download,
+            db_path=str(db_path),
+        )
+        print(f"  Updated:   {ofsted_stats['updated']}")
+        print(f"  Skipped:   {ofsted_stats['skipped']}")
+        print(f"  Not found: {ofsted_stats['not_found']}")
+    except Exception as exc:
+        print(f"  WARNING: Ofsted import failed: {exc}")
+        print("  Continuing without Ofsted data.")
 
-    geo_count = sum(1 for s in schools if s.lat is not None)
-    print(f"  With coordinates: {geo_count}/{len(schools)}")
+    # ------------------------------------------------------------------
+    # Step 3: EES - Performance data (KS2 + KS4)
+    # ------------------------------------------------------------------
+    print("\n[3/4] Fetching performance data from EES API ...")
+    ees = EESService()
+    try:
+        perf_stats = ees.refresh_performance(
+            council=council,
+            force_download=force_download,
+            db_path=str(db_path),
+        )
+        for key, sub_stats in perf_stats.items():
+            print(f"  {key.upper()}: imported={sub_stats.get('imported', 0)}, skipped={sub_stats.get('skipped', 0)}")
+    except Exception as exc:
+        print(f"  WARNING: Performance data import failed: {exc}")
+        print("  Continuing without performance data.")
 
-    print("[4/14] Writing schools to database ...")
+    # ------------------------------------------------------------------
+    # Step 4: Private school details (researched fee data)
+    # ------------------------------------------------------------------
+    print("\n[4/4] Seeding private school details ...")
     session = _ensure_database(db_path)
     try:
-        inserted, updated = _upsert_schools(session, schools)
-        total_in_db = session.query(School).filter_by(council=council).count()
-        print(f"  Inserted: {inserted}")
-        print(f"  Updated : {updated}")
-        print(f"  Total schools for '{council}' in DB: {total_in_db}")
+        pvt_count = _seed_private_school_details(session)
+        print(f"  Private school fee tiers: {pvt_count}")
 
-        print("[5/13] Seeding term dates ...")
-        term_count = _seed_term_dates(session, council)
-        print(f"  Term date records created: {term_count}")
-
-        print("[6/13] Generating club data ...")
+        # ------------------------------------------------------------------
+        # Summary
+        # ------------------------------------------------------------------
         all_schools = session.query(School).filter_by(council=council).all()
-        clubs = _generate_test_clubs(all_schools)
-        clubs_inserted = _upsert_clubs(session, clubs)
         total_clubs = session.query(SchoolClub).count()
-        breakfast_count = sum(1 for c in clubs if c.club_type == "breakfast")
-        afterschool_count = sum(1 for c in clubs if c.club_type == "after_school")
-        print(f"  Clubs generated : {len(clubs)} ({breakfast_count} breakfast, {afterschool_count} after-school)")
-        print(f"  Clubs inserted  : {clubs_inserted}")
-        print(f"  Total clubs in DB: {total_clubs}")
-
-        print("[7/13] Generating private school details ...")
-        pvt_count = _generate_private_school_details(session)
-        print(f"  Private school detail tiers: {pvt_count}")
-
-        print("[8/13] Generating performance data ...")
-        # Clear existing performance data for idempotent re-seed
-        school_ids = [s.id for s in all_schools]
-        if school_ids:
-            session.query(SchoolPerformance).filter(SchoolPerformance.school_id.in_(school_ids)).delete(
-                synchronize_session=False
-            )
-            session.flush()
-        perf_count = _generate_test_performance(all_schools, session)
-        print(f"  Performance records created: {perf_count}")
-
-        print("[9/13] Generating admissions history ...")
-        admissions_count = _generate_test_admissions(all_schools, session)
-        print(f"  Admissions history records created: {admissions_count}")
-
-        print("[10/15] Generating class size trends ...")
-        class_size_count = _generate_test_class_sizes(all_schools, session)
-        print(f"  Class size records created: {class_size_count}")
-
-        print("[11/15] Generating Ofsted inspection history ...")
-        ofsted_history_count = _generate_test_ofsted_history(all_schools, session)
-        print(f"  Ofsted history records created: {ofsted_history_count}")
-
-        print("[12/15] Generating uniform information ...")
-        uniform_count = _generate_test_uniforms(all_schools, session)
-        print(f"  Uniform records created: {uniform_count}")
-
-        print("[13/15] Generating parking chaos ratings ...")
-        parking_count = _generate_test_parking_ratings(all_schools, session)
-        print(f"  Parking rating records created: {parking_count}")
-
-        print("[14/15] Generating admissions criteria ...")
-        criteria_count = _generate_test_admissions_criteria(all_schools, session)
-        print(f"  Admissions criteria records created: {criteria_count}")
-
-        print("[15/15] Generating bus routes ...")
-        bus_route_count = _generate_test_bus_routes(all_schools, session)
-        print(f"  Bus route records created: {bus_route_count}")
 
         print()
         print("=" * 60)
         print(f"  SUMMARY: {council}")
         print("=" * 60)
+
         primary_count = sum(1 for s in all_schools if s.age_range_to and s.age_range_to <= 13 and not s.is_private)
         secondary_count = sum(
             1
@@ -2334,33 +511,32 @@ def main(argv: list[str] | None = None) -> None:  # noqa: C901
             and not s.is_private
         )
         private_count = sum(1 for s in all_schools if s.is_private)
+
         print(f"  Total schools       : {len(all_schools)}")
         print(f"  State primary       : {primary_count}")
         print(f"  State secondary     : {secondary_count}")
         print(f"  Private/independent : {private_count}")
-        print(f"  Term date records   : {term_count}")
-        print(f"  Performance records : {perf_count}")
-        print(f"  Admissions records  : {admissions_count}")
-        print(f"  Admissions criteria : {criteria_count}")
-        print(f"  Breakfast clubs     : {breakfast_count}")
-        print(f"  After-school clubs  : {afterschool_count}")
-        print(f"  Parking ratings     : {parking_count}")
-        print(f"  Bus routes          : {bus_route_count}")
+        print(f"  Clubs in DB         : {total_clubs}")
         print()
-        from collections import Counter
 
         rating_counts = Counter(s.ofsted_rating for s in all_schools if s.ofsted_rating)
         print("  Ofsted ratings:")
         for rating in ["Outstanding", "Good", "Requires Improvement", "Inadequate"]:
-            count = rating_counts.get(rating, 0)
-            if count:
-                print(f"    {rating:25s}: {count}")
+            c = rating_counts.get(rating, 0)
+            if c:
+                print(f"    {rating:25s}: {c}")
         no_rating = sum(1 for s in all_schools if not s.ofsted_rating)
         if no_rating:
             print(f"    {'(no rating)':25s}: {no_rating}")
+
+        print()
+        print("  NOTE: Fields without real data are left empty.")
+        print("  Run agents (clubs, term_times, ethos) to populate additional data.")
+        print("  Run 'python -m src.services.gov_data refresh' to update government data.")
         print("=" * 60)
     finally:
         session.close()
+
     print()
     print("Done.")
 
