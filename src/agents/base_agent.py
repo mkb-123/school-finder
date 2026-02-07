@@ -160,7 +160,7 @@ class BaseAgent(ABC):
         # All retries exhausted.
         msg = f"Failed to fetch {url} after {_MAX_RETRIES} attempts"
         self._logger.error(msg)
-        raise type(last_exc)(msg) if last_exc is not None else RuntimeError(msg)  # type: ignore[arg-type]
+        raise RuntimeError(msg) from last_exc
 
     async def fetch_cached(self, url: str) -> str | None:
         """Return the cached response for *url*, or ``None`` if not cached.

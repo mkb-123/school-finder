@@ -184,6 +184,14 @@ class EESService(BaseGovDataService):
         urn_map = self._load_urn_map(db, council)
         return self._import_ks2(db, df, urn_map, council)
 
+    # Mapping from EES subject names to our metric types
+    _KS2_SUBJECT_MAP = {
+        "Reading": "SATs_Reading",
+        "Maths": "SATs_Maths",
+        "Writing": "SATs_Writing",
+        "Reading, writing and maths": "SATs",
+    }
+
     def _import_ks2(
         self,
         db_path: str,
@@ -191,59 +199,55 @@ class EESService(BaseGovDataService):
         urn_map: dict[str, int],
         council: str | None,
     ) -> dict[str, int]:
-        """Parse KS2 CSV and insert performance records."""
+        """Parse KS2 CSV and insert performance records.
+
+        The EES KS2 dataset is in *long format*: each row represents one
+        subject / breakdown combination for a single school.  We filter to
+        ``breakdown_topic == 'All pupils'`` and ``breakdown == 'Total'`` to
+        get headline figures, then pivot on the ``subject`` column.
+        """
         stats = {"imported": 0, "skipped": 0, "not_found": 0}
 
-        # Find the URN column (school-level dataset uses 'school_urn')
         urn_col = self._find_col(df, ["school_urn", "URN", "urn", "Urn"])
         if not urn_col:
             self._logger.error("No URN column found in KS2 data. Columns: %s", df.columns)
             return stats
 
-        # Find performance columns
-        # EES KS2 school-level dataset column names:
-        reading_col = self._find_col(
-            df,
-            [
-                "pt_read_exp",
-                "read_expected",
-                "reading_expected_standard",
-            ],
-        )
-        maths_col = self._find_col(
-            df,
-            [
-                "pt_mat_exp",
-                "maths_expected",
-                "maths_expected_standard",
-            ],
-        )
-        writing_col = self._find_col(
-            df,
-            [
-                "pt_writ_exp",
-                "pt_writ_ta_exp",
-                "writing_expected",
-                "writing_expected_standard",
-            ],
-        )
-        rwm_col = self._find_col(
-            df,
-            [
-                "pt_rwm_exp",
-                "rwm_expected",
-                "reading_writing_maths_expected",
-            ],
-        )
         year_col = self._find_col(df, ["time_period", "year", "academic_year"])
-        self._logger.info(
-            "KS2 columns mapped: urn=%s, reading=%s, maths=%s, rwm=%s, year=%s",
-            urn_col,
-            reading_col,
-            maths_col,
-            rwm_col,
-            year_col,
+        subject_col = self._find_col(df, ["subject"])
+        value_col = self._find_col(
+            df,
+            ["expected_standard_pupil_percent", "pt_read_exp", "pt_rwm_exp"],
         )
+        breakdown_topic_col = self._find_col(df, ["breakdown_topic"])
+        breakdown_col = self._find_col(df, ["breakdown"])
+
+        self._logger.info(
+            "KS2 columns mapped: urn=%s, year=%s, subject=%s, value=%s, breakdown_topic=%s, breakdown=%s",
+            urn_col,
+            year_col,
+            subject_col,
+            value_col,
+            breakdown_topic_col,
+            breakdown_col,
+        )
+
+        # Filter to headline "All pupils / Total" rows only
+        if breakdown_topic_col:
+            df = df.filter(pl.col(breakdown_topic_col) == "All pupils")
+        if breakdown_col:
+            df = df.filter(pl.col(breakdown_col) == "Total")
+
+        self._logger.info("KS2 after filtering to All pupils/Total: %d rows", df.height)
+
+        if not subject_col or not value_col:
+            # Fall back: maybe this is a wide-format dataset after all
+            self._logger.warning(
+                "KS2 dataset missing subject/value columns; cannot import. Columns available: %s", df.columns
+            )
+            return stats
+
+        suppress_vals = {"", "SUPP", "NE", "NA", "x", "z", "null", "None"}
 
         engine = create_engine(f"sqlite:///{db_path}")
         with Session(engine) as session:
@@ -254,74 +258,29 @@ class EESService(BaseGovDataService):
                     stats["not_found"] += 1
                     continue
 
+                subject = str(row.get(subject_col, "")).strip()
+                metric_type = self._KS2_SUBJECT_MAP.get(subject)
+                if not metric_type:
+                    stats["skipped"] += 1
+                    continue
+
+                val = str(row.get(value_col, "")).strip()
+                if not val or val in suppress_vals:
+                    stats["skipped"] += 1
+                    continue
+
                 year = self._parse_year(row.get(year_col, "")) if year_col else 0
 
-                metrics_added = 0
-
-                # Reading
-                if reading_col and row.get(reading_col):
-                    val = str(row[reading_col]).strip()
-                    if val and val not in ("", "SUPP", "NE", "NA", "x"):
-                        session.add(
-                            SchoolPerformance(
-                                school_id=school_id,
-                                metric_type="SATs_Reading",
-                                metric_value=f"Expected standard: {val}%",
-                                year=year,
-                                source_url="https://explore-education-statistics.service.gov.uk/",
-                            )
-                        )
-                        metrics_added += 1
-
-                # Maths
-                if maths_col and row.get(maths_col):
-                    val = str(row[maths_col]).strip()
-                    if val and val not in ("", "SUPP", "NE", "NA", "x"):
-                        session.add(
-                            SchoolPerformance(
-                                school_id=school_id,
-                                metric_type="SATs_Maths",
-                                metric_value=f"Expected standard: {val}%",
-                                year=year,
-                                source_url="https://explore-education-statistics.service.gov.uk/",
-                            )
-                        )
-                        metrics_added += 1
-
-                # Writing
-                if writing_col and row.get(writing_col):
-                    val = str(row[writing_col]).strip()
-                    if val and val not in ("", "SUPP", "NE", "NA", "x"):
-                        session.add(
-                            SchoolPerformance(
-                                school_id=school_id,
-                                metric_type="SATs_Writing",
-                                metric_value=f"Expected standard: {val}%",
-                                year=year,
-                                source_url="https://explore-education-statistics.service.gov.uk/",
-                            )
-                        )
-                        metrics_added += 1
-
-                # Combined RWM
-                if rwm_col and row.get(rwm_col):
-                    val = str(row[rwm_col]).strip()
-                    if val and val not in ("", "SUPP", "NE", "NA", "x"):
-                        session.add(
-                            SchoolPerformance(
-                                school_id=school_id,
-                                metric_type="SATs",
-                                metric_value=f"Expected standard: {val}%",
-                                year=year,
-                                source_url="https://explore-education-statistics.service.gov.uk/",
-                            )
-                        )
-                        metrics_added += 1
-
-                if metrics_added > 0:
-                    stats["imported"] += metrics_added
-                else:
-                    stats["skipped"] += 1
+                session.add(
+                    SchoolPerformance(
+                        school_id=school_id,
+                        metric_type=metric_type,
+                        metric_value=f"Expected standard: {val}%",
+                        year=year,
+                        source_url="https://explore-education-statistics.service.gov.uk/",
+                    )
+                )
+                stats["imported"] += 1
 
             session.commit()
 
