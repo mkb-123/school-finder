@@ -28,7 +28,6 @@ import datetime
 import logging
 import re
 import sys
-from datetime import date
 
 from sqlalchemy import create_engine, delete, select
 from sqlalchemy.orm import Session
