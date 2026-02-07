@@ -119,6 +119,10 @@ class AdmissionsHistoryResponse(BaseModel):
     waiting_list_offers: int | None = None
     appeals_heard: int | None = None
     appeals_upheld: int | None = None
+    allocation_description: str | None = None
+    had_vacancies: bool | None = None
+    intake_year: str | None = None
+    source_url: str | None = None
 
 
 class ClassSizeResponse(BaseModel):

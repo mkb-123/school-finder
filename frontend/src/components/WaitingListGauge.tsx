@@ -18,6 +18,10 @@ interface AdmissionsRecord {
   waiting_list_offers: number | null;
   appeals_heard: number | null;
   appeals_upheld: number | null;
+  allocation_description: string | null;
+  had_vacancies: boolean | null;
+  intake_year: string | null;
+  source_url: string | null;
 }
 
 interface AdmissionsEstimate {
