@@ -7,6 +7,43 @@ interface ParkingRatingFormProps {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+const RATING_FIELDS = [
+  {
+    field: "dropoff_chaos" as const,
+    label: "Drop-off experience",
+    description: "How stressful is the morning drop-off? (1 = calm, 5 = chaotic)",
+  },
+  {
+    field: "pickup_chaos" as const,
+    label: "Pick-up experience",
+    description: "How stressful is the afternoon pick-up? (1 = calm, 5 = chaotic)",
+  },
+  {
+    field: "parking_availability" as const,
+    label: "Parking availability",
+    description: "How easy is it to find parking nearby? (1 = easy, 5 = very hard)",
+  },
+  {
+    field: "road_congestion" as const,
+    label: "Road congestion",
+    description: "How bad is traffic on surrounding roads? (1 = clear, 5 = gridlocked)",
+  },
+  {
+    field: "restrictions_hazards" as const,
+    label: "Safety concerns",
+    description: "Are there restrictions, hazards, or safety issues? (1 = safe, 5 = concerning)",
+  },
+];
+
+const RATING_LABELS: Record<number, string> = {
+  0: "Not rated",
+  1: "Easy",
+  2: "Manageable",
+  3: "Moderate",
+  4: "Difficult",
+  5: "Very difficult",
+};
+
 export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: ParkingRatingFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +62,14 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Check that at least one rating has been provided
+    const hasRating = RATING_FIELDS.some(({ field }) => formData[field] > 0);
+    if (!hasRating) {
+      setError("Please rate at least one category before submitting.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Only include ratings that have been set (non-zero)
@@ -69,8 +114,8 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
   ) => {
     const value = formData[field] as number;
     return (
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <fieldset className="space-y-2">
+        <legend className="block text-sm font-medium text-gray-900">{label}</legend>
         <p className="text-xs text-gray-500">{description}</p>
         <div className="flex items-center gap-2">
           {[1, 2, 3, 4, 5].map((rating) => (
@@ -78,47 +123,50 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
               key={rating}
               type="button"
               onClick={() => setFormData({ ...formData, [field]: rating })}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-medium transition ${
+              aria-label={`Rate ${label} as ${rating} out of 5`}
+              className={`flex h-11 w-11 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all ${
                 value === rating
                   ? rating <= 2
-                    ? "border-green-500 bg-green-500 text-white"
+                    ? "border-green-500 bg-green-500 text-white shadow-sm"
                     : rating <= 3
-                    ? "border-amber-500 bg-amber-500 text-white"
-                    : "border-red-500 bg-red-500 text-white"
-                  : "border-gray-300 text-gray-600 hover:border-gray-400"
+                    ? "border-amber-500 bg-amber-500 text-white shadow-sm"
+                    : "border-red-500 bg-red-500 text-white shadow-sm"
+                  : "border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
               }`}
             >
               {rating}
             </button>
           ))}
-          <span className="ml-2 text-xs text-gray-500">
-            {value === 0 ? "Not rated" : value <= 2 ? "Low chaos" : value <= 3 ? "Moderate" : "High chaos"}
+          <span className="ml-2 text-xs font-medium text-gray-500">
+            {RATING_LABELS[value]}
           </span>
         </div>
-      </div>
+      </fieldset>
     );
   };
 
   if (success) {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 p-6 text-center">
-        <svg
-          className="mx-auto h-12 w-12 text-green-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-        <h3 className="mt-4 text-lg font-semibold text-green-900">Thank you!</h3>
-        <p className="mt-2 text-sm text-green-700">
-          Your parking rating has been submitted successfully.
+      <div className="flex flex-col items-center rounded-xl border border-green-200 bg-green-50 py-8 px-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+          <svg
+            className="h-7 w-7 text-green-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+        <h3 className="mt-4 text-base font-semibold text-green-900">Thank you for your feedback</h3>
+        <p className="mt-1.5 text-sm text-green-700">
+          Your parking rating has been submitted and will help other parents.
         </p>
       </div>
     );
@@ -129,79 +177,58 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
         <p className="text-sm text-blue-900">
           Help other parents by sharing your experience with parking and drop-off at this school.
-          Rate from 1 (easy/safe) to 5 (chaotic/difficult).
+          All ratings are anonymous.
         </p>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">
-          {error}
+        <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4" role="alert">
+          <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
-      {renderRatingInput(
-        "Drop-off chaos",
-        "dropoff_chaos",
-        "Morning drop-off congestion and stress level"
-      )}
-
-      {renderRatingInput(
-        "Pick-up chaos",
-        "pickup_chaos",
-        "Afternoon pick-up congestion and wait times"
-      )}
-
-      {renderRatingInput(
-        "Parking availability",
-        "parking_availability",
-        "How hard is it to find parking nearby?"
-      )}
-
-      {renderRatingInput(
-        "Road congestion",
-        "road_congestion",
-        "Traffic congestion on surrounding roads"
-      )}
-
-      {renderRatingInput(
-        "Restrictions & hazards",
-        "restrictions_hazards",
-        "Parking restrictions, safety concerns, or hazards"
+      {RATING_FIELDS.map(({ field, label, description }) =>
+        renderRatingInput(label, field, description)
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label htmlFor="parking-comments" className="block text-sm font-medium text-gray-900">
           Additional comments (optional)
         </label>
         <textarea
+          id="parking-comments"
           value={formData.comments}
           onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
           rows={4}
-          className="mt-2 w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-2 w-full rounded-lg border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           placeholder="Share any specific details about parking challenges, helpful tips, or safety concerns..."
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label htmlFor="parking-email" className="block text-sm font-medium text-gray-900">
           Email (optional)
         </label>
         <input
+          id="parking-email"
           type="email"
           value={formData.parent_email}
           onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })}
-          className="mt-2 w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-2 w-full rounded-lg border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           placeholder="your.email@example.com"
         />
-        <p className="mt-1 text-xs text-gray-500">
-          Optional. Only used if we need to follow up on your feedback.
+        <p className="mt-1.5 text-xs text-gray-500">
+          Your email is only used if we need to follow up on your feedback. It is never shared or displayed publicly.
         </p>
       </div>
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-md bg-blue-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+        className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? "Submitting..." : "Submit Rating"}
       </button>

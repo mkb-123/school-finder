@@ -13,7 +13,6 @@ from pathlib import Path
 import httpx
 import polars as pl
 
-
 # Ofsted rating mappings (1=Outstanding, 2=Good, 3=Requires Improvement, 4=Inadequate)
 OFSTED_RATINGS = {
     "1": "Outstanding",
@@ -49,7 +48,7 @@ def parse_ofsted_date(date_str: str) -> str | None:
     try:
         dt = datetime.strptime(date_str.strip(), "%d/%m/%Y")
         return dt.strftime("%Y-%m-%d")
-    except:
+    except (ValueError, AttributeError):
         return None
 
 
@@ -90,7 +89,6 @@ def import_ofsted_history(db_path: Path, council_filter: str | None = None) -> d
 
     for row in df.iter_rows(named=True):
         urn = str(row.get("URN", ""))
-        school_name = row.get("School name", "")
 
         # Find school by URN in our database
         cursor.execute("SELECT id, name FROM schools WHERE urn = ?", (urn,))
@@ -156,7 +154,7 @@ def import_ofsted_history(db_path: Path, council_filter: str | None = None) -> d
     conn.commit()
     conn.close()
 
-    print(f"\n📈 Import complete:")
+    print("\n📈 Import complete:")
     print(f"  - Current inspections imported: {stats['current_imported']}")
     print(f"  - Previous inspections imported: {stats['previous_imported']}")
     print(f"  - Errors: {stats['errors']}")

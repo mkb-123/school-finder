@@ -54,6 +54,8 @@ interface MapProps {
   onSchoolSelect?: (id: number) => void;
   /** Bus stops to display on the map. */
   busStops?: BusStopMarker[];
+  /** Whether to show the legend. Defaults to true. */
+  showLegend?: boolean;
 }
 
 const MILTON_KEYNES: LatLngExpression = [52.0406, -0.7594];
@@ -164,6 +166,15 @@ function ZoomTracker({
   return null;
 }
 
+/** Ofsted legend items. */
+const LEGEND_ITEMS = [
+  { label: "Outstanding", color: "#16a34a" },
+  { label: "Good", color: "#2563eb" },
+  { label: "Requires improvement", color: "#d97706" },
+  { label: "Inadequate", color: "#dc2626" },
+  { label: "Not rated", color: "#6b7280" },
+];
+
 export default function Map({
   center = MILTON_KEYNES,
   zoom = 12,
@@ -171,8 +182,10 @@ export default function Map({
   selectedSchoolId = null,
   onSchoolSelect,
   busStops = [],
+  showLegend = true,
 }: MapProps) {
   const [currentZoom, setCurrentZoom] = useState(zoom);
+  const [legendExpanded, setLegendExpanded] = useState(false);
   const flyToRef = useRef<((lat: number, lng: number) => void) | null>(null);
 
   const schoolsWithCoords = useMemo(
@@ -192,9 +205,9 @@ export default function Map({
 
   return (
     <div
-      className="h-full w-full overflow-hidden rounded-lg border border-gray-200"
-      role="img"
-      aria-label={`Map showing ${schools.length} school${schools.length !== 1 ? "s" : ""}`}
+      className="relative h-full w-full overflow-hidden rounded-xl border border-gray-200 shadow-sm"
+      role="region"
+      aria-label={`Interactive map showing ${schools.length} school${schools.length !== 1 ? "s" : ""}`}
     >
       <MapContainer
         center={center}
@@ -221,7 +234,7 @@ export default function Map({
               pathOptions={{
                 color: ofstedColor(school.ofsted_rating),
                 fillColor: ofstedColor(school.ofsted_rating),
-                fillOpacity: 0.12,
+                fillOpacity: 0.1,
                 weight: 2,
                 dashArray: "6 4",
               }}
@@ -239,7 +252,7 @@ export default function Map({
               center={[school.lat!, school.lng!]}
               radius={isSelected ? 10 : 7}
               pathOptions={{
-                color: isSelected ? "#000" : color,
+                color: isSelected ? "#1e293b" : color,
                 fillColor: color,
                 fillOpacity: 0.9,
                 weight: isSelected ? 3 : 2,
@@ -249,39 +262,48 @@ export default function Map({
               }}
             >
               <Popup>
-                <div className="min-w-[180px]">
+                <div className="min-w-[200px] max-w-[260px]">
                   <Link
                     to={
                       school.is_private
                         ? `/private-schools/${school.id}`
                         : `/schools/${school.id}`
                     }
-                    className="font-semibold text-blue-700 hover:underline"
+                    className="text-sm font-semibold text-blue-700 hover:underline"
                   >
                     {school.name}
                   </Link>
-                  <div className="mt-1 text-xs text-gray-600">
-                    {school.postcode}
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5">
+                  <p className="mt-1 text-xs text-gray-500">{school.postcode}</p>
+                  <div className="mt-1.5 flex items-center gap-1.5">
                     <span
                       className="inline-block h-2.5 w-2.5 rounded-full"
                       style={{ backgroundColor: color }}
                       aria-hidden="true"
                     />
-                    <span className="text-xs font-medium">
+                    <span className="text-xs font-medium text-gray-700">
                       {ofstedLabel(school.ofsted_rating)}
                     </span>
                   </div>
                   {school.distance_km != null && (
-                    <div className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500">
                       {school.distance_km.toFixed(1)} km away
-                    </div>
+                    </p>
                   )}
-                  <div className="mt-1 text-xs text-gray-500">
-                    Ages {school.age_range_from}&ndash;{school.age_range_to} |{" "}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Ages {school.age_range_from}&ndash;{school.age_range_to}
+                    <span className="mx-1 text-gray-300" aria-hidden="true">|</span>
                     {school.gender_policy}
-                  </div>
+                  </p>
+                  <Link
+                    to={
+                      school.is_private
+                        ? `/private-schools/${school.id}`
+                        : `/schools/${school.id}`
+                    }
+                    className="mt-2 inline-block text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    View full details
+                  </Link>
                 </div>
               </Popup>
             </CircleMarker>
@@ -313,11 +335,11 @@ export default function Map({
               }}
             >
               <Popup>
-                <div className="min-w-[180px]">
-                  <p className="font-semibold text-gray-900">
+                <div className="min-w-[200px] max-w-[260px]">
+                  <p className="text-sm font-semibold text-gray-900">
                     {count} schools in this area
                   </p>
-                  <ul className="mt-1 max-h-32 overflow-y-auto text-xs text-gray-600">
+                  <ul className="mt-1.5 max-h-36 space-y-0.5 overflow-y-auto text-xs text-gray-600">
                     {cluster.schools.slice(0, 8).map((s) => (
                       <li key={s.id} className="py-0.5">
                         <Link
@@ -337,12 +359,12 @@ export default function Map({
                     ))}
                     {count > 8 && (
                       <li className="py-0.5 text-gray-400">
-                        ...and {count - 8} more
+                        and {count - 8} more
                       </li>
                     )}
                   </ul>
-                  <p className="mt-1 text-xs text-gray-400">
-                    Zoom in to see individual schools
+                  <p className="mt-2 text-xs font-medium text-blue-600">
+                    Click to zoom in
                   </p>
                 </div>
               </Popup>
@@ -350,23 +372,23 @@ export default function Map({
           );
         })}
 
-        {/* Bus stop markers */}
+        {/* Bus stop markers - slightly larger for mobile taps */}
         {busStops.map((stop) => (
           <CircleMarker
             key={`bus-stop-${stop.id}`}
             center={[stop.lat, stop.lng]}
-            radius={6}
+            radius={8}
             pathOptions={{
               color: "#f59e0b",
               fillColor: "#fbbf24",
-              fillOpacity: 0.8,
+              fillOpacity: 0.85,
               weight: 2,
             }}
           >
             <Popup>
-              <div className="min-w-[140px]">
-                <p className="font-semibold text-gray-900">{stop.name}</p>
-                <p className="text-xs text-gray-600">{stop.schoolName}</p>
+              <div className="min-w-[160px]">
+                <p className="text-sm font-semibold text-gray-900">{stop.name}</p>
+                <p className="mt-0.5 text-xs text-gray-600">{stop.schoolName}</p>
                 {stop.pickupTime && (
                   <p className="mt-1 text-xs text-gray-500">
                     Pick-up: {stop.pickupTime}
@@ -377,6 +399,75 @@ export default function Map({
           </CircleMarker>
         ))}
       </MapContainer>
+
+      {/* Ofsted colour legend - overlaid on map */}
+      {showLegend && (
+        <div className="absolute bottom-3 left-3 z-[1000]">
+          <button
+            onClick={() => setLegendExpanded(!legendExpanded)}
+            className="flex items-center gap-1.5 rounded-lg bg-white/95 px-3 py-2 text-xs font-medium text-gray-700 shadow-md backdrop-blur-sm transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-expanded={legendExpanded}
+            aria-label={legendExpanded ? "Hide map legend" : "Show map legend"}
+          >
+            {/* Colour dots preview when collapsed */}
+            {!legendExpanded && (
+              <span className="flex gap-0.5" aria-hidden="true">
+                {LEGEND_ITEMS.slice(0, 4).map((item) => (
+                  <span
+                    key={item.label}
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                ))}
+              </span>
+            )}
+            <span>{legendExpanded ? "Hide legend" : "Legend"}</span>
+          </button>
+
+          {legendExpanded && (
+            <div className="mt-1.5 rounded-lg bg-white/95 p-3 shadow-md backdrop-blur-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                Ofsted rating
+              </p>
+              <ul className="mt-1.5 space-y-1.5">
+                {LEGEND_ITEMS.map((item) => (
+                  <li key={item.label} className="flex items-center gap-2">
+                    <span
+                      className="inline-block h-3 w-3 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                      aria-hidden="true"
+                    />
+                    <span className="text-xs text-gray-700">{item.label}</span>
+                  </li>
+                ))}
+              </ul>
+              {busStops.length > 0 && (
+                <>
+                  <div className="my-2 border-t border-gray-200" />
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-block h-3 w-3 rounded-full"
+                      style={{ backgroundColor: "#fbbf24" }}
+                      aria-hidden="true"
+                    />
+                    <span className="text-xs text-gray-700">Bus stop</span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* School count badge */}
+      {schools.length > 0 && (
+        <div
+          className="absolute right-3 top-3 z-[1000] rounded-lg bg-white/95 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-md backdrop-blur-sm"
+          aria-live="polite"
+        >
+          {schools.length} school{schools.length !== 1 ? "s" : ""}
+        </div>
+      )}
     </div>
   );
 }

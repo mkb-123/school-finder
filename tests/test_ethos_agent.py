@@ -63,7 +63,7 @@ class TestEthosAgent:
         html = """
         <html>
         <head>
-            <meta name="description" content="We are a thriving school community committed to excellence and inclusion for all our students.">
+            <meta name="description" content="We are a thriving school community committed to excellence.">
         </head>
         <body>
             <h1>Welcome</h1>

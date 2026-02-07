@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for mk-school-finder on 2026-02-07T09:40:05Z
+# fly.toml app configuration file generated for school-finder on 2026-02-07T12:07:55Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'mk-school-finder'
-primary_region = 'iad'
+app = 'school-finder'
+primary_region = 'lhr'
 
 [build]
 
@@ -14,14 +14,7 @@ primary_region = 'iad'
   auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
-
-  [http_service.checks]
-    [http_service.checks.health]
-      interval = "15s"
-      timeout = "5s"
-      grace_period = "30s"
-      method = "GET"
-      path = "/api/health"
+  processes = ['app']
 
 [[vm]]
   memory = '1gb'

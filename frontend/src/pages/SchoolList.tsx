@@ -119,7 +119,10 @@ export default function SchoolList() {
     if (!postcode) return;
     get<{ lat: number; lng: number }>("/geocode", { postcode })
       .then((data) => setUserLocation([data.lat, data.lng]))
-      .catch(() => {});
+      .catch(() => {
+        // Geocoding is optional — map falls back to default MK center
+        console.warn("Could not geocode postcode for map centering:", postcode);
+      });
   }, [postcode]);
 
   // Apply client-side filters
@@ -278,7 +281,7 @@ export default function SchoolList() {
               <SchoolCard
                 id={s.id}
                 name={s.name}
-                type={s.is_private ? "Private" : "State"}
+                type={s.is_private ? "Private" : (s.type || "State")}
                 ofstedRating={s.ofsted_rating ?? "Not rated"}
                 distance={
                   s.distance_km != null
@@ -287,6 +290,7 @@ export default function SchoolList() {
                 }
                 isPrivate={s.is_private}
                 ethos={s.ethos}
+                ageRange={`${s.age_range_from}\u2013${s.age_range_to}`}
               />
             </div>
           ))}

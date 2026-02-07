@@ -13,7 +13,6 @@ from pathlib import Path
 import httpx
 import polars as pl
 
-
 # Ofsted rating mappings (1=Outstanding, 2=Good, 3=Requires Improvement, 4=Inadequate)
 OFSTED_RATINGS = {
     "1": "Outstanding",
@@ -49,7 +48,7 @@ def parse_ofsted_date(date_str: str) -> str | None:
     try:
         dt = datetime.strptime(date_str.strip(), "%d/%m/%Y")
         return dt.strftime("%Y-%m-%d")
-    except:
+    except (ValueError, AttributeError):
         return None
 
 
@@ -84,7 +83,6 @@ def import_ofsted_ratings(db_path: Path, council_filter: str | None = None) -> d
 
     for row in df.iter_rows(named=True):
         urn = str(row.get("URN", ""))
-        school_name = row.get("School name", "")
         rating_code = str(row.get("Overall effectiveness", "")).strip()
         pub_date = row.get("Publication date", "")
 
@@ -107,11 +105,14 @@ def import_ofsted_ratings(db_path: Path, council_filter: str | None = None) -> d
         school_id, db_name = school
 
         # Update school's Ofsted rating
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE schools
             SET ofsted_rating = ?, ofsted_date = ?
             WHERE id = ?
-        """, (rating, ofsted_date, school_id))
+        """,
+            (rating, ofsted_date, school_id),
+        )
 
         stats["updated"] += 1
         print(f"  ✅ {db_name}: {rating} ({pub_date})")
@@ -119,7 +120,7 @@ def import_ofsted_ratings(db_path: Path, council_filter: str | None = None) -> d
     conn.commit()
     conn.close()
 
-    print(f"\n📈 Import complete:")
+    print("\n📈 Import complete:")
     print(f"  - Updated: {stats['updated']}")
     print(f"  - Skipped (no rating): {stats['skipped']}")
     print(f"  - Not found in DB: {stats['not_found']}")
