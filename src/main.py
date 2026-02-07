@@ -21,6 +21,7 @@ from src.api.parking import router as parking_router
 from src.api.private_schools import router as private_schools_router
 from src.api.schools import router as schools_router
 from src.config import get_settings
+from src.api.health import router as health_router
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
@@ -61,6 +62,7 @@ if _cors_origins:
         allow_headers=["*"],
     )
 
+app.include_router(health_router)
 app.include_router(schools_router)
 app.include_router(private_schools_router)
 app.include_router(geocode_router)
