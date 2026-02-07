@@ -669,6 +669,7 @@ Workflow per phase:
 
 ## Development Guidelines
 
+- **Check `.claude/` directory at session start** — the `.claude/` directory contains specialist agent definitions (`.claude/agents/`), session hooks (`.claude/hooks/`), use case prompts (`.claude/USE_CASES.md`), and project settings (`.claude/settings.json`). Always review these files when initialising a new session to understand available agents, hooks, and project-specific configuration before starting work.
 - Default to SQLite for local dev; no database server needed to get started
 - Use `uv` for all Python dependency management; commit `uv.lock`
 - All data-collection agents live in `src/agents/` and are runnable standalone via CLI
