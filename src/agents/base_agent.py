@@ -144,7 +144,22 @@ class BaseAgent(ABC):
                 self.save_cache(url, content)
                 return content
 
-            except (httpx.TransportError, httpx.HTTPStatusError) as exc:
+            except httpx.HTTPStatusError as exc:
+                # Don't retry client errors (4xx) - they won't succeed on retry
+                if 400 <= exc.response.status_code < 500:
+                    raise
+                last_exc = exc
+                backoff = _BACKOFF_BASE**attempt
+                self._logger.warning(
+                    "Request to %s failed (attempt %d/%d): %s – retrying in %.1fs",
+                    url,
+                    attempt + 1,
+                    _MAX_RETRIES,
+                    exc,
+                    backoff,
+                )
+                await asyncio.sleep(backoff)
+            except httpx.TransportError as exc:
                 last_exc = exc
                 backoff = _BACKOFF_BASE**attempt
                 self._logger.warning(
