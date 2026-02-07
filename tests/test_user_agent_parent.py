@@ -33,9 +33,9 @@ from sqlalchemy.orm import Session
 from src.db.base import SchoolRepository
 from src.db.factory import get_school_repository
 from src.db.models import Base
-from src.db.seed import _generate_private_school_details, _generate_test_schools
 from src.db.sqlite_repo import SQLiteSchoolRepository
 from src.main import app
+from tests.seed_test_data import _generate_private_school_details, _generate_test_schools
 
 # ---------------------------------------------------------------------------
 # Issue tracker

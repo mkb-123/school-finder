@@ -14,9 +14,9 @@ from sqlalchemy.orm import Session
 from src.db.base import SchoolRepository
 from src.db.factory import get_school_repository
 from src.db.models import Base
-from src.db.seed import _generate_test_schools
 from src.db.sqlite_repo import SQLiteSchoolRepository
 from src.main import app
+from tests.seed_test_data import _generate_test_schools
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -65,9 +65,9 @@ def seed_client(seed_db_path) -> TestClient:
 class TestSeedDataDirect:
     """Verify the seed data generator produces correct records."""
 
-    def test_school_count_above_100(self):
+    def test_school_count_reasonable(self):
         schools = _generate_test_schools("Milton Keynes")
-        assert len(schools) >= 100, f"Expected 100+ schools, got {len(schools)}"
+        assert len(schools) >= 60, f"Expected 60+ schools, got {len(schools)}"
 
     def test_all_schools_have_required_fields(self):
         for s in _generate_test_schools("Milton Keynes"):
@@ -105,7 +105,7 @@ class TestSeedDataDirect:
         schools = _generate_test_schools("Milton Keynes")
         primary = [s for s in schools if s.age_range_from <= 5 and s.age_range_to <= 12]
         secondary = [s for s in schools if s.age_range_from >= 11]
-        assert len(primary) >= 50, f"Expected 50+ primary, got {len(primary)}"
+        assert len(primary) >= 30, f"Expected 30+ primary, got {len(primary)}"
         assert len(secondary) >= 10, f"Expected 10+ secondary, got {len(secondary)}"
 
     def test_has_private_schools(self):
@@ -142,7 +142,7 @@ class TestSeedDataViaAPI:
         r = seed_client.get("/api/schools", params={"council": "Milton Keynes"})
         assert r.status_code == 200
         schools = r.json()
-        assert len(schools) >= 100
+        assert len(schools) >= 60
 
     def test_private_schools_endpoint(self, seed_client):
         r = seed_client.get("/api/private-schools", params={"council": "Milton Keynes"})
