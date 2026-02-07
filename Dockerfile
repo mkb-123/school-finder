@@ -28,9 +28,9 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 RUN mkdir -p /app/data /app/data/cache
 COPY data/schools.db /app/data/schools.db
 
-# Copy entrypoint
+# Copy entrypoint and ensure Unix line endings (CRLF -> LF)
 COPY entrypoint.sh ./
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 EXPOSE 8000
 
