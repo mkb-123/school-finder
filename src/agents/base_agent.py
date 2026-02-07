@@ -145,7 +145,7 @@ class BaseAgent(ABC):
                 return content
 
             except httpx.HTTPStatusError as exc:
-                # Don't retry client errors (4xx) — the page simply doesn't exist.
+                # Don't retry client errors (4xx) - they won't succeed on retry
                 if 400 <= exc.response.status_code < 500:
                     self._logger.debug(
                         "Client error %d for %s – not retrying",

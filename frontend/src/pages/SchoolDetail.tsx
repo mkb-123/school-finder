@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { get } from "../api/client";
 import Map, { type School } from "../components/Map";
 import WaitingListGauge from "../components/WaitingListGauge";
@@ -539,6 +539,8 @@ function ClubsTab({ clubs }: { clubs: Club[] }) {
 
 export default function SchoolDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const userPostcode = searchParams.get("postcode") ?? "";
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
   const [school, setSchool] = useState<SchoolDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -550,16 +552,19 @@ export default function SchoolDetail() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    get<SchoolDetail>(`/schools/${id}`)
+    const params: Record<string, string> = {};
+    if (userPostcode) params.postcode = userPostcode;
+    get<SchoolDetail>(`/schools/${id}`, params)
       .then(setSchool)
       .catch(() => setSchool(null))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, userPostcode]);
 
   // Fetch admissions estimate when Admissions tab is selected
   useEffect(() => {
     if (activeTab !== "Admissions" || !school || estimateLoaded) return;
-    // Use school's distance_km if available, otherwise use catchment_radius_km as a proxy
+    // Use the real distance_km computed by the backend (from user's postcode),
+    // falling back to catchment_radius_km only when no postcode was provided
     const userDist = school.distance_km ?? school.catchment_radius_km ?? 2.0;
     get<AdmissionsEstimate>(
       `/schools/${school.id}/admissions/estimate`,

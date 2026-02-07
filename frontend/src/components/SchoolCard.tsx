@@ -13,6 +13,7 @@ interface SchoolCardProps {
   hasAfterSchoolClub?: boolean;
   ethos?: string | null;
   ageRange?: string | null;
+  postcode?: string;
 }
 
 const RATING_STYLES: Record<string, { badge: string; dot: string }> = {
@@ -60,14 +61,16 @@ export default function SchoolCard({
   hasAfterSchoolClub = false,
   ethos,
   ageRange,
+  postcode,
 }: SchoolCardProps) {
   const ratingStyle = RATING_STYLES[ofstedRating] ?? DEFAULT_STYLE;
   const borderColor = RATING_BORDER[ofstedRating] ?? DEFAULT_BORDER;
-  const linkTo = id
+  const basePath = id
     ? isPrivate
       ? `/private-schools/${id}`
       : `/schools/${id}`
     : "#";
+  const linkTo = postcode ? `${basePath}?postcode=${encodeURIComponent(postcode)}` : basePath;
 
   return (
     <Link
