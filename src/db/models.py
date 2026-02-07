@@ -242,6 +242,12 @@ class AdmissionsHistory(Base):
     appeals_heard: Mapped[int | None] = mapped_column(Integer, nullable=True)
     appeals_upheld: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # Allocation profile description (e.g. "All applicants offered up to criterion 6 (distance) up to 1.011 miles")
+    allocation_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    had_vacancies: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    intake_year: Mapped[str | None] = mapped_column(String(20), nullable=True)  # e.g. "Year R", "Year 3"
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     school: Mapped[School] = relationship("School", back_populates="admissions_history")
 
     def __repr__(self) -> str:

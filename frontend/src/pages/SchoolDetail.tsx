@@ -106,7 +106,7 @@ interface SchoolDetail extends School {
   ofsted_trajectory?: OfstedTrajectoryResponse | null;
 }
 
-const TABS = [
+const ALL_TABS = [
   "Overview",
   "Clubs",
   "Performance",
@@ -114,7 +114,7 @@ const TABS = [
   "Admissions",
   "Class Sizes",
 ] as const;
-type Tab = (typeof TABS)[number];
+type Tab = (typeof ALL_TABS)[number];
 
 const RATING_COLORS: Record<string, string> = {
   Outstanding: "bg-green-100 text-green-800 ring-1 ring-green-600/20",
@@ -574,24 +574,36 @@ export default function SchoolDetail() {
       });
   }, [activeTab, school, estimateLoaded]);
 
+  // Compute visible tabs - hide tabs with no data (Overview and Admissions always shown)
+  const visibleTabs = ALL_TABS.filter((tab) => {
+    if (tab === "Overview") return true;
+    if (tab === "Admissions") return true; // Always show - has criteria even if no history
+    if (!school) return false;
+    if (tab === "Clubs") return (school.clubs ?? []).length > 0;
+    if (tab === "Performance") return (school.performance ?? []).length > 0;
+    if (tab === "Term Dates") return false; // No term dates data yet
+    if (tab === "Class Sizes") return (school.class_sizes ?? []).length > 0;
+    return true;
+  });
+
   /** Handle keyboard navigation for tabs (arrow keys). */
   function handleTabKeyDown(e: React.KeyboardEvent, tabIndex: number) {
     let nextIndex = tabIndex;
     if (e.key === "ArrowRight") {
-      nextIndex = (tabIndex + 1) % TABS.length;
+      nextIndex = (tabIndex + 1) % visibleTabs.length;
     } else if (e.key === "ArrowLeft") {
-      nextIndex = (tabIndex - 1 + TABS.length) % TABS.length;
+      nextIndex = (tabIndex - 1 + visibleTabs.length) % visibleTabs.length;
     } else if (e.key === "Home") {
       nextIndex = 0;
     } else if (e.key === "End") {
-      nextIndex = TABS.length - 1;
+      nextIndex = visibleTabs.length - 1;
     } else {
       return;
     }
     e.preventDefault();
-    setActiveTab(TABS[nextIndex]);
+    setActiveTab(visibleTabs[nextIndex]);
     // Focus the new tab button
-    const tabBtn = document.getElementById(`school-tab-${TABS[nextIndex]}`);
+    const tabBtn = document.getElementById(`school-tab-${visibleTabs[nextIndex]}`);
     tabBtn?.focus();
   }
 
@@ -729,7 +741,7 @@ export default function SchoolDetail() {
             role="tablist"
             aria-label="School information sections"
           >
-            {TABS.map((tab, idx) => (
+            {visibleTabs.map((tab, idx) => (
               <button
                 key={tab}
                 id={`school-tab-${tab}`}
@@ -988,42 +1000,127 @@ export default function SchoolDetail() {
               </div>
             )}
 
-            {/* Historical admissions table */}
+            {/* Historical admissions data */}
             {(school.admissions_history ?? []).length > 0 && (
               <div className="mt-6 rounded-lg border border-stone-200 bg-white p-6">
-                <h3 className="text-lg font-semibold text-stone-900">Historical Admissions</h3>
-                <div className="mt-4 overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-stone-200 text-left text-xs font-medium uppercase text-stone-500">
-                        <th className="pb-2 pr-4">Year</th>
-                        <th className="pb-2 pr-4">Places</th>
-                        <th className="pb-2 pr-4">Applications</th>
-                        <th className="pb-2 pr-4">Last Distance</th>
-                        <th className="pb-2 pr-4">Off Waiting List</th>
-                        <th className="pb-2 pr-4">Appeals Heard</th>
-                        <th className="pb-2">Appeals Upheld</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...(school.admissions_history ?? [])]
-                        .sort((a, b) => b.academic_year.localeCompare(a.academic_year))
-                        .map((r) => (
-                          <tr key={r.academic_year} className="border-b border-stone-100">
-                            <td className="py-2 pr-4 font-medium">{r.academic_year}</td>
-                            <td className="py-2 pr-4">{r.places_offered ?? "—"}</td>
-                            <td className="py-2 pr-4">{r.applications_received ?? "—"}</td>
-                            <td className="py-2 pr-4">{r.last_distance_offered_km != null ? `${r.last_distance_offered_km.toFixed(2)} km` : "—"}</td>
-                            <td className="py-2 pr-4">{r.waiting_list_offers ?? "—"}</td>
-                            <td className="py-2 pr-4">{r.appeals_heard ?? "—"}</td>
-                            <td className="py-2">{r.appeals_upheld ?? "—"}</td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                <h3 className="text-lg font-semibold text-stone-900">Allocation History</h3>
+                <p className="mt-1 text-sm text-stone-500">
+                  How places were allocated on National Offer Day for previous years.
+                </p>
+                <div className="mt-4 space-y-4">
+                  {[...(school.admissions_history ?? [])]
+                    .sort((a, b) => b.academic_year.localeCompare(a.academic_year))
+                    .map((r) => (
+                      <div key={`${r.academic_year}-${r.intake_year ?? ""}`} className="rounded-lg border border-stone-100 bg-stone-50 p-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-base font-semibold text-stone-900">{r.academic_year}</span>
+                          {r.intake_year && (
+                            <span className="rounded bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-700">
+                              {r.intake_year}
+                            </span>
+                          )}
+                          {r.had_vacancies === false && (
+                            <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                              Oversubscribed
+                            </span>
+                          )}
+                          {r.had_vacancies === true && (
+                            <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                              Vacancies
+                            </span>
+                          )}
+                        </div>
+
+                        {r.allocation_description && (
+                          <p className="mt-2 text-sm text-stone-700">{r.allocation_description}</p>
+                        )}
+
+                        <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+                          {r.places_offered != null && (
+                            <div>
+                              <span className="text-xs font-medium uppercase text-stone-500">Places</span>
+                              <p className="font-semibold text-stone-900">{r.places_offered}</p>
+                            </div>
+                          )}
+                          {r.applications_received != null && (
+                            <div>
+                              <span className="text-xs font-medium uppercase text-stone-500">Applications</span>
+                              <p className="font-semibold text-stone-900">{r.applications_received}</p>
+                            </div>
+                          )}
+                          {r.last_distance_offered_km != null && (
+                            <div>
+                              <span className="text-xs font-medium uppercase text-stone-500">Last distance</span>
+                              <p className="font-semibold text-stone-900">
+                                {(r.last_distance_offered_km / 1.60934).toFixed(2)} miles
+                                <span className="ml-1 text-xs font-normal text-stone-500">
+                                  ({r.last_distance_offered_km.toFixed(2)} km)
+                                </span>
+                              </p>
+                            </div>
+                          )}
+                          {r.applications_received != null && r.places_offered != null && (
+                            <div>
+                              <span className="text-xs font-medium uppercase text-stone-500">Ratio</span>
+                              <p className="font-semibold text-stone-900">
+                                {(r.applications_received / r.places_offered).toFixed(1)}:1
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {r.source_url && (
+                          <a
+                            href={r.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                            View source document
+                          </a>
+                        )}
+                      </div>
+                    ))}
                 </div>
               </div>
             )}
+
+            {/* Useful links */}
+            <div className="mt-6 rounded-lg border border-stone-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-stone-900">Useful Links</h3>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <a
+                  href="https://www.milton-keynes.gov.uk/schools-and-lifelong-learning/school-admissions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm hover:border-stone-300 hover:shadow-md transition-all"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 text-stone-400" aria-hidden="true" />
+                  MK Council Admissions
+                </a>
+                <a
+                  href="https://www.milton-keynes.gov.uk/sites/default/files/2024-08/Parent%20Guide%20Primary%202025%20FINAL.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm hover:border-stone-300 hover:shadow-md transition-all"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 text-stone-400" aria-hidden="true" />
+                  Primary Parent Guide 2025
+                </a>
+                {school.website && (
+                  <a
+                    href={school.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm hover:border-stone-300 hover:shadow-md transition-all"
+                  >
+                    <Globe className="h-4 w-4 text-brand-600" aria-hidden="true" />
+                    School website
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
