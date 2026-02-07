@@ -5,8 +5,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.api.bus_routes import router as bus_routes_router
@@ -71,9 +72,20 @@ app.include_router(parking_router)
 app.include_router(holiday_clubs_router)
 app.include_router(bus_routes_router)
 
-# Serve frontend build (production). The SPA catch-all must come AFTER API routes.
+# Serve frontend SPA in production.
+# Static assets (JS, CSS, images) are served directly from dist/assets/.
+# All other non-API paths fall through to index.html for client-side routing.
 if FRONTEND_DIST.is_dir():
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIST), html=True), name="frontend")
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="static-assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(request: Request, full_path: str) -> FileResponse:
+        """Serve index.html for all non-API routes (SPA client-side routing)."""
+        file_path = (FRONTEND_DIST / full_path).resolve()
+        if full_path and file_path.is_file() and str(file_path).startswith(str(FRONTEND_DIST.resolve())):
+            return FileResponse(file_path)
+        return FileResponse(FRONTEND_DIST / "index.html")
+
 
 if __name__ == "__main__":
     uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)
