@@ -117,11 +117,13 @@ class SQLiteSchoolRepository(SchoolRepository):
             stmt = stmt.where(School.faith == filters.faith)
 
         if filters.gender is not None:
-            # Exclude schools whose gender_policy is incompatible
+            # Exclude schools whose gender_policy is incompatible.
+            # Accept both GIAS format ("Mixed", "Boys", "Girls") and
+            # legacy format ("co-ed", "boys", "girls").
             if filters.gender == "male":
-                stmt = stmt.where(School.gender_policy.in_(["co-ed", "boys"]))
+                stmt = stmt.where(School.gender_policy.in_(["co-ed", "boys", "Mixed", "Boys"]))
             elif filters.gender == "female":
-                stmt = stmt.where(School.gender_policy.in_(["co-ed", "girls"]))
+                stmt = stmt.where(School.gender_policy.in_(["co-ed", "girls", "Mixed", "Girls"]))
 
         if filters.age is not None:
             stmt = stmt.where(School.age_range_from <= filters.age).where(School.age_range_to >= filters.age)
@@ -152,7 +154,7 @@ class SQLiteSchoolRepository(SchoolRepository):
             stmt = stmt.where(
                 select(SchoolClub.id)
                 .where(SchoolClub.school_id == School.id)
-                .where(SchoolClub.club_type == "after_school")
+                .where(SchoolClub.club_type.in_(["after_school", "after-school"]))
                 .correlate(School)
                 .exists()
             )
@@ -204,7 +206,14 @@ class SQLiteSchoolRepository(SchoolRepository):
 
         async with self._session_factory() as session:
             result = await session.execute(stmt, params)
-            return list(result.scalars().all())
+            schools = list(result.scalars().all())
+
+        # Attach computed distance_km when a reference point was provided
+        if filters.lat is not None and filters.lng is not None:
+            for school in schools:
+                school.distance_km = _haversine(school.lat, school.lng, filters.lat, filters.lng)
+
+        return schools
 
     # ------------------------------------------------------------------
     # Single-school lookups
