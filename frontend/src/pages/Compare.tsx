@@ -80,9 +80,9 @@ function latestMetric(
 
 /** Colour Progress 8 values: green if positive, red if negative. */
 function Progress8Cell({ value }: { value: string | null }) {
-  if (!value) return <span className="text-gray-400">&mdash;</span>;
+  if (!value) return <span className="text-stone-400">&mdash;</span>;
   const num = parseFloat(value);
-  let cls = "text-gray-900";
+  let cls = "text-stone-900";
   if (!isNaN(num)) {
     if (num > 0) cls = "text-green-700 font-semibold";
     else if (num < 0) cls = "text-red-700 font-semibold";
@@ -115,11 +115,11 @@ function CompareSkeletonRow({ colCount }: { colCount: number }) {
   return (
     <tr>
       <td className="whitespace-nowrap px-4 py-3">
-        <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
+        <div className="h-4 w-28 animate-pulse rounded bg-stone-200" />
       </td>
       {Array.from({ length: colCount }).map((_, i) => (
         <td key={i} className="px-4 py-3">
-          <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
+          <div className="h-4 w-20 animate-pulse rounded bg-stone-200" />
         </td>
       ))}
     </tr>
@@ -183,8 +183,8 @@ export default function Compare() {
     isEven: boolean;
   }) {
     return (
-      <tr className={isEven ? "bg-gray-50/50" : "bg-white"}>
-        <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 sticky left-0 z-10 bg-inherit">
+      <tr className={isEven ? "bg-stone-50/50" : "bg-white"}>
+        <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900 sticky left-0 z-10 bg-inherit">
           {label}
         </td>
         {schools.map((s) => {
@@ -215,33 +215,33 @@ export default function Compare() {
       {/* Back navigation */}
       <Link
         to="/schools"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-700 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Back to schools
       </Link>
 
       <div className="mt-4">
-        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Compare schools</h1>
-        <p className="mt-1 text-sm text-gray-600 sm:text-base">
+        <h1 className="font-display text-2xl font-bold text-stone-900 sm:text-3xl">Compare schools</h1>
+        <p className="mt-1 text-sm text-stone-600 sm:text-base">
           See how your shortlisted schools stack up side by side.
         </p>
       </div>
 
       {/* Empty state - no schools selected */}
       {ids.length === 0 && (
-        <div className="mt-8 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-          <GitCompareArrows className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true" />
-          <h2 className="mt-4 text-lg font-semibold text-gray-900">
+        <div className="mt-8 rounded-lg border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
+          <GitCompareArrows className="mx-auto h-12 w-12 text-stone-300" aria-hidden="true" />
+          <h2 className="mt-4 text-lg font-semibold text-stone-900">
             No schools selected
           </h2>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-stone-500">
             Head to the school list and tap on schools you&apos;d like to compare.
             You can compare up to 4 schools at a time.
           </p>
           <Link
             to="/schools"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
           >
             Browse schools
           </Link>
@@ -257,19 +257,19 @@ export default function Compare() {
 
       {/* Loading skeleton */}
       {loading && ids.length > 0 && (
-        <div className="mt-8 overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+        <div className="mt-8 overflow-hidden rounded-xl border border-stone-200 shadow-sm">
           <table className="min-w-full" aria-label="Loading comparison data">
-            <thead className="bg-gray-50">
+            <thead className="bg-stone-50">
               <tr>
-                <th className="px-4 py-3"><div className="h-4 w-16 animate-pulse rounded bg-gray-200" /></th>
+                <th className="px-4 py-3"><div className="h-4 w-16 animate-pulse rounded bg-stone-200" /></th>
                 {ids.map((id) => (
                   <th key={id} className="px-4 py-3">
-                    <div className="h-5 w-32 animate-pulse rounded bg-gray-200" />
+                    <div className="h-5 w-32 animate-pulse rounded bg-stone-200" />
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-stone-100">
               {[1, 2, 3, 4, 5, 6].map((row) => (
                 <CompareSkeletonRow key={row} colCount={ids.length} />
               ))}
@@ -284,12 +284,12 @@ export default function Compare() {
           {/* School header cards - above table on mobile for context */}
           <div className="mt-6 grid gap-3 sm:hidden" style={{ gridTemplateColumns: `repeat(${schools.length}, minmax(0, 1fr))` }}>
             {schools.map((s) => {
-              const ratingBadge = RATING_BADGES[s.ofsted_rating ?? ""] ?? "bg-gray-100 text-gray-600 ring-1 ring-gray-300/50";
+              const ratingBadge = RATING_BADGES[s.ofsted_rating ?? ""] ?? "bg-stone-100 text-stone-600 ring-1 ring-stone-300/50";
               return (
-                <div key={s.id} className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+                <div key={s.id} className="rounded-lg border border-stone-200 bg-white p-3 text-center">
                   <Link
                     to={s.is_private ? `/private-schools/${s.id}` : `/schools/${s.id}`}
-                    className="text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                    className="text-sm font-semibold text-stone-900 hover:text-brand-600 transition-colors"
                   >
                     {s.name}
                   </Link>
@@ -303,7 +303,7 @@ export default function Compare() {
                   <button
                     type="button"
                     onClick={() => removeSchool(s.id)}
-                    className="mt-2 inline-flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors"
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-stone-400 hover:text-red-500 transition-colors"
                     aria-label={`Remove ${s.name} from comparison`}
                   >
                     <X className="h-3 w-3" aria-hidden="true" />
@@ -317,17 +317,17 @@ export default function Compare() {
           {/* Scrollable table with sticky first column */}
           <div className="relative mt-4 sm:mt-8">
             {/* Scroll indicator fade on right edge */}
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 z-20 w-6 bg-gradient-to-l from-gray-50 to-transparent sm:hidden" aria-hidden="true" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 z-20 w-6 bg-gradient-to-l from-stone-50 to-transparent sm:hidden" aria-hidden="true" />
 
             <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
               <table
-                className="min-w-full divide-y divide-gray-200 overflow-hidden rounded-xl border border-gray-200 shadow-sm"
+                className="min-w-full divide-y divide-stone-200 overflow-hidden rounded-xl border border-stone-200 shadow-sm"
                 aria-label="School comparison"
               >
                 {/* Sticky header row with school names */}
-                <thead className="bg-gray-50">
+                <thead className="bg-stone-50">
                   <tr>
-                    <th className="sticky left-0 z-10 bg-gray-50 px-4 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="sticky left-0 z-10 bg-stone-50 px-4 py-4 text-left text-xs font-medium uppercase tracking-wider text-stone-500">
                       <span className="sr-only">Metric</span>
                     </th>
                     {schools.map((s) => (
@@ -340,36 +340,36 @@ export default function Compare() {
                             to={s.is_private ? `/private-schools/${s.id}` : `/schools/${s.id}`}
                             className="group hidden sm:block"
                           >
-                            <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                            <span className="text-sm font-semibold text-stone-900 group-hover:text-brand-600 transition-colors">
                               {s.name}
                             </span>
-                            <ExternalLink className="ml-1 inline h-3 w-3 text-gray-300 group-hover:text-blue-400" aria-hidden="true" />
+                            <ExternalLink className="ml-1 inline h-3 w-3 text-stone-300 group-hover:text-brand-400" aria-hidden="true" />
                           </Link>
                           <button
                             type="button"
                             onClick={() => removeSchool(s.id)}
-                            className="hidden flex-shrink-0 rounded p-1 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 sm:block"
+                            className="hidden flex-shrink-0 rounded p-1 text-stone-300 transition-colors hover:bg-red-50 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 sm:block"
                             aria-label={`Remove ${s.name} from comparison`}
                           >
                             <X className="h-4 w-4" aria-hidden="true" />
                           </button>
                         </div>
                         {/* Mobile: just show abbreviated name */}
-                        <span className="text-xs font-semibold text-gray-900 sm:hidden">
+                        <span className="text-xs font-semibold text-stone-900 sm:hidden">
                           {s.name}
                         </span>
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-stone-100">
                   {/* Ofsted Rating */}
                   <CompareRow
                     label="Ofsted rating"
                     isEven={false}
                     isBest={(s) => isBestOfsted(s, schools)}
                     renderCell={(s) => {
-                      const style = RATING_STYLES[s.ofsted_rating ?? ""] ?? "text-gray-400";
+                      const style = RATING_STYLES[s.ofsted_rating ?? ""] ?? "text-stone-400";
                       return <span className={style}>{s.ofsted_rating ?? <>&mdash;</>}</span>;
                     }}
                   />
@@ -379,7 +379,7 @@ export default function Compare() {
                     label="Last inspection"
                     isEven={true}
                     renderCell={(s) => (
-                      <span className="text-gray-600">{s.ofsted_date ?? <>&mdash;</>}</span>
+                      <span className="text-stone-600">{s.ofsted_date ?? <>&mdash;</>}</span>
                     )}
                   />
 
@@ -388,7 +388,7 @@ export default function Compare() {
                     label="School type"
                     isEven={false}
                     renderCell={(s) => (
-                      <span className="text-gray-600">
+                      <span className="text-stone-600">
                         {s.is_private ? "Independent" : s.type ?? <>&mdash;</>}
                       </span>
                     )}
@@ -399,7 +399,7 @@ export default function Compare() {
                     label="Age range"
                     isEven={true}
                     renderCell={(s) => (
-                      <span className="text-gray-600">
+                      <span className="text-stone-600">
                         {s.age_range_from != null && s.age_range_to != null
                           ? `${s.age_range_from}\u2013${s.age_range_to} years`
                           : <>&mdash;</>}
@@ -414,7 +414,7 @@ export default function Compare() {
                       isEven={false}
                       isBest={(s) => isClosest(s, schools)}
                       renderCell={(s) => (
-                        <span className="text-gray-600">
+                        <span className="text-stone-600">
                           {s.distance_km != null
                             ? `${s.distance_km.toFixed(1)} km`
                             : <>&mdash;</>}
@@ -428,7 +428,7 @@ export default function Compare() {
                     label="Catchment radius"
                     isEven={hasDistance ? true : false}
                     renderCell={(s) => (
-                      <span className="text-gray-600">
+                      <span className="text-stone-600">
                         {s.catchment_radius_km != null
                           ? `${s.catchment_radius_km} km`
                           : <>&mdash;</>}
@@ -441,7 +441,7 @@ export default function Compare() {
                     label="Gender policy"
                     isEven={hasDistance ? false : true}
                     renderCell={(s) => (
-                      <span className="text-gray-600">{s.gender_policy ?? <>&mdash;</>}</span>
+                      <span className="text-stone-600">{s.gender_policy ?? <>&mdash;</>}</span>
                     )}
                   />
 
@@ -450,7 +450,7 @@ export default function Compare() {
                     label="Faith"
                     isEven={hasDistance ? true : false}
                     renderCell={(s) => (
-                      <span className="text-gray-600">{s.faith ?? "None"}</span>
+                      <span className="text-stone-600">{s.faith ?? "None"}</span>
                     )}
                   />
 
@@ -459,7 +459,7 @@ export default function Compare() {
                     label="Ethos"
                     isEven={hasDistance ? false : true}
                     renderCell={(s) => (
-                      <span className="text-gray-500 italic text-xs leading-relaxed">
+                      <span className="text-stone-500 italic text-xs leading-relaxed">
                         {s.ethos ? `"${s.ethos}"` : <>&mdash;</>}
                       </span>
                     )}
@@ -476,7 +476,7 @@ export default function Compare() {
                           Available
                         </span>
                       ) : (
-                        <span className="text-gray-400">&mdash;</span>
+                        <span className="text-stone-400">&mdash;</span>
                       );
                     }}
                   />
@@ -492,7 +492,7 @@ export default function Compare() {
                           Available
                         </span>
                       ) : (
-                        <span className="text-gray-400">&mdash;</span>
+                        <span className="text-stone-400">&mdash;</span>
                       );
                     }}
                   />
@@ -504,7 +504,7 @@ export default function Compare() {
                         label="SATs (Expected)"
                         isEven={true}
                         renderCell={(s) => (
-                          <span className="text-gray-600">
+                          <span className="text-stone-600">
                             {latestMetric(s.performance, "SATs") ?? <>&mdash;</>}
                           </span>
                         )}
@@ -513,7 +513,7 @@ export default function Compare() {
                         label="SATs (Higher)"
                         isEven={false}
                         renderCell={(s) => (
-                          <span className="text-gray-600">
+                          <span className="text-stone-600">
                             {latestMetric(s.performance, "SATs_Higher") ?? <>&mdash;</>}
                           </span>
                         )}
@@ -528,7 +528,7 @@ export default function Compare() {
                         label="GCSE results"
                         isEven={true}
                         renderCell={(s) => (
-                          <span className="text-gray-600">
+                          <span className="text-stone-600">
                             {latestMetric(s.performance, "GCSE") ?? <>&mdash;</>}
                           </span>
                         )}
@@ -544,7 +544,7 @@ export default function Compare() {
                         label="Attainment 8"
                         isEven={true}
                         renderCell={(s) => (
-                          <span className="text-gray-600">
+                          <span className="text-stone-600">
                             {latestMetric(s.performance, "Attainment8") ?? <>&mdash;</>}
                           </span>
                         )}
@@ -557,7 +557,7 @@ export default function Compare() {
           </div>
 
           {/* Helpful tip */}
-          <p className="mt-4 text-center text-xs text-gray-400">
+          <p className="mt-4 text-center text-xs text-stone-400">
             <Trophy className="mr-1 inline h-3 w-3 text-amber-400" aria-hidden="true" />
             Trophy icon highlights the best value in each row across the schools being compared.
           </p>
@@ -566,18 +566,18 @@ export default function Compare() {
 
       {/* No results for given IDs */}
       {!loading && ids.length > 0 && schools.length === 0 && !error && (
-        <div className="mt-8 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-          <GitCompareArrows className="mx-auto h-10 w-10 text-gray-300" aria-hidden="true" />
-          <h2 className="mt-3 text-lg font-semibold text-gray-900">
+        <div className="mt-8 rounded-lg border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
+          <GitCompareArrows className="mx-auto h-10 w-10 text-stone-300" aria-hidden="true" />
+          <h2 className="mt-3 text-lg font-semibold text-stone-900">
             No matching schools found
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-stone-500">
             We couldn&apos;t find any schools matching your selection.
             Try browsing schools and adding them to compare.
           </p>
           <Link
             to="/schools"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
           >
             Browse schools
           </Link>

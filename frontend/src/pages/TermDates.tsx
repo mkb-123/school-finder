@@ -22,7 +22,7 @@ interface TermDate {
 
 /** Colour palette for each school slot (up to 4). */
 const SCHOOL_COLOURS = [
-  { bg: "bg-blue-50", border: "border-blue-400", text: "text-blue-700", dot: "bg-blue-500", ring: "ring-blue-500" },
+  { bg: "bg-brand-50", border: "border-brand-400", text: "text-brand-700", dot: "bg-brand-500", ring: "ring-brand-500" },
   { bg: "bg-emerald-50", border: "border-emerald-400", text: "text-emerald-700", dot: "bg-emerald-500", ring: "ring-emerald-500" },
   { bg: "bg-amber-50", border: "border-amber-400", text: "text-amber-700", dot: "bg-amber-500", ring: "ring-amber-500" },
   { bg: "bg-purple-50", border: "border-purple-400", text: "text-purple-700", dot: "bg-purple-500", ring: "ring-purple-500" },
@@ -124,8 +124,8 @@ export default function TermDates() {
           <Calendar className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Term Dates</h1>
-          <p className="mt-1 text-sm leading-relaxed text-gray-600 sm:text-base">
+          <h1 className="font-display text-2xl font-bold text-stone-900 sm:text-3xl">Term Dates</h1>
+          <p className="mt-1 text-sm leading-relaxed text-stone-600 sm:text-base">
             Compare term dates across schools. Academies and free schools may
             set their own dates, and private schools often have different
             schedules with longer holidays.
@@ -134,12 +134,12 @@ export default function TermDates() {
       </div>
 
       {/* School selector */}
-      <section className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <section className="mt-6 rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
         <div className="flex items-baseline justify-between gap-2">
-          <h2 className="text-base font-semibold text-gray-900">
+          <h2 className="text-base font-semibold text-stone-900">
             Schools to compare
           </h2>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-stone-500">
             {selectedIds.length} of 4
           </span>
         </div>
@@ -176,27 +176,27 @@ export default function TermDates() {
         {selectedIds.length < 4 && (
           <div className="mt-3">
             {schoolsLoading ? (
-              <div className="flex items-center gap-2 py-3 text-sm text-gray-400">
+              <div className="flex items-center gap-2 py-3 text-sm text-stone-400">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                 Loading schools...
               </div>
             ) : (
               <>
                 <div className="relative">
-                  <Plus className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+                  <Plus className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
                   <input
                     type="text"
                     placeholder="Search and add a school..."
                     value={schoolSearch}
                     onChange={(e) => setSchoolSearch(e.target.value)}
                     aria-label="Search for a school to add to comparison"
-                    className="block w-full rounded-lg border border-gray-300 py-2.5 pl-9 pr-3 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-80"
+                    className="block w-full rounded-lg border border-stone-300 py-2.5 pl-9 pr-3 text-sm shadow-sm transition-colors focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 sm:w-80"
                   />
                 </div>
                 {schoolSearch.trim() && (
-                  <div className="mt-1.5 max-h-36 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                  <div className="mt-1.5 max-h-36 overflow-y-auto rounded-lg border border-stone-200 bg-white shadow-sm">
                     {filteredAvailableSchools.length === 0 ? (
-                      <p className="py-3 text-center text-xs text-gray-400">
+                      <p className="py-3 text-center text-xs text-stone-400">
                         No matching schools found
                       </p>
                     ) : (
@@ -207,12 +207,12 @@ export default function TermDates() {
                             handleAddSchool(s.id);
                             setSchoolSearch("");
                           }}
-                          className="flex w-full min-h-[44px] items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                          className="flex w-full min-h-[44px] items-center gap-2 px-3 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-50"
                         >
-                          <Plus className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" aria-hidden="true" />
+                          <Plus className="h-3.5 w-3.5 flex-shrink-0 text-stone-400" aria-hidden="true" />
                           <span className="truncate">{s.name}</span>
                           {s.is_private && (
-                            <span className="ml-auto flex-shrink-0 text-xs text-gray-400">(Private)</span>
+                            <span className="ml-auto flex-shrink-0 text-xs text-stone-400">(Private)</span>
                           )}
                         </button>
                       ))
@@ -227,18 +227,18 @@ export default function TermDates() {
 
       {/* Term date comparison grid */}
       {selectedIds.length === 0 ? (
-        <div className="mt-8 rounded-xl border-2 border-dashed border-gray-200 px-6 py-12 text-center">
-          <Calendar className="mx-auto h-10 w-10 text-gray-300" aria-hidden="true" />
-          <p className="mt-3 text-sm font-medium text-gray-600">
+        <div className="mt-8 rounded-xl border-2 border-dashed border-stone-200 px-6 py-12 text-center">
+          <Calendar className="mx-auto h-10 w-10 text-stone-300" aria-hidden="true" />
+          <p className="mt-3 text-sm font-medium text-stone-600">
             Select schools to compare their term dates
           </p>
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-stone-400">
             Search for schools above to see their term dates side by side. You
             can compare up to 4 schools at once.
           </p>
         </div>
       ) : loading ? (
-        <div className="mt-8 flex items-center justify-center gap-2 py-12 text-sm text-gray-400">
+        <div className="mt-8 flex items-center justify-center gap-2 py-12 text-sm text-stone-400">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           Loading term dates...
         </div>
@@ -262,15 +262,15 @@ export default function TermDates() {
             return (
               <section
                 key={termName}
-                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+                className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm"
                 aria-label={`${termName} dates`}
               >
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-stone-900">
                   {termName}
                 </h2>
 
                 {!anyData && (
-                  <p className="mt-4 text-xs text-gray-400">
+                  <p className="mt-4 text-xs text-stone-400">
                     No term dates available for the selected schools yet.
                   </p>
                 )}
@@ -280,7 +280,7 @@ export default function TermDates() {
                     {/* Term Start */}
                     <div className="mt-4">
                       <div className="flex items-center gap-1.5">
-                        <p className={`text-xs font-semibold uppercase tracking-wide ${startDiffers ? "text-amber-600" : "text-gray-500"}`}>
+                        <p className={`text-xs font-semibold uppercase tracking-wide ${startDiffers ? "text-amber-600" : "text-stone-500"}`}>
                           Term Start
                         </p>
                         {startDiffers && (
@@ -302,7 +302,7 @@ export default function TermDates() {
                               </span>
                               {selectedIds.length > 1 && (
                                 <span
-                                  className="truncate text-xs text-gray-400"
+                                  className="truncate text-xs text-stone-400"
                                   title={schoolName}
                                 >
                                   {schoolName.length > 18 ? schoolName.slice(0, 18) + "..." : schoolName}
@@ -317,7 +317,7 @@ export default function TermDates() {
                     {/* Half Term */}
                     <div className="mt-4">
                       <div className="flex items-center gap-1.5">
-                        <p className={`text-xs font-semibold uppercase tracking-wide ${htStartDiffers || htEndDiffers ? "text-amber-600" : "text-gray-500"}`}>
+                        <p className={`text-xs font-semibold uppercase tracking-wide ${htStartDiffers || htEndDiffers ? "text-amber-600" : "text-stone-500"}`}>
                           Half Term
                         </p>
                         {(htStartDiffers || htEndDiffers) && (
@@ -349,7 +349,7 @@ export default function TermDates() {
                     {/* Term End */}
                     <div className="mt-4">
                       <div className="flex items-center gap-1.5">
-                        <p className={`text-xs font-semibold uppercase tracking-wide ${endDiffers ? "text-amber-600" : "text-gray-500"}`}>
+                        <p className={`text-xs font-semibold uppercase tracking-wide ${endDiffers ? "text-amber-600" : "text-stone-500"}`}>
                           Term End
                         </p>
                         {endDiffers && (
@@ -384,13 +384,13 @@ export default function TermDates() {
       {/* Visual timeline */}
       {selectedIds.length > 0 && !loading && (
         <section
-          className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:mt-8 sm:p-6"
+          className="mt-6 rounded-xl border border-stone-200 bg-white p-5 shadow-sm sm:mt-8 sm:p-6"
           aria-label="Academic year timeline"
         >
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-stone-900">
             Academic year overview
           </h2>
-          <p className="mt-1 text-xs leading-relaxed text-gray-500">
+          <p className="mt-1 text-xs leading-relaxed text-stone-500">
             Coloured bars show term durations; gaps show holidays. White marks
             within bars indicate half-term breaks.
           </p>
@@ -414,12 +414,12 @@ export default function TermDates() {
                     </p>
                   </div>
                   {dates.length === 0 ? (
-                    <div className="h-7 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <span className="text-[10px] text-gray-400">No term date data available</span>
+                    <div className="h-7 rounded-lg bg-stone-100 flex items-center justify-center">
+                      <span className="text-[10px] text-stone-400">No term date data available</span>
                     </div>
                   ) : (
                     <div
-                      className="relative h-7 rounded-lg bg-gray-100"
+                      className="relative h-7 rounded-lg bg-stone-100"
                       role="img"
                       aria-label={`Timeline for ${school.name}: ${dates.map((t) => `${t.term_name} from ${formatShortDate(t.start_date)} to ${formatShortDate(t.end_date)}`).join("; ")}`}
                     >
@@ -460,7 +460,7 @@ export default function TermDates() {
             })}
 
             {/* Month labels */}
-            <div className="relative mt-1 hidden h-5 text-[10px] text-gray-400 sm:block" aria-hidden="true">
+            <div className="relative mt-1 hidden h-5 text-[10px] text-stone-400 sm:block" aria-hidden="true">
               {["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"].map(
                 (month, i) => (
                   <span
@@ -474,7 +474,7 @@ export default function TermDates() {
               )}
             </div>
             {/* Simplified mobile month labels - show fewer months to avoid overlap */}
-            <div className="relative mt-1 flex h-5 justify-between text-[10px] text-gray-400 sm:hidden" aria-hidden="true">
+            <div className="relative mt-1 flex h-5 justify-between text-[10px] text-stone-400 sm:hidden" aria-hidden="true">
               {["Sep", "Nov", "Jan", "Mar", "May", "Jul"].map((month) => (
                 <span key={month}>{month}</span>
               ))}

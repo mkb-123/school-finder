@@ -127,9 +127,9 @@ function TrendIndicator({ trend }: { trend: string }) {
     );
   }
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+    <div className="flex items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
       <svg
-        className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-400"
+        className="mt-0.5 h-5 w-5 flex-shrink-0 text-stone-400"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -143,8 +143,8 @@ function TrendIndicator({ trend }: { trend: string }) {
         />
       </svg>
       <div>
-        <p className="text-sm font-medium text-gray-700">Demand is stable</p>
-        <p className="mt-0.5 text-xs text-gray-600">
+        <p className="text-sm font-medium text-stone-700">Demand is stable</p>
+        <p className="mt-0.5 text-xs text-stone-600">
           The admission distance has been relatively consistent across recent years.
         </p>
       </div>
@@ -174,10 +174,10 @@ function DistanceChart({
 
   return (
     <div className="mt-5">
-      <h4 className="text-sm font-medium text-gray-700">
+      <h4 className="text-sm font-medium text-stone-700">
         Maximum Distance Offered Over Time
       </h4>
-      <p className="mt-0.5 text-xs text-gray-500">
+      <p className="mt-0.5 text-xs text-stone-500">
         The furthest distance that received an offer each year
       </p>
       <div
@@ -196,7 +196,7 @@ function DistanceChart({
               className="flex flex-1 flex-col items-center gap-1"
               style={{ minWidth: "2.5rem" }}
             >
-              <span className="text-xs font-medium text-gray-600">
+              <span className="text-xs font-medium text-stone-600">
                 {dist.toFixed(2)}
               </span>
               <div
@@ -204,7 +204,7 @@ function DistanceChart({
                 style={{ height: `${height}px` }}
                 title={`${record.academic_year}: ${dist.toFixed(2)} km`}
               />
-              <span className="text-[11px] text-gray-500">{yearLabel}</span>
+              <span className="text-[11px] text-stone-500">{yearLabel}</span>
             </div>
           );
         })}
@@ -227,7 +227,7 @@ function DistanceChart({
           </div>
         )}
       </div>
-      <p className="mt-1 text-right text-[10px] text-gray-400">Distance in km</p>
+      <p className="mt-1 text-right text-[10px] text-stone-400">Distance in km</p>
     </div>
   );
 }
@@ -239,12 +239,12 @@ export default function WaitingListGauge({
 }: WaitingListGaugeProps) {
   if (!estimate || estimate.years_of_data === 0) {
     return (
-      <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6" aria-labelledby="wl-heading">
-        <h3 id="wl-heading" className="text-lg font-semibold text-gray-900">
+      <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="wl-heading">
+        <h3 id="wl-heading" className="text-lg font-semibold text-stone-900">
           Admissions Likelihood
         </h3>
-        <div className="mt-4 flex items-center gap-3 rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
-          <svg className="h-5 w-5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
+          <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           No historical admissions data available for this school.
@@ -254,16 +254,16 @@ export default function WaitingListGauge({
   }
 
   const config = LIKELIHOOD_CONFIG[estimate.likelihood] ?? {
-    bgColor: "bg-gray-50",
-    textColor: "text-gray-700",
+    bgColor: "bg-stone-50",
+    textColor: "text-stone-700",
     barWidth: "w-1/2",
-    ringColor: "ring-gray-300/50",
+    ringColor: "ring-stone-300/50",
     description: "We could not determine a likelihood based on available data.",
   };
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6" aria-labelledby="wl-heading">
-      <h3 id="wl-heading" className="text-lg font-semibold text-gray-900">
+    <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="wl-heading">
+      <h3 id="wl-heading" className="text-lg font-semibold text-stone-900">
         Admissions Likelihood
       </h3>
 
@@ -271,7 +271,7 @@ export default function WaitingListGauge({
       <div className={`mt-4 rounded-xl ${config.bgColor} p-4 sm:p-5`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600">
+            <p className="text-sm font-medium text-stone-600">
               Chance of getting a place
             </p>
             <p className={`mt-1 text-2xl font-bold ${config.textColor}`}>
@@ -287,13 +287,13 @@ export default function WaitingListGauge({
         </div>
 
         {/* Description */}
-        <p className="mt-3 text-sm text-gray-600">
+        <p className="mt-3 text-sm text-stone-600">
           {config.description}
         </p>
 
         {/* Gauge bar */}
         <div className="mt-4" role="meter" aria-label="Likelihood gauge" aria-valuenow={GAUGE_STEPS.indexOf(estimate.likelihood) + 1} aria-valuemin={1} aria-valuemax={4}>
-          <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-stone-200">
             <div
               className={`h-full rounded-full ${config.barWidth} transition-all duration-500`}
               style={{
@@ -305,7 +305,7 @@ export default function WaitingListGauge({
               }}
             />
           </div>
-          <div className="mt-1.5 flex justify-between text-[11px] font-medium text-gray-500">
+          <div className="mt-1.5 flex justify-between text-[11px] font-medium text-stone-500">
             {GAUGE_STEPS.map((step) => (
               <span
                 key={step}
@@ -323,11 +323,11 @@ export default function WaitingListGauge({
         userDistanceKm != null) && (
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {estimate.latest_last_distance_km != null && (
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <p className="text-xs font-medium text-gray-500">
+            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+              <p className="text-xs font-medium text-stone-500">
                 Last distance offered
               </p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
+              <p className="mt-1 text-lg font-semibold text-stone-900">
                 {estimate.latest_last_distance_km.toFixed(2)} km
               </p>
             </div>
@@ -341,21 +341,21 @@ export default function WaitingListGauge({
             </div>
           )}
           {estimate.avg_last_distance_km != null && (
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <p className="text-xs font-medium text-gray-500">
+            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+              <p className="text-xs font-medium text-stone-500">
                 Average (all years)
               </p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
+              <p className="mt-1 text-lg font-semibold text-stone-900">
                 {estimate.avg_last_distance_km.toFixed(2)} km
               </p>
             </div>
           )}
           {estimate.avg_oversubscription_ratio != null && (
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <p className="text-xs font-medium text-gray-500">
+            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+              <p className="text-xs font-medium text-stone-500">
                 Oversubscription
               </p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
+              <p className="mt-1 text-lg font-semibold text-stone-900">
                 {estimate.avg_oversubscription_ratio.toFixed(1)}x
               </p>
             </div>
@@ -375,8 +375,8 @@ export default function WaitingListGauge({
       />
 
       {/* Disclaimer -- more visible */}
-      <div className="mt-5 rounded-lg bg-gray-50 border border-gray-200 p-3">
-        <p className="text-xs text-gray-600">
+      <div className="mt-5 rounded-lg bg-stone-50 border border-stone-200 p-3">
+        <p className="text-xs text-stone-600">
           <span className="font-medium">Please note:</span> This estimate is based on {estimate.years_of_data} year(s) of historical admissions data
           and is indicative only. It does not guarantee a school place. Actual admissions
           are determined by the school's oversubscription criteria.

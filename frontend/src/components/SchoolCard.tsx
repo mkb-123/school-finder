@@ -35,9 +35,18 @@ const RATING_STYLES: Record<string, { badge: string; dot: string }> = {
 };
 
 const DEFAULT_STYLE = {
-  badge: "bg-gray-100 text-gray-600 ring-1 ring-gray-300/50",
-  dot: "bg-gray-400",
+  badge: "bg-stone-100 text-stone-600 ring-1 ring-stone-300/50",
+  dot: "bg-stone-400",
 };
+
+const RATING_BORDER: Record<string, string> = {
+  Outstanding: "border-l-green-500",
+  Good: "border-l-blue-500",
+  "Requires Improvement": "border-l-amber-500",
+  Inadequate: "border-l-red-500",
+};
+
+const DEFAULT_BORDER = "border-l-stone-300";
 
 export default function SchoolCard({
   id,
@@ -53,6 +62,7 @@ export default function SchoolCard({
   ageRange,
 }: SchoolCardProps) {
   const ratingStyle = RATING_STYLES[ofstedRating] ?? DEFAULT_STYLE;
+  const borderColor = RATING_BORDER[ofstedRating] ?? DEFAULT_BORDER;
   const linkTo = id
     ? isPrivate
       ? `/private-schools/${id}`
@@ -62,19 +72,19 @@ export default function SchoolCard({
   return (
     <Link
       to={linkTo}
-      className="group block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      className={`group block rounded-xl border border-stone-200 border-l-4 ${borderColor} bg-white p-4 shadow-sm transition-all hover:border-stone-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2`}
     >
       {/* Top row: name + Ofsted badge */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold leading-snug text-gray-900 group-hover:text-blue-700 transition-colors">
+          <h3 className="text-base font-semibold leading-snug text-stone-900 group-hover:text-brand-700 transition-colors">
             {name}
           </h3>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-500">
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-stone-500">
             <span>{type}</span>
             {ageRange && (
               <>
-                <span aria-hidden="true" className="text-gray-300">|</span>
+                <span aria-hidden="true" className="text-stone-300">|</span>
                 <span>Ages {ageRange}</span>
               </>
             )}
@@ -100,7 +110,7 @@ export default function SchoolCard({
 
       {/* Ethos - readable, not italic */}
       {ethos && (
-        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-600">
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-stone-600">
           {ethos}
         </p>
       )}
@@ -109,8 +119,8 @@ export default function SchoolCard({
       <div className="mt-3 flex items-center justify-between">
         <div className="flex flex-wrap items-center gap-2">
           {/* Distance */}
-          <span className="inline-flex items-center gap-1 text-sm text-gray-600">
-            <MapPin className="h-3.5 w-3.5 text-gray-400" aria-hidden="true" />
+          <span className="inline-flex items-center gap-1 text-sm text-stone-600">
+            <MapPin className="h-3.5 w-3.5 text-stone-400" aria-hidden="true" />
             {distance}
           </span>
 
@@ -131,14 +141,14 @@ export default function SchoolCard({
 
         {/* Chevron - visual affordance for clickability */}
         <ChevronRight
-          className="h-4 w-4 flex-shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-gray-500"
+          className="h-4 w-4 flex-shrink-0 text-stone-300 transition-transform group-hover:translate-x-0.5 group-hover:text-stone-500"
           aria-hidden="true"
         />
       </div>
 
       {/* Ofsted inspection date - subtle */}
       {!isPrivate && ofstedDate && (
-        <p className="mt-2 text-xs text-gray-400">
+        <p className="mt-2 text-xs text-stone-400">
           Last inspected {ofstedDate}
         </p>
       )}

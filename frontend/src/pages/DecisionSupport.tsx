@@ -451,14 +451,14 @@ export default function DecisionSupport() {
     <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8 print:px-0" role="main">
       {/* Page header */}
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 sm:h-12 sm:w-12">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 sm:h-12 sm:w-12">
           <Scale className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+          <h1 className="font-display text-2xl font-bold text-stone-900 sm:text-3xl">
             Help me decide
           </h1>
-          <p className="mt-1 text-sm leading-relaxed text-gray-600 sm:text-base">
+          <p className="mt-1 text-sm leading-relaxed text-stone-600 sm:text-base">
             Tell us what matters most to your family, and we will rank schools
             by a personalised score. Explore "what if" scenarios and build a
             shortlist.
@@ -479,14 +479,14 @@ export default function DecisionSupport() {
         {/* ---- Left column: controls ---- */}
         <aside className="space-y-4 sm:space-y-5 lg:col-span-4 print:hidden" aria-label="Decision support controls">
           {/* School selector */}
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-blue-600" aria-hidden="true" />
-              <h2 className="text-base font-semibold text-gray-900">
+              <Sparkles className="h-4 w-4 text-brand-600" aria-hidden="true" />
+              <h2 className="text-base font-semibold text-stone-900">
                 Schools to rank
               </h2>
             </div>
-            <p className="mt-1 text-xs leading-relaxed text-gray-500">
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">
               Pick which schools to include in scoring. All are selected by
               default.
             </p>
@@ -495,13 +495,13 @@ export default function DecisionSupport() {
             <div className="mt-3 flex gap-2">
               <button
                 onClick={selectAllSchools}
-                className="rounded-lg px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-lg px-3 py-2 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 Select all
               </button>
               <button
                 onClick={clearSelection}
-                className="rounded-lg px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-lg px-3 py-2 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 Clear all
               </button>
@@ -515,54 +515,54 @@ export default function DecisionSupport() {
                 value={schoolSearch}
                 onChange={(e) => setSchoolSearch(e.target.value)}
                 aria-label="Filter school list"
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm transition-colors focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
 
             {/* School list */}
-            <div className="mt-2 max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-gray-100 p-1">
+            <div className="mt-2 max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-stone-100 p-1">
               {filteredAllSchools.map((school) => (
                 <label
                   key={school.id}
-                  className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                  className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-50"
                 >
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(school.id)}
                     onChange={() => toggleSchoolSelection(school.id)}
-                    className="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 flex-shrink-0 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
                   />
                   <span className="truncate">{school.name}</span>
                 </label>
               ))}
               {allSchools.length === 0 && (
-                <div className="flex items-center justify-center py-6 text-xs text-gray-400">
+                <div className="flex items-center justify-center py-6 text-xs text-stone-400">
                   <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   Loading schools...
                 </div>
               )}
               {allSchools.length > 0 && filteredAllSchools.length === 0 && (
-                <p className="py-4 text-center text-xs text-gray-400">
+                <p className="py-4 text-center text-xs text-stone-400">
                   No schools match your search
                 </p>
               )}
             </div>
             {selectedIds.length > 0 && (
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-stone-500">
                 {selectedIds.length} school{selectedIds.length !== 1 ? "s" : ""} selected
               </p>
             )}
           </section>
 
           {/* Priority sliders */}
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-blue-600" aria-hidden="true" />
-              <h2 className="text-base font-semibold text-gray-900">
+              <SlidersHorizontal className="h-4 w-4 text-brand-600" aria-hidden="true" />
+              <h2 className="text-base font-semibold text-stone-900">
                 Your priorities
               </h2>
             </div>
-            <p className="mt-1 text-xs leading-relaxed text-gray-500">
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">
               Drag the sliders to reflect what matters most to your family.
               Weights are balanced automatically.
             </p>
@@ -574,15 +574,15 @@ export default function DecisionSupport() {
                   <div className="flex items-baseline justify-between">
                     <label
                       htmlFor={`w-${key}`}
-                      className="text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-stone-700"
                     >
                       {label}
                     </label>
-                    <span className="ml-2 min-w-[2.5rem] text-right text-sm tabular-nums text-gray-500">
+                    <span className="ml-2 min-w-[2.5rem] text-right text-sm tabular-nums text-stone-500">
                       {weights[key]}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-gray-400">{description}</p>
+                  <p className="mt-0.5 text-xs text-stone-400">{description}</p>
                   <input
                     id={`w-${key}`}
                     type="range"
@@ -596,17 +596,17 @@ export default function DecisionSupport() {
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={weights[key]}
-                    className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-blue-600 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5"
+                    className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-full bg-stone-200 accent-[#0d9488] [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5"
                   />
                 </div>
               ))}
             </div>
 
             {/* Advanced priorities - progressive disclosure */}
-            <div className="mt-5 border-t border-gray-100 pt-4">
+            <div className="mt-5 border-t border-stone-100 pt-4">
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex w-full min-h-[44px] items-center justify-between text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg px-1"
+                className="flex w-full min-h-[44px] items-center justify-between text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 rounded-lg px-1"
                 aria-expanded={showAdvanced}
               >
                 <span>More factors</span>
@@ -623,15 +623,15 @@ export default function DecisionSupport() {
                       <div className="flex items-baseline justify-between">
                         <label
                           htmlFor={`w-${key}`}
-                          className="text-sm font-medium text-gray-700"
+                          className="text-sm font-medium text-stone-700"
                         >
                           {label}
                         </label>
-                        <span className="ml-2 min-w-[2.5rem] text-right text-sm tabular-nums text-gray-500">
+                        <span className="ml-2 min-w-[2.5rem] text-right text-sm tabular-nums text-stone-500">
                           {weights[key]}
                         </span>
                       </div>
-                      <p className="mt-0.5 text-xs text-gray-400">
+                      <p className="mt-0.5 text-xs text-stone-400">
                         {description}
                       </p>
                       <input
@@ -647,7 +647,7 @@ export default function DecisionSupport() {
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-valuenow={weights[key]}
-                        className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-blue-600 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5"
+                        className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-full bg-stone-200 accent-[#0d9488] [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5"
                       />
                     </div>
                   ))}
@@ -657,16 +657,16 @@ export default function DecisionSupport() {
           </section>
 
           {/* What-if controls */}
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-gray-900">
+          <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-stone-900">
               "What if" scenarios
             </h2>
-            <p className="mt-1 text-xs leading-relaxed text-gray-500">
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">
               Toggle these to explore how your rankings change under different
               assumptions.
             </p>
             <div className="mt-4 space-y-1">
-              <label className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50">
+              <label className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-50">
                 <input
                   type="checkbox"
                   checked={whatIf.okWith15MinDrive}
@@ -676,13 +676,13 @@ export default function DecisionSupport() {
                       okWith15MinDrive: e.target.checked,
                     }))
                   }
-                  className="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 flex-shrink-0 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
                 />
                 <span>
                   I am happy with up to a 15 km drive
                 </span>
               </label>
-              <label className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50">
+              <label className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-50">
                 <input
                   type="checkbox"
                   checked={whatIf.dropMinOfstedToGood}
@@ -692,13 +692,13 @@ export default function DecisionSupport() {
                       dropMinOfstedToGood: e.target.checked,
                     }))
                   }
-                  className="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 flex-shrink-0 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
                 />
                 <span>
                   A "Good" Ofsted rating is fine
                 </span>
               </label>
-              <label className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50">
+              <label className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-50">
                 <input
                   type="checkbox"
                   checked={whatIf.includeFaith}
@@ -708,7 +708,7 @@ export default function DecisionSupport() {
                       includeFaith: e.target.checked,
                     }))
                   }
-                  className="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 flex-shrink-0 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
                 />
                 <span>Include faith schools</span>
               </label>
@@ -719,20 +719,20 @@ export default function DecisionSupport() {
         {/* ---- Right column: results ---- */}
         <div className="space-y-6 lg:col-span-8">
           {/* Ranked list */}
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-stone-900">
                   Your ranked schools
                 </h2>
-                <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
+                <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
                   {rankedSchools.length} school{rankedSchools.length !== 1 ? "s" : ""}{" "}
                   ranked by your personalised score. Tap a school to see the
                   breakdown.
                 </p>
               </div>
               {loading && (
-                <div className="flex items-center gap-1.5 text-xs text-blue-600">
+                <div className="flex items-center gap-1.5 text-xs text-brand-600">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   <span>Updating</span>
                 </div>
@@ -740,35 +740,35 @@ export default function DecisionSupport() {
             </div>
 
             {rankedSchools.length === 0 && !loading ? (
-              <div className="mt-6 rounded-xl border-2 border-dashed border-gray-200 px-6 py-10 text-center">
-                <SlidersHorizontal className="mx-auto h-8 w-8 text-gray-300" aria-hidden="true" />
-                <p className="mt-3 text-sm font-medium text-gray-600">
+              <div className="mt-6 rounded-xl border-2 border-dashed border-stone-200 px-6 py-10 text-center">
+                <SlidersHorizontal className="mx-auto h-8 w-8 text-stone-300" aria-hidden="true" />
+                <p className="mt-3 text-sm font-medium text-stone-600">
                   {selectedIds.length === 0
                     ? "Select schools to get started"
                     : "No schools match your current filters"}
                 </p>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-stone-400">
                   {selectedIds.length === 0
                     ? "Use the school selector on the left to pick schools to rank."
                     : "Try adjusting your \"what if\" settings or selecting more schools."}
                 </p>
               </div>
             ) : (
-              <ul className="mt-4 divide-y divide-gray-100" role="list">
+              <ul className="mt-4 divide-y divide-stone-100" role="list">
                 {rankedSchools.map((school, idx) => {
                   const isExpanded = expandedSchoolId === school.school_id;
                   const pc = prosConsMap[school.school_id];
                   const isShortlisted = shortlist.includes(school.school_id);
                   const ratingColor =
                     OFSTED_COLORS[school.ofsted_rating ?? ""] ??
-                    "bg-gray-100 text-gray-600";
+                    "bg-stone-100 text-stone-600";
 
                   return (
                     <li key={school.school_id} className="py-3 first:pt-0 last:pb-0">
                       {/* Main row */}
                       <button
                         onClick={() => handleExpand(school.school_id)}
-                        className="w-full min-h-[56px] rounded-lg px-2 py-1 text-left transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full min-h-[56px] rounded-lg px-2 py-1 text-left transition-colors hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
                         aria-expanded={isExpanded}
                         aria-label={`${school.school_name}, ranked ${idx + 1}, score ${school.composite_score.toFixed(1)}. Click to ${isExpanded ? "collapse" : "expand"} details.`}
                       >
@@ -777,12 +777,12 @@ export default function DecisionSupport() {
                           <span
                             className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                               idx === 0
-                                ? "bg-blue-600 text-white"
+                                ? "bg-brand-600 text-white"
                                 : idx === 1
-                                  ? "bg-blue-100 text-blue-700"
+                                  ? "bg-brand-100 text-brand-700"
                                   : idx === 2
-                                    ? "bg-blue-50 text-blue-600"
-                                    : "bg-gray-100 text-gray-600"
+                                    ? "bg-brand-50 text-brand-600"
+                                    : "bg-stone-100 text-stone-600"
                             }`}
                           >
                             {idx + 1}
@@ -790,7 +790,7 @@ export default function DecisionSupport() {
 
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="truncate font-medium text-gray-900">
+                              <span className="truncate font-medium text-stone-900">
                                 {school.school_name}
                               </span>
                               {school.ofsted_rating && (
@@ -804,7 +804,7 @@ export default function DecisionSupport() {
                                 <Star className="h-3.5 w-3.5 flex-shrink-0 fill-yellow-400 text-yellow-400" aria-label="On your shortlist" />
                               )}
                             </div>
-                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500">
                               {school.distance_km != null && (
                                 <span>{school.distance_km.toFixed(1)} km</span>
                               )}
@@ -822,7 +822,7 @@ export default function DecisionSupport() {
                                 </span>
                               )}
                               {school.is_private && school.annual_fee != null && (
-                                <span className="text-gray-600">
+                                <span className="text-stone-600">
                                   {"\u00A3"}
                                   {school.annual_fee.toLocaleString()}/yr
                                 </span>
@@ -833,12 +833,12 @@ export default function DecisionSupport() {
                           {/* Score bar + expand indicator */}
                           <div className="flex items-center gap-2">
                             <div className="flex w-24 flex-shrink-0 flex-col items-end sm:w-28">
-                              <span className="text-sm font-bold text-gray-900">
+                              <span className="text-sm font-bold text-stone-900">
                                 {school.composite_score.toFixed(1)}
                               </span>
-                              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-stone-200">
                                 <div
-                                  className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                                  className="h-full rounded-full bg-brand-600 transition-all duration-300"
                                   style={{
                                     width: `${Math.min(school.composite_score, 100)}%`,
                                   }}
@@ -846,7 +846,7 @@ export default function DecisionSupport() {
                               </div>
                             </div>
                             <ChevronRight
-                              className={`h-4 w-4 flex-shrink-0 text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                              className={`h-4 w-4 flex-shrink-0 text-stone-400 transition-transform ${isExpanded ? "rotate-90" : ""}`}
                               aria-hidden="true"
                             />
                           </div>
@@ -855,22 +855,22 @@ export default function DecisionSupport() {
 
                       {/* Expanded: component scores + pros/cons */}
                       {isExpanded && (
-                        <div className="ml-11 mt-3 space-y-4 rounded-lg border border-gray-100 bg-gray-50/50 p-4">
+                        <div className="ml-11 mt-3 space-y-4 rounded-lg border border-stone-100 bg-stone-50/50 p-4">
                           {/* Component score bars - only show weighted ones */}
                           <div>
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">
                               Score breakdown
                             </h3>
                             <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-3">
                               {visibleComponentLabels.map(([key, label]) => (
                                 <div key={key}>
-                                  <div className="flex justify-between text-xs text-gray-500">
+                                  <div className="flex justify-between text-xs text-stone-500">
                                     <span>{label}</span>
                                     <span className="tabular-nums">
                                       {school.component_scores[key].toFixed(0)}
                                     </span>
                                   </div>
-                                  <div className="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                                  <div className="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-stone-200">
                                     <div
                                       className="h-full rounded-full bg-indigo-500 transition-all duration-300"
                                       style={{
@@ -932,7 +932,7 @@ export default function DecisionSupport() {
                               </div>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <div className="flex items-center gap-2 text-xs text-stone-400">
                               <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
                               Loading strengths and considerations...
                             </div>
@@ -945,10 +945,10 @@ export default function DecisionSupport() {
                                 e.stopPropagation();
                                 toggleShortlist(school.school_id);
                               }}
-                              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 ${
                                 isShortlisted
                                   ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                  : "bg-stone-100 text-stone-700 hover:bg-stone-200"
                               }`}
                             >
                               {isShortlisted ? (
@@ -969,7 +969,7 @@ export default function DecisionSupport() {
                                   ? `/private-schools/${school.school_id}`
                                   : `/schools/${school.school_id}`
                               }
-                              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-gray-100 px-4 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-stone-100 px-4 py-2 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
                             >
                               View full details
                               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -985,15 +985,15 @@ export default function DecisionSupport() {
           </section>
 
           {/* Shortlist */}
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <Star className="h-4 w-4 text-yellow-500" aria-hidden="true" />
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-stone-900">
                     Your shortlist
                   </h2>
-                  <p className="mt-0.5 text-xs text-gray-500">
+                  <p className="mt-0.5 text-xs text-stone-500">
                     {shortlist.length} school{shortlist.length !== 1 ? "s" : ""}{" "}
                     saved. Your shortlist is kept between visits.
                   </p>
@@ -1003,7 +1003,7 @@ export default function DecisionSupport() {
                 {shortlist.length >= 2 && (
                   <Link
                     to={`/compare?ids=${shortlist.join(",")}`}
-                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     Compare side by side
                     <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1012,7 +1012,7 @@ export default function DecisionSupport() {
                 <button
                   onClick={handleExportPdf}
                   disabled={shortlist.length === 0}
-                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-stone-300"
                 >
                   <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
                   Export as PDF
@@ -1021,17 +1021,17 @@ export default function DecisionSupport() {
             </div>
 
             {shortlist.length === 0 ? (
-              <div className="mt-5 rounded-xl border-2 border-dashed border-gray-200 px-6 py-8 text-center">
-                <Star className="mx-auto h-7 w-7 text-gray-300" aria-hidden="true" />
-                <p className="mt-2 text-sm font-medium text-gray-600">
+              <div className="mt-5 rounded-xl border-2 border-dashed border-stone-200 px-6 py-8 text-center">
+                <Star className="mx-auto h-7 w-7 text-stone-300" aria-hidden="true" />
+                <p className="mt-2 text-sm font-medium text-stone-600">
                   No schools shortlisted yet
                 </p>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-stone-400">
                   Expand a school above and tap "Add to shortlist" to save it here.
                 </p>
               </div>
             ) : (
-              <ul className="mt-4 divide-y divide-gray-100" role="list">
+              <ul className="mt-4 divide-y divide-stone-100" role="list">
                 {shortlistedSchools.map((school) => (
                   <li
                     key={school.school_id}
@@ -1044,11 +1044,11 @@ export default function DecisionSupport() {
                             ? `/private-schools/${school.school_id}`
                             : `/schools/${school.school_id}`
                         }
-                        className="text-sm font-medium text-gray-900 hover:text-blue-700 hover:underline"
+                        className="text-sm font-medium text-stone-900 hover:text-brand-700 hover:underline"
                       >
                         {school.school_name}
                       </Link>
-                      <span className="ml-2 text-xs tabular-nums text-gray-400">
+                      <span className="ml-2 text-xs tabular-nums text-stone-400">
                         Score: {school.composite_score.toFixed(1)}
                       </span>
                     </div>
@@ -1073,7 +1073,7 @@ export default function DecisionSupport() {
                         key={id}
                         className="flex items-center justify-between gap-3 py-3"
                       >
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-stone-700">
                           {schoolInfo?.name ?? `School #${id}`}
                         </span>
                         <button

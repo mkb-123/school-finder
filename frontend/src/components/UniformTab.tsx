@@ -39,10 +39,10 @@ function formatCurrency(amount: number): string {
 function UniformTab({ uniform }: { uniform: Uniform[] }) {
   if (uniform.length === 0) {
     return (
-      <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6" aria-labelledby="uniform-heading">
-        <h2 id="uniform-heading" className="text-lg font-semibold text-gray-900">Uniform</h2>
-        <div className="mt-4 flex items-center gap-3 rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
-          <svg className="h-5 w-5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="uniform-heading">
+        <h2 id="uniform-heading" className="text-lg font-semibold text-stone-900">Uniform</h2>
+        <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
+          <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           No uniform information available yet.
@@ -112,40 +112,40 @@ function UniformTab({ uniform }: { uniform: Uniform[] }) {
       )}
 
       {/* Main uniform details card */}
-      <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6" aria-labelledby="uniform-detail-heading">
-        <h2 id="uniform-detail-heading" className="text-lg font-semibold text-gray-900">Uniform Details</h2>
+      <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="uniform-detail-heading">
+        <h2 id="uniform-detail-heading" className="text-lg font-semibold text-stone-900">Uniform Details</h2>
 
         <div className="mt-4 space-y-4">
           {uni.description && (
-            <p className="text-sm leading-relaxed text-gray-700">{uni.description}</p>
+            <p className="text-sm leading-relaxed text-stone-700">{uni.description}</p>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             {uni.style && (
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Style</p>
-                <p className="mt-1 text-sm text-gray-900">{uni.style}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Style</p>
+                <p className="mt-1 text-sm text-stone-900">{uni.style}</p>
               </div>
             )}
 
             {uni.colors && (
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Colours</p>
-                <p className="mt-1 text-sm text-gray-900">{uni.colors}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Colours</p>
+                <p className="mt-1 text-sm text-stone-900">{uni.colors}</p>
               </div>
             )}
           </div>
 
           {uni.requires_specific_supplier && uni.supplier_name && (
-            <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Supplier</p>
-              <p className="mt-1 text-sm font-medium text-gray-900">{uni.supplier_name}</p>
+            <div className="rounded-lg bg-stone-50 border border-stone-100 p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Supplier</p>
+              <p className="mt-1 text-sm font-medium text-stone-900">{uni.supplier_name}</p>
               {uni.supplier_website && (
                 <a
                   href={uni.supplier_website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-800 transition-colors"
                 >
                   Visit supplier website
                   <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -157,8 +157,8 @@ function UniformTab({ uniform }: { uniform: Uniform[] }) {
           )}
 
           {uni.notes && (
-            <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
-              <p className="text-sm text-gray-700">{uni.notes}</p>
+            <div className="rounded-lg bg-stone-50 border border-stone-100 p-3">
+              <p className="text-sm text-stone-700">{uni.notes}</p>
             </div>
           )}
         </div>
@@ -166,23 +166,23 @@ function UniformTab({ uniform }: { uniform: Uniform[] }) {
 
       {/* Cost breakdown card */}
       {costItems.length > 0 && (
-        <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6" aria-labelledby="uniform-cost-heading">
-          <h2 id="uniform-cost-heading" className="text-lg font-semibold text-gray-900">Cost Breakdown</h2>
-          <p className="mt-1 text-sm text-gray-500">
+        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="uniform-cost-heading">
+          <h2 id="uniform-cost-heading" className="text-lg font-semibold text-stone-900">Cost Breakdown</h2>
+          <p className="mt-1 text-sm text-stone-500">
             Estimated costs for a full uniform set (typical quantities for a year)
           </p>
 
-          <div className="mt-4 divide-y divide-gray-100">
+          <div className="mt-4 divide-y divide-stone-100">
             {costItems.map((item) => (
               <div key={item.label} className="flex items-center justify-between py-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm font-medium text-stone-900">{item.label}</p>
+                  <p className="text-xs text-stone-500">
                     {item.quantityLabel}
                     {item.quantity > 1 && ` at ${formatCurrency(item.perItem)} each`}
                   </p>
                 </div>
-                <p className="text-sm font-semibold text-gray-900">
+                <p className="text-sm font-semibold text-stone-900">
                   {formatCurrency(item.perItem * item.quantity)}
                 </p>
               </div>
@@ -191,9 +191,9 @@ function UniformTab({ uniform }: { uniform: Uniform[] }) {
             {/* Total */}
             {uni.total_cost_estimate != null && (
               <div className="flex items-center justify-between pt-4">
-                <p className="text-base font-bold text-gray-900">Total Estimate</p>
+                <p className="text-base font-bold text-stone-900">Total Estimate</p>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-gray-900">
+                  <p className="text-xl font-bold text-stone-900">
                     {formatCurrency(uni.total_cost_estimate)}
                   </p>
                 </div>
@@ -201,7 +201,7 @@ function UniformTab({ uniform }: { uniform: Uniform[] }) {
             )}
           </div>
 
-          <p className="mt-4 text-xs text-gray-500">
+          <p className="mt-4 text-xs text-stone-500">
             Costs are estimates and may vary. Always check with the school or supplier for current prices.
           </p>
         </section>

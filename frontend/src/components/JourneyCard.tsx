@@ -123,18 +123,18 @@ export default function JourneyCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
           {rank != null && (
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-stone-100 text-xs font-bold text-stone-600">
               {rank}
             </span>
           )}
           <div>
             <Link
               to={`/schools/${school_id}`}
-              className="text-base font-semibold text-gray-900 hover:text-blue-700 hover:underline transition-colors"
+              className="text-base font-semibold text-stone-900 hover:text-brand-700 hover:underline transition-colors"
             >
               {school_name}
             </Link>
-            <div className="mt-1 flex items-center gap-2 text-sm text-gray-500">
+            <div className="mt-1 flex items-center gap-2 text-sm text-stone-500">
               <ModeIcon mode={dropoff.mode} />
               <span>{distance_km.toFixed(1)} km away</span>
             </div>
@@ -151,38 +151,38 @@ export default function JourneyCard({
       <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
         {/* Drop-off */}
         <div className={`rounded-lg border p-2.5 sm:p-3 text-center ${durationBg(dropoff.duration_minutes)}`}>
-          <div className="text-xs font-medium uppercase tracking-wide text-gray-600">
+          <div className="text-xs font-medium uppercase tracking-wide text-stone-600">
             Drop-off
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">8:00-8:45am</div>
+          <div className="text-xs text-stone-500 mt-0.5">8:00-8:45am</div>
           <div className={`mt-1.5 text-lg font-bold sm:text-xl ${durationColor(dropoff.duration_minutes)}`}>
             {formatDuration(dropoff.duration_minutes)}
           </div>
           {dropoff.is_rush_hour && (
-            <div className="mt-0.5 text-xs text-gray-500">rush hour</div>
+            <div className="mt-0.5 text-xs text-stone-500">rush hour</div>
           )}
         </div>
 
         {/* Pick-up */}
         <div className={`rounded-lg border p-2.5 sm:p-3 text-center ${durationBg(pickup.duration_minutes)}`}>
-          <div className="text-xs font-medium uppercase tracking-wide text-gray-600">
+          <div className="text-xs font-medium uppercase tracking-wide text-stone-600">
             Pick-up
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">5:00-5:30pm</div>
+          <div className="text-xs text-stone-500 mt-0.5">5:00-5:30pm</div>
           <div className={`mt-1.5 text-lg font-bold sm:text-xl ${durationColor(pickup.duration_minutes)}`}>
             {formatDuration(pickup.duration_minutes)}
           </div>
           {pickup.is_rush_hour && (
-            <div className="mt-0.5 text-xs text-gray-500">rush hour</div>
+            <div className="mt-0.5 text-xs text-stone-500">rush hour</div>
           )}
         </div>
 
         {/* Off-peak */}
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-2.5 sm:p-3 text-center">
-          <div className="text-xs font-medium uppercase tracking-wide text-gray-600">
+        <div className="rounded-lg border border-stone-200 bg-stone-50 p-2.5 sm:p-3 text-center">
+          <div className="text-xs font-medium uppercase tracking-wide text-stone-600">
             Off-peak
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">quiet times</div>
+          <div className="text-xs text-stone-500 mt-0.5">quiet times</div>
           <div className={`mt-1.5 text-lg font-bold sm:text-xl ${durationColor(off_peak.duration_minutes)}`}>
             {formatDuration(off_peak.duration_minutes)}
           </div>
@@ -191,7 +191,7 @@ export default function JourneyCard({
 
       {/* Rush hour comparison -- only show if there's a meaningful difference */}
       {hasRushDelta && (
-        <p className="mt-3 text-xs text-gray-500">
+        <p className="mt-3 text-xs text-stone-500">
           Rush hour adds {dropoffDelta > 0 ? `~${dropoffDelta} min at drop-off` : ""}
           {dropoffDelta > 0 && pickupDelta > 0 ? " and " : ""}
           {pickupDelta > 0 ? `~${pickupDelta} min at pick-up` : ""} to your drive.

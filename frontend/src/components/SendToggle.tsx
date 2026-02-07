@@ -106,7 +106,7 @@ export default function SendToggle() {
           aria-label="Toggle SEND information display"
           onClick={() => toggle(!enabled)}
           className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-            enabled ? "bg-purple-600" : "bg-gray-300"
+            enabled ? "bg-purple-600" : "bg-stone-300"
           }`}
         >
           <span
@@ -115,12 +115,12 @@ export default function SendToggle() {
             }`}
           />
         </button>
-        <span className="text-sm font-medium text-gray-700">Show SEND information</span>
+        <span className="text-sm font-medium text-stone-700">Show SEND information</span>
       </label>
 
       {/* Explanation for parents who may not know SEND */}
       {!enabled && (
-        <p className="mt-2 text-xs text-gray-500 ml-[3.75rem]">
+        <p className="mt-2 text-xs text-stone-500 ml-[3.75rem]">
           Enable to see Special Educational Needs and Disabilities provision details on school pages.
         </p>
       )}

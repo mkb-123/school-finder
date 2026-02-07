@@ -6,15 +6,15 @@ import { get } from "../api/client";
 /** Skeleton loader for school cards during loading. */
 function SchoolCardSkeleton() {
   return (
-    <div className="animate-pulse rounded-xl border border-gray-200 bg-white p-4">
+    <div className="animate-pulse rounded-xl border border-stone-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 space-y-2">
-          <div className="h-4 w-3/4 rounded bg-gray-200" />
-          <div className="h-3 w-1/2 rounded bg-gray-100" />
+          <div className="h-4 w-3/4 rounded bg-stone-200" />
+          <div className="h-3 w-1/2 rounded bg-stone-100" />
         </div>
         <div className="h-6 w-20 rounded-full bg-violet-100" />
       </div>
-      <div className="mt-3 h-3 w-2/3 rounded bg-gray-100" />
+      <div className="mt-3 h-3 w-2/3 rounded bg-stone-100" />
     </div>
   );
 }
@@ -92,23 +92,23 @@ export default function PrivateSchools() {
     <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
       {/* Page header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Private Schools</h1>
-        <p className="mt-1 text-sm text-gray-600 sm:text-base">
+        <h1 className="font-display text-2xl font-bold text-stone-900 sm:text-3xl">Private Schools</h1>
+        <p className="mt-1 text-sm text-stone-600 sm:text-base">
           Browse independent and private schools in {selectedCouncil || "your area"}. Filter by
           fees, age range, transport availability, and more.
         </p>
       </div>
 
       {/* Council selector */}
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <label htmlFor="council-select-private" className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="mb-6 rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+        <label htmlFor="council-select-private" className="block text-sm font-medium text-stone-700 mb-2">
           Select Council
         </label>
         <select
           id="council-select-private"
           value={selectedCouncil}
           onChange={(e) => setSelectedCouncil(e.target.value)}
-          className="w-full max-w-md rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full max-w-md rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
         >
           <option value="">Select a council</option>
           {councils.map((c) => (
@@ -135,16 +135,16 @@ export default function PrivateSchools() {
         <button
           type="button"
           onClick={() => setFiltersOpen(!filtersOpen)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 active:bg-gray-100"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-3 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-stone-50 active:bg-stone-100"
           aria-expanded={filtersOpen}
           aria-controls="filter-panel"
         >
-          <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="h-5 w-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
           Filters
           {activeFilterCount > 0 && (
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
               {activeFilterCount}
             </span>
           )}
@@ -158,14 +158,14 @@ export default function PrivateSchools() {
           className={`space-y-4 lg:col-span-3 ${filtersOpen ? "block" : "hidden lg:block"}`}
           aria-label="Private school filters"
         >
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+              <h2 className="text-lg font-semibold text-stone-900">Filters</h2>
               {hasActiveFilters && (
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  className="text-sm font-medium text-brand-600 hover:text-brand-800 transition-colors"
                 >
                   Clear all
                 </button>
@@ -177,12 +177,12 @@ export default function PrivateSchools() {
               <div>
                 <label
                   htmlFor="maxFee"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-stone-700"
                 >
                   Max Termly Fee
                 </label>
                 <div className="relative mt-1">
-                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 text-sm">
+                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-stone-400 text-sm">
                     &pound;
                   </span>
                   <input
@@ -191,11 +191,11 @@ export default function PrivateSchools() {
                     placeholder="e.g. 5000"
                     value={maxFee}
                     onChange={(e) => setMaxFee(e.target.value)}
-                    className="block w-full rounded-lg border border-gray-300 py-2.5 pl-7 pr-3 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="block w-full rounded-lg border border-stone-300 py-2.5 pl-7 pr-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                   />
                 </div>
                 {maxFee && (
-                  <p className="mt-1.5 text-xs text-gray-500">
+                  <p className="mt-1.5 text-xs text-stone-500">
                     Fee filtering is applied on individual school pages where detailed fee data is available.
                   </p>
                 )}
@@ -205,7 +205,7 @@ export default function PrivateSchools() {
               <div>
                 <label
                   htmlFor="ageRange"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-stone-700"
                 >
                   Age Range
                 </label>
@@ -213,7 +213,7 @@ export default function PrivateSchools() {
                   id="ageRange"
                   value={ageRange}
                   onChange={(e) => setAgeRange(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                 >
                   <option value="">Any age</option>
                   <option value="3-7">3-7 (Pre-prep)</option>
@@ -227,7 +227,7 @@ export default function PrivateSchools() {
               <div>
                 <label
                   htmlFor="gender"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-stone-700"
                 >
                   Gender Policy
                 </label>
@@ -235,7 +235,7 @@ export default function PrivateSchools() {
                   id="gender"
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                 >
                   <option value="">Any</option>
                   <option value="co-ed">Co-educational</option>
@@ -247,26 +247,26 @@ export default function PrivateSchools() {
               {/* Transport checkbox with proper touch target */}
               <label
                 htmlFor="transport"
-                className="flex cursor-pointer items-center gap-3 rounded-lg p-2 -mx-2 transition hover:bg-gray-50"
+                className="flex cursor-pointer items-center gap-3 rounded-lg p-2 -mx-2 transition hover:bg-stone-50"
               >
                 <input
                   id="transport"
                   type="checkbox"
                   checked={transportOnly}
                   onChange={(e) => setTransportOnly(e.target.checked)}
-                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                  className="h-5 w-5 rounded border-stone-300 text-brand-600 focus:ring-2 focus:ring-brand-500"
                 />
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-stone-700">
                   Provides transport
                 </span>
               </label>
 
               {/* Result count */}
               <div
-                className="rounded-md bg-gray-50 px-3 py-2 text-center text-sm text-gray-600"
+                className="rounded-md bg-stone-50 px-3 py-2 text-center text-sm text-stone-600"
                 aria-live="polite"
               >
-                <span className="font-semibold text-gray-900">{filteredSchools.length}</span>
+                <span className="font-semibold text-stone-900">{filteredSchools.length}</span>
                 {" "}of {schools.length} private school{schools.length !== 1 ? "s" : ""}
               </div>
             </div>
@@ -287,23 +287,23 @@ export default function PrivateSchools() {
 
           {/* Empty state */}
           {!loading && filteredSchools.length === 0 && (
-            <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-white py-12 px-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
-                <svg className="h-7 w-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <div className="flex flex-col items-center rounded-xl border border-stone-200 bg-white py-12 px-6 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-stone-100">
+                <svg className="h-7 w-7 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h3 className="mt-4 text-base font-semibold text-gray-900">
+              <h3 className="mt-4 text-base font-semibold text-stone-900">
                 No schools match your filters
               </h3>
-              <p className="mt-1.5 max-w-sm text-sm text-gray-500">
+              <p className="mt-1.5 max-w-sm text-sm text-stone-500">
                 Try widening your search criteria or removing some filters to see more results.
               </p>
               {hasActiveFilters && (
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="mt-4 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="mt-4 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                 >
                   Clear all filters
                 </button>
@@ -325,9 +325,9 @@ export default function PrivateSchools() {
                 }
               }}
               aria-pressed={selectedSchoolId === s.id}
-              className={`cursor-pointer rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              className={`cursor-pointer rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
                 selectedSchoolId === s.id
-                  ? "ring-2 ring-blue-500 ring-offset-1"
+                  ? "ring-2 ring-brand-500 ring-offset-1"
                   : ""
               }`}
             >

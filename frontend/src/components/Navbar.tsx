@@ -59,7 +59,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-sm"
+      className="sticky top-0 z-40 border-b border-stone-200 bg-white/95 backdrop-blur-sm"
       role="navigation"
       aria-label="Main navigation"
     >
@@ -68,12 +68,12 @@ export default function Navbar() {
           {/* Logo / brand */}
           <Link
             to="/"
-            className="flex items-center gap-2 rounded-lg px-1 py-1 text-lg font-bold text-blue-600 transition-colors hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="flex items-center gap-2 rounded-lg px-1 py-1 text-lg font-bold text-brand-600 transition-colors hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
             aria-label="School Finder home"
           >
-            <GraduationCap className="h-5 w-5" aria-hidden="true" />
-            <span className="hidden sm:inline">School Finder</span>
-            <span className="sm:hidden">Schools</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">SF</span>
+            <span className="hidden font-display sm:inline">School Finder</span>
+            <span className="font-display sm:hidden">Schools</span>
           </Link>
 
           {/* Desktop nav */}
@@ -84,10 +84,10 @@ export default function Navbar() {
                 to={link.to}
                 end={link.to === "/"}
                 className={({ isActive }) =>
-                  `relative rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                  `relative rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1 ${
                     isActive
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-brand-50 text-brand-700"
+                      : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
                   }`
                 }
               >
@@ -97,7 +97,7 @@ export default function Navbar() {
                     {/* Active indicator bar */}
                     {isActive && (
                       <span
-                        className="absolute -bottom-[9px] left-2 right-2 h-0.5 rounded-full bg-blue-600"
+                        className="absolute -bottom-[9px] left-2 right-2 h-0.5 rounded-full bg-brand-600"
                         aria-hidden="true"
                       />
                     )}
@@ -111,7 +111,7 @@ export default function Navbar() {
           <button
             ref={toggleRef}
             type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-nav-menu"
@@ -130,7 +130,7 @@ export default function Navbar() {
       <div
         ref={menuRef}
         id="mobile-nav-menu"
-        className={`overflow-hidden border-t border-gray-200 transition-all duration-200 ease-in-out md:hidden ${
+        className={`overflow-hidden border-t border-stone-200 transition-all duration-200 ease-in-out md:hidden ${
           mobileMenuOpen ? "max-h-[420px] opacity-100" : "max-h-0 opacity-0 border-t-0"
         }`}
         aria-hidden={!mobileMenuOpen}
@@ -145,8 +145,8 @@ export default function Navbar() {
               className={({ isActive }) =>
                 `flex min-h-[44px] items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-brand-50 text-brand-700"
+                    : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
                 }`
               }
             >
@@ -154,7 +154,7 @@ export default function Navbar() {
                 <span className="flex items-center gap-2">
                   {isActive && (
                     <span
-                      className="inline-block h-1.5 w-1.5 rounded-full bg-blue-600"
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-brand-600"
                       aria-hidden="true"
                     />
                   )}

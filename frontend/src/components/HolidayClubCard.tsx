@@ -39,17 +39,17 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
   const hasCostInfo = club.cost_per_day !== null || club.cost_per_week !== null;
 
   return (
-    <article className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+    <article className="rounded-xl border border-stone-200 bg-white p-4 sm:p-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold text-gray-900">
+          <h3 className="text-base font-semibold text-stone-900">
             {club.provider_name}
           </h3>
           <span
             className={`mt-1.5 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
               club.is_school_run
-                ? 'bg-blue-50 text-blue-800 ring-blue-600/20'
+                ? 'bg-brand-50 text-brand-800 ring-brand-600/20'
                 : 'bg-purple-50 text-purple-800 ring-purple-600/20'
             }`}
           >
@@ -59,7 +59,7 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
       </div>
 
       {club.description && (
-        <p className="mt-3 text-sm leading-relaxed text-gray-600">{club.description}</p>
+        <p className="mt-3 text-sm leading-relaxed text-stone-600">{club.description}</p>
       )}
 
       {/* Details grid */}
@@ -69,8 +69,8 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
           <div className="flex flex-wrap gap-4">
             {hasAgeInfo && (
               <div className="text-sm">
-                <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Ages</span>
-                <p className="mt-0.5 font-medium text-gray-900">
+                <span className="text-xs font-medium uppercase tracking-wide text-stone-500">Ages</span>
+                <p className="mt-0.5 font-medium text-stone-900">
                   {club.age_from && club.age_to
                     ? `${club.age_from}-${club.age_to}`
                     : club.age_from
@@ -84,8 +84,8 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
 
             {hasTimeInfo && (
               <div className="text-sm">
-                <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Hours</span>
-                <p className="mt-0.5 font-medium text-gray-900">
+                <span className="text-xs font-medium uppercase tracking-wide text-stone-500">Hours</span>
+                <p className="mt-0.5 font-medium text-stone-900">
                   {formatTime(club.start_time)} - {formatTime(club.end_time)}
                 </p>
               </div>
@@ -94,17 +94,17 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
 
           {/* Cost row */}
           {hasCostInfo && (
-            <div className="flex flex-wrap gap-4 rounded-lg bg-gray-50 border border-gray-100 p-3">
+            <div className="flex flex-wrap gap-4 rounded-lg bg-stone-50 border border-stone-100 p-3">
               {club.cost_per_day !== null && (
                 <div className="text-sm">
-                  <span className="text-xs font-medium text-gray-500">Daily</span>
-                  <p className="mt-0.5 font-semibold text-gray-900">{formatCurrency(club.cost_per_day)}</p>
+                  <span className="text-xs font-medium text-stone-500">Daily</span>
+                  <p className="mt-0.5 font-semibold text-stone-900">{formatCurrency(club.cost_per_day)}</p>
                 </div>
               )}
               {club.cost_per_week !== null && (
                 <div className="text-sm">
-                  <span className="text-xs font-medium text-gray-500">Weekly</span>
-                  <p className="mt-0.5 font-semibold text-gray-900">{formatCurrency(club.cost_per_week)}</p>
+                  <span className="text-xs font-medium text-stone-500">Weekly</span>
+                  <p className="mt-0.5 font-semibold text-stone-900">{formatCurrency(club.cost_per_week)}</p>
                 </div>
               )}
             </div>
@@ -114,9 +114,9 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
 
       {/* Available Weeks */}
       {club.available_weeks && (
-        <div className="mt-4 border-t border-gray-100 pt-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Availability</p>
-          <p className="mt-1 text-sm text-gray-700">{club.available_weeks}</p>
+        <div className="mt-4 border-t border-stone-100 pt-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Availability</p>
+          <p className="mt-1 text-sm text-stone-700">{club.available_weeks}</p>
         </div>
       )}
 
@@ -128,7 +128,7 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Book online with ${club.provider_name}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-700 transition hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             Book online
             <svg

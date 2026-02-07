@@ -115,8 +115,8 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
     const value = formData[field] as number;
     return (
       <fieldset className="space-y-2">
-        <legend className="block text-sm font-medium text-gray-900">{label}</legend>
-        <p className="text-xs text-gray-500">{description}</p>
+        <legend className="block text-sm font-medium text-stone-900">{label}</legend>
+        <p className="text-xs text-stone-500">{description}</p>
         <div className="flex items-center gap-2">
           {[1, 2, 3, 4, 5].map((rating) => (
             <button
@@ -131,13 +131,13 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
                     : rating <= 3
                     ? "border-amber-500 bg-amber-500 text-white shadow-sm"
                     : "border-red-500 bg-red-500 text-white shadow-sm"
-                  : "border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                  : "border-stone-200 text-stone-600 hover:border-stone-400 hover:bg-stone-50"
               }`}
             >
               {rating}
             </button>
           ))}
-          <span className="ml-2 text-xs font-medium text-gray-500">
+          <span className="ml-2 text-xs font-medium text-stone-500">
             {RATING_LABELS[value]}
           </span>
         </div>
@@ -174,8 +174,8 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <p className="text-sm text-blue-900">
+      <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
+        <p className="text-sm text-brand-900">
           Help other parents by sharing your experience with parking and drop-off at this school.
           All ratings are anonymous.
         </p>
@@ -195,7 +195,7 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
       )}
 
       <div>
-        <label htmlFor="parking-comments" className="block text-sm font-medium text-gray-900">
+        <label htmlFor="parking-comments" className="block text-sm font-medium text-stone-900">
           Additional comments (optional)
         </label>
         <textarea
@@ -203,13 +203,13 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
           value={formData.comments}
           onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
           rows={4}
-          className="mt-2 w-full rounded-lg border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="mt-2 w-full rounded-lg border border-stone-300 p-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           placeholder="Share any specific details about parking challenges, helpful tips, or safety concerns..."
         />
       </div>
 
       <div>
-        <label htmlFor="parking-email" className="block text-sm font-medium text-gray-900">
+        <label htmlFor="parking-email" className="block text-sm font-medium text-stone-900">
           Email (optional)
         </label>
         <input
@@ -217,10 +217,10 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
           type="email"
           value={formData.parent_email}
           onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })}
-          className="mt-2 w-full rounded-lg border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="mt-2 w-full rounded-lg border border-stone-300 p-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           placeholder="your.email@example.com"
         />
-        <p className="mt-1.5 text-xs text-gray-500">
+        <p className="mt-1.5 text-xs text-stone-500">
           Your email is only used if we need to follow up on your feedback. It is never shared or displayed publicly.
         </p>
       </div>
@@ -228,7 +228,7 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full rounded-lg bg-brand-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? "Submitting..." : "Submit Rating"}
       </button>

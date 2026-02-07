@@ -35,10 +35,10 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
 
   if (!clubs || clubs.length === 0) {
     return (
-      <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-white py-12 px-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+      <div className="flex flex-col items-center rounded-xl border border-stone-200 bg-white py-12 px-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-stone-100">
           <svg
-            className="h-7 w-7 text-gray-400"
+            className="h-7 w-7 text-stone-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -52,10 +52,10 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
             />
           </svg>
         </div>
-        <h3 className="mt-4 text-base font-semibold text-gray-900">
+        <h3 className="mt-4 text-base font-semibold text-stone-900">
           No holiday clubs listed
         </h3>
-        <p className="mt-1.5 max-w-sm text-sm text-gray-500">
+        <p className="mt-1.5 max-w-sm text-sm text-stone-500">
           Holiday club information is not currently available for this school.
         </p>
       </div>
@@ -72,16 +72,16 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
       {/* Header and Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-stone-900">
             Holiday Clubs{schoolName ? ` at ${schoolName}` : ""}
           </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-stone-500 mt-0.5">
             Childcare provision during school holidays
           </p>
         </div>
 
         {/* Filter Toggle */}
-        <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1" role="group" aria-label="Filter holiday clubs">
+        <div className="flex items-center gap-1 rounded-lg bg-stone-100 p-1" role="group" aria-label="Filter holiday clubs">
           {FILTER_OPTIONS.map((option) => {
             const count = option.countFn(clubs);
             const isActive = filterSchoolRun === option.value;
@@ -93,8 +93,8 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
                 aria-pressed={isActive}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-stone-900 shadow-sm'
+                    : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
                 {option.label} ({count})
@@ -105,11 +105,11 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
       </div>
 
       {/* Info Box */}
-      <details className="rounded-lg border border-blue-200 bg-blue-50">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-blue-900 hover:text-blue-700">
+      <details className="rounded-lg border border-brand-200 bg-brand-50">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-brand-900 hover:text-brand-700">
           What is the difference between school-run and external clubs?
         </summary>
-        <div className="px-4 pb-3 text-sm text-blue-800">
+        <div className="px-4 pb-3 text-sm text-brand-800">
           <strong>School-run clubs</strong> are operated by the school itself, while{' '}
           <strong>external providers</strong> rent the premises. Booking procedures
           and policies may differ.
@@ -125,14 +125,14 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-white py-8 px-6 text-center">
-            <p className="text-sm text-gray-500">
+          <div className="flex flex-col items-center rounded-xl border border-stone-200 bg-white py-8 px-6 text-center">
+            <p className="text-sm text-stone-500">
               No {filterSchoolRun ? 'school-run' : 'external'} holiday clubs found.
             </p>
             <button
               type="button"
               onClick={() => setFilterSchoolRun(null)}
-              className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+              className="mt-3 text-sm font-medium text-brand-600 hover:text-brand-800 transition-colors"
             >
               View all clubs
             </button>

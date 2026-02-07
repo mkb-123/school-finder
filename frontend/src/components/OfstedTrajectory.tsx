@@ -33,7 +33,7 @@ const trajectoryConfig: Record<string, { icon: typeof TrendingUp; color: string;
   improving: { icon: TrendingUp, color: 'text-green-700 bg-green-50 border-green-200', label: 'Improving' },
   declining: { icon: TrendingDown, color: 'text-red-700 bg-red-50 border-red-200', label: 'Declining' },
   stable: { icon: Minus, color: 'text-blue-700 bg-blue-50 border-blue-200', label: 'Stable' },
-  unknown: { icon: Minus, color: 'text-gray-700 bg-gray-50 border-gray-200', label: 'Unknown' },
+  unknown: { icon: Minus, color: 'text-stone-700 bg-stone-50 border-stone-200', label: 'Unknown' },
 };
 
 export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
@@ -51,10 +51,10 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
   // Empty state when there is no history
   if (trajectory.history.length === 0) {
     return (
-      <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6" aria-labelledby="ofsted-heading">
-        <h2 id="ofsted-heading" className="text-lg font-semibold text-gray-900">Ofsted Rating History</h2>
-        <div className="mt-4 flex items-center gap-3 rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
-          <svg className="h-5 w-5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="ofsted-heading">
+        <h2 id="ofsted-heading" className="text-lg font-semibold text-stone-900">Ofsted Rating History</h2>
+        <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
+          <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           No Ofsted inspection history available for this school.
@@ -66,12 +66,12 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
   const inspectionAgeYears = trajectory.inspection_age_years;
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 space-y-6" aria-labelledby="ofsted-heading">
+    <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6 space-y-6" aria-labelledby="ofsted-heading">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 id="ofsted-heading" className="text-lg font-semibold text-gray-900">Ofsted Rating History</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 id="ofsted-heading" className="text-lg font-semibold text-stone-900">Ofsted Rating History</h2>
+          <p className="text-sm text-stone-500 mt-1">
             How this school's Ofsted rating has changed over time
           </p>
         </div>
@@ -100,7 +100,7 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
 
       {/* Last inspected note */}
       {inspectionAgeYears != null && !trajectory.is_stale && (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-stone-500">
           <Clock className="h-4 w-4" aria-hidden="true" />
           <span>Last inspected {inspectionAgeYears.toFixed(1)} years ago</span>
         </div>
@@ -108,16 +108,16 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
 
       {/* Inspection Timeline */}
       <div>
-        <h3 className="text-base font-semibold text-gray-900">Inspection History</h3>
+        <h3 className="text-base font-semibold text-stone-900">Inspection History</h3>
         <ol className="mt-4 space-y-4" aria-label="Ofsted inspection timeline">
           {trajectory.history.map((inspection, index) => {
-            const ratingStyle = ratingColors[inspection.rating] ?? 'text-gray-700 bg-gray-50 border-gray-200';
+            const ratingStyle = ratingColors[inspection.rating] ?? 'text-stone-700 bg-stone-50 border-stone-200';
             const isCurrent = index === 0;
 
             return (
               <li
                 key={inspection.id}
-                className={`rounded-xl border p-4 ${isCurrent ? 'border-gray-300 bg-white' : 'border-gray-200 bg-white'}`}
+                className={`rounded-xl border p-4 ${isCurrent ? 'border-stone-300 bg-white' : 'border-stone-200 bg-white'}`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -125,7 +125,7 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
                       {inspection.rating}
                     </span>
                     {isCurrent && (
-                      <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-0.5 text-xs font-medium text-white">
+                      <span className="inline-flex items-center rounded-full bg-stone-900 px-2 py-0.5 text-xs font-medium text-white">
                         Current
                       </span>
                     )}
@@ -135,7 +135,7 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
                       href={inspection.report_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-brand-600 transition hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
                     >
                       View report
                       <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -145,7 +145,7 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
                   )}
                 </div>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-stone-500">
                   Inspected {formatDate(inspection.inspection_date)}
                 </p>
 
