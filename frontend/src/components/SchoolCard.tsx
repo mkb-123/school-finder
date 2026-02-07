@@ -20,6 +20,13 @@ const RATING_COLORS: Record<string, string> = {
   Inadequate: "bg-red-100 text-red-800",
 };
 
+const RATING_BORDER: Record<string, string> = {
+  Outstanding: "border-l-green-500",
+  Good: "border-l-blue-500",
+  "Requires Improvement": "border-l-amber-500",
+  Inadequate: "border-l-red-500",
+};
+
 export default function SchoolCard({
   id,
   name,
@@ -32,7 +39,8 @@ export default function SchoolCard({
   hasAfterSchoolClub = false,
   ethos,
 }: SchoolCardProps) {
-  const badgeColor = RATING_COLORS[ofstedRating] ?? "bg-gray-100 text-gray-800";
+  const badgeColor = RATING_COLORS[ofstedRating] ?? "bg-stone-100 text-stone-600";
+  const borderColor = RATING_BORDER[ofstedRating] ?? "border-l-stone-300";
   const linkTo = id
     ? isPrivate
       ? `/private-schools/${id}`
@@ -42,35 +50,35 @@ export default function SchoolCard({
   return (
     <Link
       to={linkTo}
-      className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+      className={`block rounded-lg border border-stone-200 border-l-4 ${borderColor} bg-white p-4 transition-colors hover:bg-stone-50`}
     >
       <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-semibold text-gray-900">{name}</h3>
-          <p className="mt-0.5 text-sm text-gray-500">{type}</p>
+        <div className="min-w-0">
+          <h3 className="font-semibold text-stone-900">{name}</h3>
+          <p className="mt-0.5 text-sm text-stone-500">{type}</p>
           {ethos && (
-            <p className="mt-1 text-sm italic text-gray-600">{ethos}</p>
+            <p className="mt-1 text-sm italic text-stone-500">{ethos}</p>
           )}
         </div>
         {!isPrivate && (
-          <div className="flex flex-col items-end gap-1">
+          <div className="ml-3 flex flex-shrink-0 flex-col items-end gap-1">
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeColor}`}
             >
               {ofstedRating}
             </span>
             {ofstedDate && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-stone-400">
                 Inspected: {ofstedDate}
               </span>
             )}
           </div>
         )}
       </div>
-      <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
+      <div className="mt-3 flex items-center gap-2 text-sm text-stone-500">
         <span className="flex items-center">
           <svg
-            className="mr-1 h-4 w-4"
+            className="mr-1 h-4 w-4 text-stone-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

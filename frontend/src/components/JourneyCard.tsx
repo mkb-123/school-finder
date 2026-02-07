@@ -118,18 +118,18 @@ export default function JourneyCard({
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
           {rank != null && (
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-100 text-xs font-bold text-stone-600">
               {rank}
             </span>
           )}
           <div>
             <Link
               to={`/schools/${school_id}`}
-              className="font-semibold text-gray-900 hover:text-blue-700 hover:underline"
+              className="font-semibold text-stone-900 hover:text-brand-700 hover:underline"
             >
               {school_name}
             </Link>
-            <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-500">
+            <div className="mt-0.5 flex items-center gap-2 text-xs text-stone-500">
               <ModeIcon mode={dropoff.mode} />
               <span>{distance_km.toFixed(1)} km</span>
             </div>
@@ -146,38 +146,38 @@ export default function JourneyCard({
       <div className="mt-3 grid grid-cols-3 gap-2">
         {/* Drop-off */}
         <div className={`rounded-md border p-2 text-center ${durationBg(dropoff.duration_minutes)}`}>
-          <div className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
+          <div className="text-[10px] font-medium uppercase tracking-wide text-stone-500">
             Drop-off
           </div>
-          <div className="text-[10px] text-gray-400">8:00-8:45am</div>
+          <div className="text-[10px] text-stone-400">8:00-8:45am</div>
           <div className={`mt-1 text-lg font-bold ${durationColor(dropoff.duration_minutes)}`}>
             {formatDuration(dropoff.duration_minutes)}
           </div>
           {dropoff.is_rush_hour && (
-            <div className="text-[10px] text-gray-400">rush hour</div>
+            <div className="text-[10px] text-stone-400">rush hour</div>
           )}
         </div>
 
         {/* Pick-up */}
         <div className={`rounded-md border p-2 text-center ${durationBg(pickup.duration_minutes)}`}>
-          <div className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
+          <div className="text-[10px] font-medium uppercase tracking-wide text-stone-500">
             Pick-up
           </div>
-          <div className="text-[10px] text-gray-400">5:00-5:30pm</div>
+          <div className="text-[10px] text-stone-400">5:00-5:30pm</div>
           <div className={`mt-1 text-lg font-bold ${durationColor(pickup.duration_minutes)}`}>
             {formatDuration(pickup.duration_minutes)}
           </div>
           {pickup.is_rush_hour && (
-            <div className="text-[10px] text-gray-400">rush hour</div>
+            <div className="text-[10px] text-stone-400">rush hour</div>
           )}
         </div>
 
         {/* Off-peak */}
-        <div className="rounded-md border border-gray-200 bg-gray-50 p-2 text-center">
-          <div className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
+        <div className="rounded-md border border-stone-200 bg-stone-50 p-2 text-center">
+          <div className="text-[10px] font-medium uppercase tracking-wide text-stone-500">
             Off-peak
           </div>
-          <div className="text-[10px] text-gray-400">quiet times</div>
+          <div className="text-[10px] text-stone-400">quiet times</div>
           <div className={`mt-1 text-lg font-bold ${durationColor(off_peak.duration_minutes)}`}>
             {formatDuration(off_peak.duration_minutes)}
           </div>
@@ -186,7 +186,7 @@ export default function JourneyCard({
 
       {/* Rush hour comparison */}
       {dropoff.mode === "driving" && (
-        <div className="mt-2 text-xs text-gray-400">
+        <div className="mt-2 text-xs text-stone-400">
           Rush hour adds ~{Math.round(dropoff.duration_minutes - off_peak.duration_minutes)} min
           to your drive at drop-off,
           ~{Math.round(pickup.duration_minutes - off_peak.duration_minutes)} min at pick-up

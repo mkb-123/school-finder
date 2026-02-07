@@ -63,23 +63,23 @@ export default function PrivateSchools() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Private Schools</h1>
-        <p className="mt-1 text-sm text-gray-600 sm:text-base">
+        <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">Private Schools</h1>
+        <p className="mt-1 text-sm text-stone-600 sm:text-base">
           Browse independent and private schools in {selectedCouncil || "your area"}. Filter by
           fees, age range, transport availability, and more.
         </p>
       </div>
 
       {/* Council selector */}
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <label htmlFor="council-select-private" className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="mb-6 rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+        <label htmlFor="council-select-private" className="block text-sm font-medium text-stone-700 mb-2">
           Select Council
         </label>
         <select
           id="council-select-private"
           value={selectedCouncil}
           onChange={(e) => setSelectedCouncil(e.target.value)}
-          className="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full max-w-md rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
         >
           <option value="">Select a council</option>
           {councils.map((c) => (
@@ -97,14 +97,14 @@ export default function PrivateSchools() {
       <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-12">
         {/* Filter sidebar */}
         <aside className="space-y-4 lg:col-span-3" aria-label="Private school filters">
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
-            <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+          <div className="rounded-lg border border-stone-200 bg-white p-4">
+            <h2 className="text-lg font-semibold text-stone-900">Filters</h2>
 
             <div className="mt-4 space-y-4">
               <div>
                 <label
                   htmlFor="maxFee"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-stone-700"
                 >
                   Max Termly Fee
                 </label>
@@ -114,10 +114,10 @@ export default function PrivateSchools() {
                   placeholder="e.g. 5000"
                   value={maxFee}
                   onChange={(e) => setMaxFee(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
                 {maxFee && (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-stone-500">
                     Fee filtering applies on the detail page where fee data is
                     available.
                   </p>
@@ -127,7 +127,7 @@ export default function PrivateSchools() {
               <div>
                 <label
                   htmlFor="ageRange"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-stone-700"
                 >
                   Age Range
                 </label>
@@ -135,7 +135,7 @@ export default function PrivateSchools() {
                   id="ageRange"
                   value={ageRange}
                   onChange={(e) => setAgeRange(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 >
                   <option value="">Any</option>
                   <option value="3-7">3-7 (Pre-prep)</option>
@@ -148,7 +148,7 @@ export default function PrivateSchools() {
               <div>
                 <label
                   htmlFor="gender"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-stone-700"
                 >
                   Gender Policy
                 </label>
@@ -156,7 +156,7 @@ export default function PrivateSchools() {
                   id="gender"
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 >
                   <option value="">Any</option>
                   <option value="co-ed">Co-educational</option>
@@ -171,14 +171,14 @@ export default function PrivateSchools() {
                   type="checkbox"
                   checked={transportOnly}
                   onChange={(e) => setTransportOnly(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                  className="h-4 w-4 rounded border-stone-300 text-brand-600"
                 />
-                <label htmlFor="transport" className="text-sm text-gray-700">
+                <label htmlFor="transport" className="text-sm text-stone-700">
                   Provides transport
                 </label>
               </div>
 
-              <div className="pt-2 text-xs text-gray-500">
+              <div className="pt-2 text-xs text-stone-500">
                 Showing {filteredSchools.length} of {schools.length} private
                 schools
               </div>
@@ -189,10 +189,10 @@ export default function PrivateSchools() {
         {/* School cards */}
         <section className="space-y-3 lg:col-span-4">
           {loading && (
-            <p className="text-sm text-gray-500">Loading private schools...</p>
+            <p className="text-sm text-stone-500">Loading private schools...</p>
           )}
           {!loading && filteredSchools.length === 0 && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-stone-500">
               No private schools match your filters. Try widening your criteria.
             </p>
           )}
@@ -202,7 +202,7 @@ export default function PrivateSchools() {
               onClick={() => handleSchoolSelect(s.id)}
               className={`cursor-pointer rounded-lg transition ${
                 selectedSchoolId === s.id
-                  ? "ring-2 ring-blue-500 ring-offset-1"
+                  ? "ring-2 ring-brand-500 ring-offset-1"
                   : ""
               }`}
             >

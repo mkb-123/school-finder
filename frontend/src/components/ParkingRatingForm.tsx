@@ -70,8 +70,8 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
     const value = formData[field] as number;
     return (
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <p className="text-xs text-gray-500">{description}</p>
+        <label className="block text-sm font-medium text-stone-700">{label}</label>
+        <p className="text-xs text-stone-500">{description}</p>
         <div className="flex items-center gap-2">
           {[1, 2, 3, 4, 5].map((rating) => (
             <button
@@ -85,13 +85,13 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
                     : rating <= 3
                     ? "border-amber-500 bg-amber-500 text-white"
                     : "border-red-500 bg-red-500 text-white"
-                  : "border-gray-300 text-gray-600 hover:border-gray-400"
+                  : "border-stone-300 text-stone-600 hover:border-stone-400"
               }`}
             >
               {rating}
             </button>
           ))}
-          <span className="ml-2 text-xs text-gray-500">
+          <span className="ml-2 text-xs text-stone-500">
             {value === 0 ? "Not rated" : value <= 2 ? "Low chaos" : value <= 3 ? "Moderate" : "High chaos"}
           </span>
         </div>
@@ -126,8 +126,8 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <p className="text-sm text-blue-900">
+      <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
+        <p className="text-sm text-brand-900">
           Help other parents by sharing your experience with parking and drop-off at this school.
           Rate from 1 (easy/safe) to 5 (chaotic/difficult).
         </p>
@@ -170,30 +170,30 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-stone-700">
           Additional comments (optional)
         </label>
         <textarea
           value={formData.comments}
           onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
           rows={4}
-          className="mt-2 w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-2 w-full rounded-md border border-stone-300 p-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           placeholder="Share any specific details about parking challenges, helpful tips, or safety concerns..."
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-stone-700">
           Email (optional)
         </label>
         <input
           type="email"
           value={formData.parent_email}
           onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })}
-          className="mt-2 w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-2 w-full rounded-md border border-stone-300 p-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           placeholder="your.email@example.com"
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-stone-500">
           Optional. Only used if we need to follow up on your feedback.
         </p>
       </div>
@@ -201,7 +201,7 @@ export default function ParkingRatingForm({ schoolId, onSubmitSuccess }: Parking
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-md bg-blue-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+        className="w-full rounded-md bg-brand-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-50"
       >
         {isSubmitting ? "Submitting..." : "Submit Rating"}
       </button>

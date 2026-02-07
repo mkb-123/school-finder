@@ -122,27 +122,27 @@ function ClubSection({ title, clubs }: { title: string; clubs: Club[] }) {
   if (clubs.length === 0) return null;
   return (
     <div className="mt-4">
-      <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+      <h3 className="text-lg font-semibold text-stone-800">{title}</h3>
       <div className="mt-2 space-y-3">
         {clubs.map((club) => (
           <div
             key={club.id}
-            className="rounded-lg border border-gray-100 bg-gray-50 p-4"
+            className="rounded-lg border border-stone-100 bg-stone-50 p-4"
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="font-medium text-gray-900">{club.name}</p>
+                <p className="font-medium text-stone-900">{club.name}</p>
                 {club.description && (
-                  <p className="mt-0.5 text-sm text-gray-600">{club.description}</p>
+                  <p className="mt-0.5 text-sm text-stone-600">{club.description}</p>
                 )}
               </div>
               {club.cost_per_session != null && (
-                <span className="whitespace-nowrap rounded bg-blue-50 px-2 py-1 text-sm font-medium text-blue-700">
+                <span className="whitespace-nowrap rounded bg-brand-50 px-2 py-1 text-sm font-medium text-brand-700">
                   &pound;{club.cost_per_session.toFixed(2)}/session
                 </span>
               )}
             </div>
-            <div className="mt-2 flex flex-wrap gap-3 text-sm text-gray-500">
+            <div className="mt-2 flex flex-wrap gap-3 text-sm text-stone-500">
               {club.days_available && (
                 <span className="flex items-center gap-1">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,7 +171,7 @@ function ClubSection({ title, clubs }: { title: string; clubs: Club[] }) {
 function TrendArrow({ current, previous }: { current: number; previous: number }) {
   const diff = current - previous;
   if (Math.abs(diff) < 0.01) {
-    return <span className="ml-1 text-gray-400" title="No change">&mdash;</span>;
+    return <span className="ml-1 text-stone-400" title="No change">&mdash;</span>;
   }
   if (diff > 0) {
     return (
@@ -209,11 +209,11 @@ function academicYear(year: number): string {
 function PerformanceTab({ performance }: { performance: Performance[] }) {
   if (performance.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-xl font-semibold text-gray-900">
+      <div className="rounded-lg border border-stone-200 bg-white p-6">
+        <h2 className="text-xl font-semibold text-stone-900">
           Performance &amp; Ratings
         </h2>
-        <p className="mt-2 text-gray-600">No performance data available yet.</p>
+        <p className="mt-2 text-stone-600">No performance data available yet.</p>
       </div>
     );
   }
@@ -245,8 +245,8 @@ function PerformanceTab({ performance }: { performance: Performance[] }) {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
-      <h2 className="text-xl font-semibold text-gray-900">
+    <div className="rounded-lg border border-stone-200 bg-white p-6">
+      <h2 className="text-xl font-semibold text-stone-900">
         Performance &amp; Ratings
       </h2>
       <div className="mt-4 space-y-6">
@@ -257,29 +257,29 @@ function PerformanceTab({ performance }: { performance: Performance[] }) {
 
           return (
             <div key={metricType}>
-              <h3 className="text-lg font-semibold text-gray-800">{label}</h3>
+              <h3 className="text-lg font-semibold text-stone-800">{label}</h3>
               <div className="mt-2 overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-stone-200">
+                  <thead className="bg-stone-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-stone-500">
                         Academic Year
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-stone-500">
                         Result
                       </th>
                       {entries.length > 1 && (
-                        <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-stone-500">
                           Trend
                         </th>
                       )}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 bg-white">
+                  <tbody className="divide-y divide-stone-100 bg-white">
                     {entries.map((entry, idx) => {
                       const numVal = extractNumeric(entry.metric_value);
                       // Progress8 colour: green if positive, red if negative
-                      let valueClass = "text-gray-900";
+                      let valueClass = "text-stone-900";
                       if (isProgress8 && numVal !== null) {
                         if (numVal > 0) valueClass = "text-green-700 font-semibold";
                         else if (numVal < 0) valueClass = "text-red-700 font-semibold";
@@ -292,7 +292,7 @@ function PerformanceTab({ performance }: { performance: Performance[] }) {
 
                       return (
                         <tr key={entry.id}>
-                          <td className="whitespace-nowrap px-4 py-2 text-sm text-gray-600">
+                          <td className="whitespace-nowrap px-4 py-2 text-sm text-stone-600">
                             {academicYear(entry.year)}
                           </td>
                           <td
@@ -305,7 +305,7 @@ function PerformanceTab({ performance }: { performance: Performance[] }) {
                               {idx > 0 && numVal !== null && prevNum !== null ? (
                                 <TrendArrow current={numVal} previous={prevNum} />
                               ) : (
-                                <span className="text-gray-300">&mdash;</span>
+                                <span className="text-stone-300">&mdash;</span>
                               )}
                             </td>
                           )}
@@ -316,13 +316,13 @@ function PerformanceTab({ performance }: { performance: Performance[] }) {
                 </table>
               </div>
               {entries[0]?.source_url && (
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-stone-400">
                   Source:{" "}
                   <a
                     href={entries[0].source_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:text-gray-600"
+                    className="underline hover:text-stone-600"
                   >
                     DfE School Performance Data
                   </a>
@@ -339,9 +339,9 @@ function PerformanceTab({ performance }: { performance: Performance[] }) {
 function ClassSizesTab({ classSizes }: { classSizes: ClassSize[] }) {
   if (classSizes.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-xl font-semibold text-gray-900">Class Size Trends</h2>
-        <p className="mt-2 text-gray-600">No class size data available yet.</p>
+      <div className="rounded-lg border border-stone-200 bg-white p-6">
+        <h2 className="text-xl font-semibold text-stone-900">Class Size Trends</h2>
+        <p className="mt-2 text-stone-600">No class size data available yet.</p>
       </div>
     );
   }
@@ -363,7 +363,7 @@ function ClassSizesTab({ classSizes }: { classSizes: ClassSize[] }) {
   }).reverse(); // Reverse for chronological order for trend calculation
 
   let trend = "Stable";
-  let trendColor = "text-gray-600";
+  let trendColor = "text-stone-600";
   if (yearTotals.length >= 2) {
     const oldest = yearTotals[0].total;
     const newest = yearTotals[yearTotals.length - 1].total;
@@ -380,25 +380,25 @@ function ClassSizesTab({ classSizes }: { classSizes: ClassSize[] }) {
   return (
     <div className="space-y-6">
       {/* Summary Card */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
+      <div className="rounded-lg border border-stone-200 bg-white p-6">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Class Size Trends</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <h2 className="text-xl font-semibold text-stone-900">Class Size Trends</h2>
+            <p className="mt-1 text-sm text-stone-600">
               Enrollment patterns over recent years show if the school is growing, stable, or shrinking.
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Trend</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Trend</p>
             <p className={`mt-1 text-lg font-semibold ${trendColor}`}>{trend}</p>
           </div>
         </div>
 
         {/* Implications */}
         {trend !== "Stable" && (
-          <div className="mt-4 rounded-md bg-gray-50 p-4">
-            <h3 className="text-sm font-semibold text-gray-800">What this means:</h3>
-            <ul className="mt-2 space-y-1 text-sm text-gray-600">
+          <div className="mt-4 rounded-md bg-stone-50 p-4">
+            <h3 className="text-sm font-semibold text-stone-800">What this means:</h3>
+            <ul className="mt-2 space-y-1 text-sm text-stone-600">
               {trend.startsWith("Growing") && (
                 <>
                   <li>• School is becoming more popular or the local area is expanding</li>
@@ -421,8 +421,8 @@ function ClassSizesTab({ classSizes }: { classSizes: ClassSize[] }) {
       </div>
 
       {/* Year-by-Year Breakdown */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h3 className="text-lg font-semibold text-gray-900">Enrollment by Year Group</h3>
+      <div className="rounded-lg border border-stone-200 bg-white p-6">
+        <h3 className="text-lg font-semibold text-stone-900">Enrollment by Year Group</h3>
         <div className="mt-4 space-y-6">
           {years.map((year) => {
             const yearData = byYear[year];
@@ -431,10 +431,10 @@ function ClassSizesTab({ classSizes }: { classSizes: ClassSize[] }) {
             const avgClassSize = totalClasses > 0 ? (totalPupils / totalClasses).toFixed(1) : "N/A";
 
             return (
-              <div key={year} className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0">
+              <div key={year} className="border-t border-stone-100 pt-4 first:border-t-0 first:pt-0">
                 <div className="mb-3 flex items-center justify-between">
-                  <h4 className="text-base font-semibold text-gray-800">{year}</h4>
-                  <div className="flex gap-6 text-sm text-gray-600">
+                  <h4 className="text-base font-semibold text-stone-800">{year}</h4>
+                  <div className="flex gap-6 text-sm text-stone-600">
                     <span><strong>{totalPupils}</strong> pupils</span>
                     <span><strong>{totalClasses}</strong> classes</span>
                     <span>Avg: <strong>{avgClassSize}</strong> per class</span>
@@ -442,35 +442,35 @@ function ClassSizesTab({ classSizes }: { classSizes: ClassSize[] }) {
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-stone-50">
                       <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-stone-500">
                           Year Group
                         </th>
-                        <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-stone-500">
                           Pupils
                         </th>
-                        <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-stone-500">
                           Classes
                         </th>
-                        <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-stone-500">
                           Avg Class Size
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
+                    <tbody className="divide-y divide-stone-100 bg-white">
                       {yearData.map((cs) => (
                         <tr key={cs.id}>
-                          <td className="whitespace-nowrap px-3 py-2 font-medium text-gray-900">
+                          <td className="whitespace-nowrap px-3 py-2 font-medium text-stone-900">
                             {cs.year_group}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2 text-right text-gray-600">
+                          <td className="whitespace-nowrap px-3 py-2 text-right text-stone-600">
                             {cs.num_pupils ?? "—"}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2 text-right text-gray-600">
+                          <td className="whitespace-nowrap px-3 py-2 text-right text-stone-600">
                             {cs.num_classes ?? "—"}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2 text-right text-gray-600">
+                          <td className="whitespace-nowrap px-3 py-2 text-right text-stone-600">
                             {cs.avg_class_size?.toFixed(1) ?? "—"}
                           </td>
                         </tr>
@@ -490,11 +490,11 @@ function ClassSizesTab({ classSizes }: { classSizes: ClassSize[] }) {
 function ClubsTab({ clubs }: { clubs: Club[] }) {
   if (clubs.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-xl font-semibold text-gray-900">
+      <div className="rounded-lg border border-stone-200 bg-white p-6">
+        <h2 className="text-xl font-semibold text-stone-900">
           Breakfast &amp; After-School Clubs
         </h2>
-        <p className="mt-2 text-gray-600">No club data available yet.</p>
+        <p className="mt-2 text-stone-600">No club data available yet.</p>
       </div>
     );
   }
@@ -503,8 +503,8 @@ function ClubsTab({ clubs }: { clubs: Club[] }) {
   const afterSchoolClubs = clubs.filter((c) => c.club_type === "after_school");
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
-      <h2 className="text-xl font-semibold text-gray-900">
+    <div className="rounded-lg border border-stone-200 bg-white p-6">
+      <h2 className="text-xl font-semibold text-stone-900">
         Breakfast &amp; After-School Clubs
       </h2>
       <ClubSection title="Breakfast Clubs" clubs={breakfastClubs} />
@@ -574,7 +574,7 @@ export default function SchoolDetail() {
   if (loading) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-        <p className="text-gray-500" aria-live="polite">Loading school details...</p>
+        <p className="text-stone-500" aria-live="polite">Loading school details...</p>
       </main>
     );
   }
@@ -582,25 +582,25 @@ export default function SchoolDetail() {
   if (!school) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">School Not Found</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">School Not Found</h1>
+        <p className="mt-2 text-stone-600">
           No school found with ID {id}.
         </p>
       </main>
     );
   }
 
-  const badge = RATING_COLORS[school.ofsted_rating ?? ""] ?? "bg-gray-100 text-gray-800";
+  const badge = RATING_COLORS[school.ofsted_rating ?? ""] ?? "bg-stone-100 text-stone-800";
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{school.name}</h1>
-          <p className="mt-1 text-sm text-gray-600 sm:text-base">{school.address}</p>
-          <p className="text-xs text-gray-500 sm:text-sm">{school.postcode}</p>
+          <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">{school.name}</h1>
+          <p className="mt-1 text-sm text-stone-600 sm:text-base">{school.address}</p>
+          <p className="text-xs text-stone-500 sm:text-sm">{school.postcode}</p>
           {school.ethos && (
-            <p className="mt-2 text-sm italic text-gray-700">"{school.ethos}"</p>
+            <p className="mt-2 text-sm italic text-stone-700">"{school.ethos}"</p>
           )}
         </div>
         {school.ofsted_rating && (
@@ -611,26 +611,26 @@ export default function SchoolDetail() {
       </div>
 
       {/* Quick facts */}
-      <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-600 sm:gap-3 sm:text-sm">
-        <span className="rounded bg-gray-100 px-2 py-1">
+      <div className="mt-4 flex flex-wrap gap-2 text-xs text-stone-600 sm:gap-3 sm:text-sm">
+        <span className="rounded bg-stone-100 px-2 py-1">
           Ages {school.age_range_from}&ndash;{school.age_range_to}
         </span>
-        <span className="rounded bg-gray-100 px-2 py-1">
+        <span className="rounded bg-stone-100 px-2 py-1">
           {school.gender_policy}
         </span>
-        <span className="rounded bg-gray-100 px-2 py-1 capitalize">
+        <span className="rounded bg-stone-100 px-2 py-1 capitalize">
           {school.type || (school.is_private ? "Private" : "State")}
         </span>
         {school.faith && (
-          <span className="rounded bg-gray-100 px-2 py-1">{school.faith}</span>
+          <span className="rounded bg-stone-100 px-2 py-1">{school.faith}</span>
         )}
-        <span className="rounded bg-gray-100 px-2 py-1">
+        <span className="rounded bg-stone-100 px-2 py-1">
           URN: {school.urn}
         </span>
       </div>
 
       {/* Tab navigation - horizontal scroll on mobile */}
-      <div className="mt-6 border-b border-gray-200">
+      <div className="mt-6 border-b border-stone-200">
         <nav
           className="-mb-px flex overflow-x-auto"
           role="tablist"
@@ -646,10 +646,10 @@ export default function SchoolDetail() {
               tabIndex={activeTab === tab ? 0 : -1}
               onClick={() => setActiveTab(tab)}
               onKeyDown={(e) => handleTabKeyDown(e, idx)}
-              className={`flex-shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:px-4 ${
+              className={`flex-shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:px-4 ${
                 activeTab === tab
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  ? "border-brand-600 text-brand-600"
+                  : "border-transparent text-stone-500 hover:border-stone-300 hover:text-stone-700"
               }`}
             >
               {tab}
@@ -669,22 +669,22 @@ export default function SchoolDetail() {
           <div className="space-y-6">
             {/* School Website */}
             {school.website && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-6 w-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                     </svg>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">School Website</p>
-                      <p className="text-xs text-gray-600">Visit the official school website</p>
+                      <p className="text-sm font-medium text-stone-900">School Website</p>
+                      <p className="text-xs text-stone-600">Visit the official school website</p>
                     </div>
                   </div>
                   <a
                     href={school.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                   >
                     Visit Website
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -696,22 +696,22 @@ export default function SchoolDetail() {
             )}
             {/* Prospectus Link */}
             {school.prospectus_url && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-6 w-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">School Prospectus</p>
-                      <p className="text-xs text-gray-600">View detailed information about the school</p>
+                      <p className="text-sm font-medium text-stone-900">School Prospectus</p>
+                      <p className="text-xs text-stone-600">View detailed information about the school</p>
                     </div>
                   </div>
                   <a
                     href={school.prospectus_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                   >
                     View Prospectus
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -722,27 +722,27 @@ export default function SchoolDetail() {
               </div>
             )}
             <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-lg border border-gray-200 bg-white p-6">
-                <h2 className="text-xl font-semibold text-gray-900">Details</h2>
+              <div className="rounded-lg border border-stone-200 bg-white p-6">
+                <h2 className="text-xl font-semibold text-stone-900">Details</h2>
                 <dl className="mt-4 space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-gray-500">Type</dt>
-                    <dd className="font-medium text-gray-900 capitalize">{school.type}</dd>
+                    <dt className="text-stone-500">Type</dt>
+                    <dd className="font-medium text-stone-900 capitalize">{school.type}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-gray-500">Council</dt>
-                    <dd className="font-medium text-gray-900">{school.council}</dd>
+                    <dt className="text-stone-500">Council</dt>
+                    <dd className="font-medium text-stone-900">{school.council}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-gray-500">Catchment Radius</dt>
-                    <dd className="font-medium text-gray-900">
+                    <dt className="text-stone-500">Catchment Radius</dt>
+                    <dd className="font-medium text-stone-900">
                       {school.catchment_radius_km} km
                     </dd>
                   </div>
                   {school.ofsted_date && (
                     <div className="flex justify-between">
-                      <dt className="text-gray-500">Last Ofsted</dt>
-                      <dd className="font-medium text-gray-900">
+                      <dt className="text-stone-500">Last Ofsted</dt>
+                      <dd className="font-medium text-stone-900">
                         {school.ofsted_date}
                       </dd>
                     </div>
@@ -750,7 +750,7 @@ export default function SchoolDetail() {
                 </dl>
               </div>
               {/* Catchment map */}
-              <div className="h-[350px] rounded-lg border border-gray-200 bg-white">
+              <div className="h-[350px] rounded-lg border border-stone-200 bg-white">
                 {school.lat != null && school.lng != null ? (
                   <Map
                     center={[school.lat, school.lng]}
@@ -759,7 +759,7 @@ export default function SchoolDetail() {
                     selectedSchoolId={school.id}
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-gray-400">
+                  <div className="flex h-full items-center justify-center text-stone-400">
                     No location data
                   </div>
                 )}
@@ -776,9 +776,9 @@ export default function SchoolDetail() {
               />
             )}
             {!sendEnabled && (
-              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+              <div className="rounded-lg border border-stone-100 bg-stone-50 p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-stone-500">
                     SEND information is hidden. Enable it to see SEN provision details.
                   </p>
                   <SendToggle />
@@ -802,9 +802,9 @@ export default function SchoolDetail() {
         )}
 
         {activeTab === "Term Dates" && (
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-gray-900">Term Dates</h2>
-            <p className="mt-2 text-gray-600">
+          <div className="rounded-lg border border-stone-200 bg-white p-6">
+            <h2 className="text-xl font-semibold text-stone-900">Term Dates</h2>
+            <p className="mt-2 text-stone-600">
               Term dates will be populated by the term times agent.
             </p>
           </div>
@@ -820,30 +820,30 @@ export default function SchoolDetail() {
 
             {/* Admissions Criteria Breakdown */}
             {(school.admissions_criteria ?? []).length > 0 && (
-              <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6">
-                <h3 className="text-lg font-semibold text-gray-900">Admissions Priority Order</h3>
-                <p className="mt-2 text-sm text-gray-600">
+              <div className="mt-6 rounded-lg border border-stone-200 bg-white p-6">
+                <h3 className="text-lg font-semibold text-stone-900">Admissions Priority Order</h3>
+                <p className="mt-2 text-sm text-stone-600">
                   When the school is oversubscribed, places are allocated in the following priority order:
                 </p>
                 <div className="mt-4 space-y-4">
                   {[...(school.admissions_criteria ?? [])]
                     .sort((a, b) => a.priority_rank - b.priority_rank)
                     .map((criterion) => (
-                      <div key={criterion.id} className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
+                      <div key={criterion.id} className="border-l-4 border-brand-500 bg-brand-50 p-4 rounded">
                         <div className="flex items-start">
                           <div className="flex-shrink-0 mr-3">
-                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white">
                               {criterion.priority_rank}
                             </span>
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-base font-semibold text-gray-900">{criterion.category}</h4>
-                            <p className="mt-1 text-sm text-gray-700">{criterion.description}</p>
+                            <h4 className="text-base font-semibold text-stone-900">{criterion.category}</h4>
+                            <p className="mt-1 text-sm text-stone-700">{criterion.description}</p>
 
                             {criterion.religious_requirement && (
                               <div className="mt-2 rounded bg-white p-3 border border-amber-200">
                                 <p className="text-xs font-medium text-amber-800 uppercase tracking-wide">Religious Requirement</p>
-                                <p className="mt-1 text-sm text-gray-700">{criterion.religious_requirement}</p>
+                                <p className="mt-1 text-sm text-stone-700">{criterion.religious_requirement}</p>
                               </div>
                             )}
 
@@ -856,7 +856,7 @@ export default function SchoolDetail() {
                             </div>
 
                             {criterion.notes && (
-                              <p className="mt-2 text-xs italic text-gray-600">{criterion.notes}</p>
+                              <p className="mt-2 text-xs italic text-stone-600">{criterion.notes}</p>
                             )}
                           </div>
                         </div>
@@ -877,12 +877,12 @@ export default function SchoolDetail() {
 
             {/* Historical admissions table */}
             {(school.admissions_history ?? []).length > 0 && (
-              <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6">
-                <h3 className="text-lg font-semibold text-gray-900">Historical Admissions</h3>
+              <div className="mt-6 rounded-lg border border-stone-200 bg-white p-6">
+                <h3 className="text-lg font-semibold text-stone-900">Historical Admissions</h3>
                 <div className="mt-4 overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
+                      <tr className="border-b border-stone-200 text-left text-xs font-medium uppercase text-stone-500">
                         <th className="pb-2 pr-4">Year</th>
                         <th className="pb-2 pr-4">Places</th>
                         <th className="pb-2 pr-4">Applications</th>
@@ -896,7 +896,7 @@ export default function SchoolDetail() {
                       {[...(school.admissions_history ?? [])]
                         .sort((a, b) => b.academic_year.localeCompare(a.academic_year))
                         .map((r) => (
-                          <tr key={r.academic_year} className="border-b border-gray-100">
+                          <tr key={r.academic_year} className="border-b border-stone-100">
                             <td className="py-2 pr-4 font-medium">{r.academic_year}</td>
                             <td className="py-2 pr-4">{r.places_offered ?? "—"}</td>
                             <td className="py-2 pr-4">{r.applications_received ?? "—"}</td>

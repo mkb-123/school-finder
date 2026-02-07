@@ -173,8 +173,8 @@ export default function SchoolList() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">School Results</h1>
-        <p className="mt-1 text-sm text-gray-600 sm:text-base">
+        <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">School Results</h1>
+        <p className="mt-1 text-sm text-stone-600 sm:text-base">
           {council && postcode
             ? `Showing schools near ${postcode} in ${council}`
             : council
@@ -184,17 +184,17 @@ export default function SchoolList() {
       </div>
 
       {/* Search form */}
-      <form onSubmit={handleSearch} className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <form onSubmit={handleSearch} className="mb-6 rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <label htmlFor="council-select" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="council-select" className="block text-sm font-medium text-stone-700 mb-1">
               Council
             </label>
             <select
               id="council-select"
               value={tempCouncil}
               onChange={(e) => setTempCouncil(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             >
               <option value="">Select a council</option>
               {councils.map((c) => (
@@ -203,7 +203,7 @@ export default function SchoolList() {
             </select>
           </div>
           <div>
-            <label htmlFor="postcode-input" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="postcode-input" className="block text-sm font-medium text-stone-700 mb-1">
               Postcode (optional)
             </label>
             <input
@@ -212,13 +212,13 @@ export default function SchoolList() {
               value={tempPostcode}
               onChange={(e) => setTempPostcode(e.target.value.toUpperCase())}
               placeholder="e.g. MK9 3XS"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
           </div>
           <div className="flex items-end">
             <button
               type="submit"
-              className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="w-full rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
             >
               Search Schools
             </button>
@@ -249,10 +249,10 @@ export default function SchoolList() {
           aria-label="School results list"
         >
           {loading && (
-            <p className="text-sm text-gray-500" aria-live="polite">Loading schools...</p>
+            <p className="text-sm text-stone-500" aria-live="polite">Loading schools...</p>
           )}
           {!loading && filteredSchools.length === 0 && council && (
-            <p className="text-sm text-gray-500" aria-live="polite">
+            <p className="text-sm text-stone-500" aria-live="polite">
               No schools match your filters. Try widening your criteria.
             </p>
           )}
@@ -269,9 +269,9 @@ export default function SchoolList() {
               role="button"
               tabIndex={0}
               aria-label={`Select ${s.name} on map`}
-              className={`cursor-pointer rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`cursor-pointer rounded-lg transition focus:outline-none focus:ring-2 focus:ring-brand-500 ${
                 selectedSchoolId === s.id
-                  ? "ring-2 ring-blue-500 ring-offset-1"
+                  ? "ring-2 ring-brand-500 ring-offset-1"
                   : ""
               }`}
             >

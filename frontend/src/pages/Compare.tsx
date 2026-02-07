@@ -59,9 +59,9 @@ function latestMetric(
 
 /** Colour Progress 8 values: green if positive, red if negative. */
 function Progress8Cell({ value }: { value: string | null }) {
-  if (!value) return <span className="text-gray-400">--</span>;
+  if (!value) return <span className="text-stone-400">--</span>;
   const num = parseFloat(value);
-  let cls = "text-gray-900";
+  let cls = "text-stone-900";
   if (!isNaN(num)) {
     if (num > 0) cls = "text-green-700 font-semibold";
     else if (num < 0) cls = "text-red-700 font-semibold";
@@ -95,16 +95,16 @@ export default function Compare() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
-      <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Compare Schools</h1>
-      <p className="mt-1 text-sm text-gray-600 sm:text-base">
+      <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">Compare Schools</h1>
+      <p className="mt-1 text-sm text-stone-600 sm:text-base">
         Side-by-side comparison of 2-4 schools. Select schools from the search
         results page or enter school IDs to compare every metric in columns.
       </p>
 
       {ids.length === 0 && (
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm text-stone-500">
           No schools selected yet. Add school IDs via the{" "}
-          <code className="rounded bg-gray-100 px-1 py-0.5 text-xs">
+          <code className="rounded bg-stone-100 px-1 py-0.5 text-xs">
             ?ids=1,2,3
           </code>{" "}
           query parameter.
@@ -112,41 +112,41 @@ export default function Compare() {
       )}
 
       {loading && (
-        <p className="mt-4 text-gray-500" aria-live="polite">Loading comparison data...</p>
+        <p className="mt-4 text-stone-500" aria-live="polite">Loading comparison data...</p>
       )}
 
       {!loading && schools.length > 0 && (
         <div className="mt-8 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <table
-            className="min-w-full divide-y divide-gray-200 border border-gray-200"
+            className="min-w-full divide-y divide-stone-200 border border-stone-200"
             aria-label="School comparison table"
           >
-            <thead className="bg-gray-50">
+            <thead className="bg-stone-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500">
                   Metric
                 </th>
                 {schools.map((s) => (
                   <th
                     key={s.id}
-                    className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                    className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500"
                   >
                     {s.name}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className="divide-y divide-stone-200 bg-white">
               {/* Ofsted Rating */}
               <tr>
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                   Ofsted Rating
                 </td>
                 {schools.map((s) => (
                   <td
                     key={s.id}
                     className={`whitespace-nowrap px-4 py-3 text-sm ${
-                      RATING_COLORS[s.ofsted_rating ?? ""] ?? "text-gray-500"
+                      RATING_COLORS[s.ofsted_rating ?? ""] ?? "text-stone-500"
                     }`}
                   >
                     {s.ofsted_rating ?? "--"}
@@ -155,14 +155,14 @@ export default function Compare() {
               </tr>
 
               {/* Last Inspection */}
-              <tr className="bg-gray-50">
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+              <tr className="bg-stone-50">
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                   Last Inspection
                 </td>
                 {schools.map((s) => (
                   <td
                     key={s.id}
-                    className="whitespace-nowrap px-4 py-3 text-sm text-gray-500"
+                    className="whitespace-nowrap px-4 py-3 text-sm text-stone-500"
                   >
                     {s.ofsted_date ?? "--"}
                   </td>
@@ -171,13 +171,13 @@ export default function Compare() {
 
               {/* Ethos */}
               <tr>
-                <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                <td className="px-4 py-3 text-sm font-medium text-stone-900">
                   Ethos
                 </td>
                 {schools.map((s) => (
                   <td
                     key={s.id}
-                    className="px-4 py-3 text-sm italic text-gray-600"
+                    className="px-4 py-3 text-sm italic text-stone-600"
                   >
                     {s.ethos ? `"${s.ethos}"` : "--"}
                   </td>
@@ -185,14 +185,14 @@ export default function Compare() {
               </tr>
 
               {/* School Type */}
-              <tr className="bg-gray-50">
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+              <tr className="bg-stone-50">
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                   School Type
                 </td>
                 {schools.map((s) => (
                   <td
                     key={s.id}
-                    className="whitespace-nowrap px-4 py-3 text-sm text-gray-500"
+                    className="whitespace-nowrap px-4 py-3 text-sm text-stone-500"
                   >
                     {s.is_private ? "Private" : s.type ?? "--"}
                   </td>
@@ -200,14 +200,14 @@ export default function Compare() {
               </tr>
 
               {/* Age Range */}
-              <tr className="bg-gray-50">
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+              <tr className="bg-stone-50">
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                   Age Range
                 </td>
                 {schools.map((s) => (
                   <td
                     key={s.id}
-                    className="whitespace-nowrap px-4 py-3 text-sm text-gray-500"
+                    className="whitespace-nowrap px-4 py-3 text-sm text-stone-500"
                   >
                     {s.age_range_from != null && s.age_range_to != null
                       ? `${s.age_range_from}-${s.age_range_to}`
@@ -218,7 +218,7 @@ export default function Compare() {
 
               {/* Breakfast Club */}
               <tr>
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                   Breakfast Club
                 </td>
                 {schools.map((s) => {
@@ -226,7 +226,7 @@ export default function Compare() {
                   return (
                     <td
                       key={s.id}
-                      className={`whitespace-nowrap px-4 py-3 text-sm ${has ? "text-green-700 font-medium" : "text-gray-400"}`}
+                      className={`whitespace-nowrap px-4 py-3 text-sm ${has ? "text-green-700 font-medium" : "text-stone-400"}`}
                     >
                       {has ? "Yes" : "No"}
                     </td>
@@ -235,8 +235,8 @@ export default function Compare() {
               </tr>
 
               {/* After-School Club */}
-              <tr className="bg-gray-50">
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+              <tr className="bg-stone-50">
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                   After-School Club
                 </td>
                 {schools.map((s) => {
@@ -246,7 +246,7 @@ export default function Compare() {
                   return (
                     <td
                       key={s.id}
-                      className={`whitespace-nowrap px-4 py-3 text-sm ${has ? "text-green-700 font-medium" : "text-gray-400"}`}
+                      className={`whitespace-nowrap px-4 py-3 text-sm ${has ? "text-green-700 font-medium" : "text-stone-400"}`}
                     >
                       {has ? "Yes" : "No"}
                     </td>
@@ -257,13 +257,13 @@ export default function Compare() {
               {/* Performance - SATs (primary) */}
               {hasPrimary && (
                 <tr>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                     SATs (Expected Standard)
                   </td>
                   {schools.map((s) => (
                     <td
                       key={s.id}
-                      className="whitespace-nowrap px-4 py-3 text-sm text-gray-500"
+                      className="whitespace-nowrap px-4 py-3 text-sm text-stone-500"
                     >
                       {latestMetric(s.performance, "SATs") ?? "--"}
                     </td>
@@ -272,14 +272,14 @@ export default function Compare() {
               )}
 
               {hasPrimary && (
-                <tr className="bg-gray-50">
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                <tr className="bg-stone-50">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                     SATs (Higher Standard)
                   </td>
                   {schools.map((s) => (
                     <td
                       key={s.id}
-                      className="whitespace-nowrap px-4 py-3 text-sm text-gray-500"
+                      className="whitespace-nowrap px-4 py-3 text-sm text-stone-500"
                     >
                       {latestMetric(s.performance, "SATs_Higher") ?? "--"}
                     </td>
@@ -289,14 +289,14 @@ export default function Compare() {
 
               {/* Performance - GCSE (secondary) */}
               {hasSecondary && (
-                <tr className={hasPrimary ? "" : "bg-gray-50"}>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                <tr className={hasPrimary ? "" : "bg-stone-50"}>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                     GCSE Results
                   </td>
                   {schools.map((s) => (
                     <td
                       key={s.id}
-                      className="whitespace-nowrap px-4 py-3 text-sm text-gray-500"
+                      className="whitespace-nowrap px-4 py-3 text-sm text-stone-500"
                     >
                       {latestMetric(s.performance, "GCSE") ?? "--"}
                     </td>
@@ -307,7 +307,7 @@ export default function Compare() {
               {/* Progress 8 */}
               {hasSecondary && (
                 <tr>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                     Progress 8
                   </td>
                   {schools.map((s) => (
@@ -325,14 +325,14 @@ export default function Compare() {
 
               {/* Attainment 8 */}
               {hasSecondary && (
-                <tr className="bg-gray-50">
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                <tr className="bg-stone-50">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                     Attainment 8
                   </td>
                   {schools.map((s) => (
                     <td
                       key={s.id}
-                      className="whitespace-nowrap px-4 py-3 text-sm text-gray-500"
+                      className="whitespace-nowrap px-4 py-3 text-sm text-stone-500"
                     >
                       {latestMetric(s.performance, "Attainment8") ?? "--"}
                     </td>
@@ -342,13 +342,13 @@ export default function Compare() {
 
               {/* Catchment radius */}
               <tr>
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                   Catchment Radius
                 </td>
                 {schools.map((s) => (
                   <td
                     key={s.id}
-                    className="whitespace-nowrap px-4 py-3 text-sm text-gray-500"
+                    className="whitespace-nowrap px-4 py-3 text-sm text-stone-500"
                   >
                     {s.catchment_radius_km != null
                       ? `${s.catchment_radius_km} km`
@@ -358,14 +358,14 @@ export default function Compare() {
               </tr>
 
               {/* Gender */}
-              <tr className="bg-gray-50">
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+              <tr className="bg-stone-50">
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                   Gender Policy
                 </td>
                 {schools.map((s) => (
                   <td
                     key={s.id}
-                    className="whitespace-nowrap px-4 py-3 text-sm text-gray-500"
+                    className="whitespace-nowrap px-4 py-3 text-sm text-stone-500"
                   >
                     {s.gender_policy ?? "--"}
                   </td>
@@ -374,13 +374,13 @@ export default function Compare() {
 
               {/* Faith */}
               <tr>
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-stone-900">
                   Faith
                 </td>
                 {schools.map((s) => (
                   <td
                     key={s.id}
-                    className="whitespace-nowrap px-4 py-3 text-sm text-gray-500"
+                    className="whitespace-nowrap px-4 py-3 text-sm text-stone-500"
                   >
                     {s.faith ?? "None"}
                   </td>
@@ -392,7 +392,7 @@ export default function Compare() {
       )}
 
       {!loading && ids.length > 0 && schools.length === 0 && (
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm text-stone-500">
           No matching schools found for the given IDs.
         </p>
       )}

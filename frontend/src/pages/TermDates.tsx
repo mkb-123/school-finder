@@ -110,24 +110,24 @@ export default function TermDates() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8" role="main">
-      <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Term Dates</h1>
-      <p className="mt-1 text-sm text-gray-600 sm:text-base">
+      <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">Term Dates</h1>
+      <p className="mt-1 text-sm text-stone-600 sm:text-base">
         Compare term dates across Milton Keynes schools. Academies and free
         schools may set their own dates. Private schools often have different
         schedules with longer holidays.
       </p>
 
       {/* School selector */}
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-gray-700">
+      <div className="mt-6 rounded-lg border border-stone-200 bg-white p-4">
+        <h2 className="text-sm font-semibold text-stone-700">
           Select schools to compare (up to 4)
         </h2>
         {schoolsLoading ? (
-          <p className="mt-2 text-sm text-gray-400">Loading schools...</p>
+          <p className="mt-2 text-sm text-stone-400">Loading schools...</p>
         ) : (
           <div className="mt-2 flex flex-wrap gap-2">
             <select
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-auto"
+              className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-auto"
               value=""
               onChange={(e) => {
                 const id = Number(e.target.value);
@@ -175,11 +175,11 @@ export default function TermDates() {
 
       {/* Term date comparison grid */}
       {selectedIds.length === 0 ? (
-        <div className="mt-8 rounded-md border-2 border-dashed border-gray-300 p-12 text-center text-sm text-gray-400">
+        <div className="mt-8 rounded-md border-2 border-dashed border-stone-300 p-12 text-center text-sm text-stone-400">
           Select one or more schools above to view and compare their term dates.
         </div>
       ) : loading ? (
-        <div className="mt-8 text-center text-sm text-gray-400">
+        <div className="mt-8 text-center text-sm text-stone-400">
           Loading term dates...
         </div>
       ) : (
@@ -199,15 +199,15 @@ export default function TermDates() {
             return (
               <div
                 key={termName}
-                className="rounded-lg border border-gray-200 bg-white p-6"
+                className="rounded-lg border border-stone-200 bg-white p-6"
               >
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-stone-900">
                   {termName}
                 </h2>
 
                 {/* Term Start */}
                 <div className="mt-4">
-                  <p className={`text-xs font-semibold uppercase tracking-wide ${startDiffers ? "text-amber-600" : "text-gray-500"}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-wide ${startDiffers ? "text-amber-600" : "text-stone-500"}`}>
                     Term Start {startDiffers && "(differs)"}
                   </p>
                   <div className="mt-1 space-y-1">
@@ -221,7 +221,7 @@ export default function TermDates() {
                             {term ? formatDate(term.start_date) : "--"}
                           </span>
                           {selectedIds.length > 1 && (
-                            <span className="text-xs text-gray-400 truncate" title={schoolName}>
+                            <span className="text-xs text-stone-400 truncate" title={schoolName}>
                               {schoolName.length > 20 ? schoolName.slice(0, 20) + "..." : schoolName}
                             </span>
                           )}
@@ -233,7 +233,7 @@ export default function TermDates() {
 
                 {/* Half Term */}
                 <div className="mt-4">
-                  <p className={`text-xs font-semibold uppercase tracking-wide ${htStartDiffers || htEndDiffers ? "text-amber-600" : "text-gray-500"}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-wide ${htStartDiffers || htEndDiffers ? "text-amber-600" : "text-stone-500"}`}>
                     Half Term {(htStartDiffers || htEndDiffers) && "(differs)"}
                   </p>
                   <div className="mt-1 space-y-1">
@@ -257,7 +257,7 @@ export default function TermDates() {
 
                 {/* Term End */}
                 <div className="mt-4">
-                  <p className={`text-xs font-semibold uppercase tracking-wide ${endDiffers ? "text-amber-600" : "text-gray-500"}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-wide ${endDiffers ? "text-amber-600" : "text-stone-500"}`}>
                     Term End {endDiffers && "(differs)"}
                   </p>
                   <div className="mt-1 space-y-1">
@@ -282,11 +282,11 @@ export default function TermDates() {
 
       {/* Visual timeline */}
       {selectedIds.length > 0 && !loading && (
-        <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="mt-8 rounded-lg border border-stone-200 bg-white p-6">
+          <h2 className="text-lg font-semibold text-stone-900">
             Academic Year Overview
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-stone-500">
             Visual comparison of term lengths. Bars represent term duration;
             gaps represent holidays.
           </p>
@@ -305,7 +305,7 @@ export default function TermDates() {
                     {school.name}
                     {school.is_private ? " (Private)" : ""}
                   </p>
-                  <div className="relative h-6 rounded bg-gray-100">
+                  <div className="relative h-6 rounded bg-stone-100">
                     {dates.map((term) => {
                       const tStart = new Date(term.start_date + "T00:00:00").getTime();
                       const tEnd = new Date(term.end_date + "T00:00:00").getTime();
@@ -341,7 +341,7 @@ export default function TermDates() {
               );
             })}
             {/* Month labels */}
-            <div className="relative h-5 text-xs text-gray-400">
+            <div className="relative h-5 text-xs text-stone-400">
               {["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"].map(
                 (month, i) => (
                   <span

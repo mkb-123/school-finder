@@ -85,7 +85,7 @@ function TrendIndicator({ trend }: { trend: string }) {
           />
         </svg>
         <span className="font-medium text-red-600">Catchment shrinking</span>
-        <span className="text-gray-500">
+        <span className="text-stone-500">
           &mdash; demand increasing, harder to get in
         </span>
       </div>
@@ -108,7 +108,7 @@ function TrendIndicator({ trend }: { trend: string }) {
           />
         </svg>
         <span className="font-medium text-green-600">Catchment growing</span>
-        <span className="text-gray-500">
+        <span className="text-stone-500">
           &mdash; demand easing, easier to get in
         </span>
       </div>
@@ -117,7 +117,7 @@ function TrendIndicator({ trend }: { trend: string }) {
   return (
     <div className="flex items-center gap-1.5 text-sm">
       <svg
-        className="h-4 w-4 text-gray-400"
+        className="h-4 w-4 text-stone-400"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -129,8 +129,8 @@ function TrendIndicator({ trend }: { trend: string }) {
           d="M5 12h14"
         />
       </svg>
-      <span className="font-medium text-gray-600">Catchment stable</span>
-      <span className="text-gray-500">
+      <span className="font-medium text-stone-600">Catchment stable</span>
+      <span className="text-stone-500">
         &mdash; demand relatively consistent
       </span>
     </div>
@@ -159,7 +159,7 @@ function DistanceChart({
 
   return (
     <div className="mt-4">
-      <h4 className="text-sm font-medium text-gray-700">
+      <h4 className="text-sm font-medium text-stone-700">
         Last Distance Offered Over Time
       </h4>
       <div className="mt-2 flex items-end gap-2" style={{ height: chartHeight }}>
@@ -172,7 +172,7 @@ function DistanceChart({
               key={record.academic_year}
               className="flex flex-1 flex-col items-center gap-1"
             >
-              <span className="text-xs font-medium text-gray-600">
+              <span className="text-xs font-medium text-stone-600">
                 {dist.toFixed(2)} km
               </span>
               <div
@@ -180,7 +180,7 @@ function DistanceChart({
                 style={{ height: `${height}px` }}
                 title={`${record.academic_year}: ${dist.toFixed(2)} km`}
               />
-              <span className="text-xs text-gray-500">{yearLabel}</span>
+              <span className="text-xs text-stone-500">{yearLabel}</span>
             </div>
           );
         })}
@@ -211,11 +211,11 @@ export default function WaitingListGauge({
 }: WaitingListGaugeProps) {
   if (!estimate || estimate.years_of_data === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h3 className="text-lg font-semibold text-gray-900">
+      <div className="rounded-lg border border-stone-200 bg-white p-6">
+        <h3 className="text-lg font-semibold text-stone-900">
           Waiting List Estimator
         </h3>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-stone-500">
           No historical admissions data available for this school.
         </p>
       </div>
@@ -224,14 +224,14 @@ export default function WaitingListGauge({
 
   const config = LIKELIHOOD_CONFIG[estimate.likelihood] ?? {
     color: "#6b7280",
-    bgColor: "bg-gray-50",
-    textColor: "text-gray-700",
+    bgColor: "bg-stone-50",
+    textColor: "text-stone-700",
     barWidth: "w-1/2",
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
-      <h3 className="text-lg font-semibold text-gray-900">
+    <div className="rounded-lg border border-stone-200 bg-white p-6">
+      <h3 className="text-lg font-semibold text-stone-900">
         Waiting List Estimator
       </h3>
 
@@ -239,7 +239,7 @@ export default function WaitingListGauge({
       <div className={`mt-4 rounded-lg ${config.bgColor} p-4`}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600">
+            <p className="text-sm font-medium text-stone-600">
               Likelihood of getting a place
             </p>
             <p className={`mt-1 text-2xl font-bold ${config.textColor}`}>
@@ -266,13 +266,13 @@ export default function WaitingListGauge({
         </div>
 
         {/* Gauge bar */}
-        <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-gray-200">
+        <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-stone-200">
           <div
             className={`h-full rounded-full ${config.barWidth} transition-all`}
             style={{ backgroundColor: config.color }}
           />
         </div>
-        <div className="mt-1 flex justify-between text-xs text-gray-400">
+        <div className="mt-1 flex justify-between text-xs text-stone-400">
           <span>Very unlikely</span>
           <span>Unlikely</span>
           <span>Likely</span>
@@ -285,39 +285,39 @@ export default function WaitingListGauge({
         userDistanceKm != null) && (
         <div className="mt-4 grid grid-cols-2 gap-4">
           {estimate.latest_last_distance_km != null && (
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <p className="text-xs font-medium text-gray-500">
+            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+              <p className="text-xs font-medium text-stone-500">
                 Last distance offered (latest)
               </p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
+              <p className="mt-1 text-lg font-semibold text-stone-900">
                 {estimate.latest_last_distance_km.toFixed(2)} km
               </p>
             </div>
           )}
           {userDistanceKm != null && (
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <p className="text-xs font-medium text-gray-500">Your distance</p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
+            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+              <p className="text-xs font-medium text-stone-500">Your distance</p>
+              <p className="mt-1 text-lg font-semibold text-stone-900">
                 {userDistanceKm.toFixed(2)} km
               </p>
             </div>
           )}
           {estimate.avg_last_distance_km != null && (
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <p className="text-xs font-medium text-gray-500">
+            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+              <p className="text-xs font-medium text-stone-500">
                 Average last distance (all years)
               </p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
+              <p className="mt-1 text-lg font-semibold text-stone-900">
                 {estimate.avg_last_distance_km.toFixed(2)} km
               </p>
             </div>
           )}
           {estimate.avg_oversubscription_ratio != null && (
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <p className="text-xs font-medium text-gray-500">
+            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+              <p className="text-xs font-medium text-stone-500">
                 Avg. oversubscription ratio
               </p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
+              <p className="mt-1 text-lg font-semibold text-stone-900">
                 {estimate.avg_oversubscription_ratio.toFixed(1)}x
               </p>
             </div>
@@ -336,7 +336,7 @@ export default function WaitingListGauge({
         userDistanceKm={userDistanceKm}
       />
 
-      <p className="mt-3 text-xs text-gray-400">
+      <p className="mt-3 text-xs text-stone-400">
         Based on {estimate.years_of_data} year(s) of historical admissions data.
         This estimate is indicative only and does not guarantee a place.
       </p>

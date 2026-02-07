@@ -34,7 +34,7 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
     <div className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-stone-900">
             {club.provider_name}
           </h3>
           <span
@@ -50,15 +50,15 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
       </div>
 
       {club.description && (
-        <p className="text-sm text-gray-600 mb-3">{club.description}</p>
+        <p className="text-sm text-stone-600 mb-3">{club.description}</p>
       )}
 
       <div className="grid grid-cols-2 gap-4 text-sm">
         {/* Age Range */}
         {(club.age_from !== null || club.age_to !== null) && (
           <div>
-            <span className="font-medium text-gray-700">Ages:</span>{' '}
-            <span className="text-gray-900">
+            <span className="font-medium text-stone-700">Ages:</span>{' '}
+            <span className="text-stone-900">
               {club.age_from && club.age_to
                 ? `${club.age_from}-${club.age_to}`
                 : club.age_from
@@ -73,8 +73,8 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
         {/* Hours */}
         {(club.start_time || club.end_time) && (
           <div>
-            <span className="font-medium text-gray-700">Hours:</span>{' '}
-            <span className="text-gray-900">
+            <span className="font-medium text-stone-700">Hours:</span>{' '}
+            <span className="text-stone-900">
               {formatTime(club.start_time)} - {formatTime(club.end_time)}
             </span>
           </div>
@@ -83,16 +83,16 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
         {/* Daily Cost */}
         {club.cost_per_day !== null && (
           <div>
-            <span className="font-medium text-gray-700">Daily:</span>{' '}
-            <span className="text-gray-900">{formatCurrency(club.cost_per_day)}</span>
+            <span className="font-medium text-stone-700">Daily:</span>{' '}
+            <span className="text-stone-900">{formatCurrency(club.cost_per_day)}</span>
           </div>
         )}
 
         {/* Weekly Cost */}
         {club.cost_per_week !== null && (
           <div>
-            <span className="font-medium text-gray-700">Weekly:</span>{' '}
-            <span className="text-gray-900">
+            <span className="font-medium text-stone-700">Weekly:</span>{' '}
+            <span className="text-stone-900">
               {formatCurrency(club.cost_per_week)}
             </span>
           </div>
@@ -102,8 +102,8 @@ export default function HolidayClubCard({ club }: HolidayClubCardProps) {
       {/* Available Weeks */}
       {club.available_weeks && (
         <div className="mt-3 pt-3 border-t">
-          <span className="font-medium text-gray-700 text-sm">Available:</span>
-          <p className="text-sm text-gray-900 mt-1">{club.available_weeks}</p>
+          <span className="font-medium text-stone-700 text-sm">Available:</span>
+          <p className="text-sm text-stone-900 mt-1">{club.available_weeks}</p>
         </div>
       )}
 

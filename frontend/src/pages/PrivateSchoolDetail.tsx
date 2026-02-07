@@ -163,7 +163,7 @@ export default function PrivateSchoolDetail() {
   if (loading) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-        <p className="text-gray-500" aria-live="polite">Loading school details...</p>
+        <p className="text-stone-500" aria-live="polite">Loading school details...</p>
       </main>
     );
   }
@@ -171,13 +171,13 @@ export default function PrivateSchoolDetail() {
   if (!school) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">School Not Found</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">School Not Found</h1>
+        <p className="mt-2 text-stone-600">
           No private school found with ID {id}.
         </p>
         <Link
           to="/private-schools"
-          className="mt-4 inline-block text-blue-600 hover:underline"
+          className="mt-4 inline-block text-brand-600 hover:underline"
         >
           Back to private schools
         </Link>
@@ -204,7 +204,7 @@ export default function PrivateSchoolDetail() {
       {/* Back link */}
       <Link
         to="/private-schools"
-        className="mb-4 inline-flex items-center text-sm text-blue-600 hover:underline"
+        className="mb-4 inline-flex items-center text-sm text-brand-600 hover:underline"
         aria-label="Back to private schools list"
       >
         <svg
@@ -226,30 +226,30 @@ export default function PrivateSchoolDetail() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{school.name}</h1>
-          <p className="mt-1 text-sm text-gray-600 sm:text-base">{school.address}</p>
-          <p className="text-xs text-gray-500 sm:text-sm">{school.postcode}</p>
+          <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">{school.name}</h1>
+          <p className="mt-1 text-sm text-stone-600 sm:text-base">{school.address}</p>
+          <p className="text-xs text-stone-500 sm:text-sm">{school.postcode}</p>
           {school.ethos && (
-            <p className="mt-2 text-sm italic text-gray-700">"{school.ethos}"</p>
+            <p className="mt-2 text-sm italic text-stone-700">"{school.ethos}"</p>
           )}
         </div>
       </div>
 
       {/* Quick facts */}
-      <div className="mt-4 flex flex-wrap gap-3 text-sm text-gray-600">
-        <span className="rounded bg-gray-100 px-2 py-1">
+      <div className="mt-4 flex flex-wrap gap-3 text-sm text-stone-600">
+        <span className="rounded bg-stone-100 px-2 py-1">
           Ages {school.age_range_from}&ndash;{school.age_range_to}
         </span>
-        <span className="rounded bg-gray-100 px-2 py-1">
+        <span className="rounded bg-stone-100 px-2 py-1">
           {school.gender_policy}
         </span>
         <span className="rounded bg-purple-100 px-2 py-1 text-purple-800">
           Independent
         </span>
         {school.faith && (
-          <span className="rounded bg-gray-100 px-2 py-1">{school.faith}</span>
+          <span className="rounded bg-stone-100 px-2 py-1">{school.faith}</span>
         )}
-        <span className="rounded bg-gray-100 px-2 py-1">
+        <span className="rounded bg-stone-100 px-2 py-1">
           URN: {school.urn}
         </span>
       </div>
@@ -257,23 +257,23 @@ export default function PrivateSchoolDetail() {
       {/* Content grid */}
       <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Fees */}
-        <section className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-gray-900">Fees</h2>
-          <p className="mt-1 text-sm text-gray-500">
+        <section className="rounded-lg border border-stone-200 bg-white p-6">
+          <h2 className="text-xl font-semibold text-stone-900">Fees</h2>
+          <p className="mt-1 text-sm text-stone-500">
             Termly and annual fee breakdowns by age group.
           </p>
           {feeMin != null && feeMax != null && (
-            <div className="mt-3 rounded-md bg-blue-50 px-3 py-2">
+            <div className="mt-3 rounded-md bg-brand-50 px-3 py-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-blue-800">Fee range</span>
-                <span className="font-semibold text-blue-900">
+                <span className="font-medium text-brand-800">Fee range</span>
+                <span className="font-semibold text-brand-900">
                   {feeMin === feeMax
                     ? `${formatFee(feeMin)}/term`
                     : `${formatFee(feeMin)} - ${formatFee(feeMax)}/term`}
                 </span>
               </div>
               {feeIncreasePct != null && (
-                <div className="mt-1 flex items-center justify-between text-xs text-blue-700">
+                <div className="mt-1 flex items-center justify-between text-xs text-brand-700">
                   <span>Est. annual increase</span>
                   <span className="font-medium">~{feeIncreasePct}% per year</span>
                 </div>
@@ -285,18 +285,18 @@ export default function PrivateSchoolDetail() {
               {details.map((d) => (
                 <div
                   key={d.id}
-                  className="flex items-center justify-between border-b border-gray-100 py-2 text-sm"
+                  className="flex items-center justify-between border-b border-stone-100 py-2 text-sm"
                 >
-                  <span className="text-gray-600">
+                  <span className="text-stone-600">
                     {d.fee_age_group ?? "General"}
                   </span>
                   <div className="text-right">
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-stone-900">
                       {formatFee(d.termly_fee)}
                     </span>
-                    <span className="ml-1 text-gray-400">/term</span>
+                    <span className="ml-1 text-stone-400">/term</span>
                     {d.annual_fee != null && (
-                      <span className="ml-3 text-xs text-gray-500">
+                      <span className="ml-3 text-xs text-stone-500">
                         ({formatFee(d.annual_fee)}/yr)
                       </span>
                     )}
@@ -305,7 +305,7 @@ export default function PrivateSchoolDetail() {
               ))}
             </div>
           ) : (
-            <p className="mt-4 text-sm text-gray-400">
+            <p className="mt-4 text-sm text-stone-400">
               No fee data available yet.
             </p>
           )}
@@ -314,8 +314,8 @@ export default function PrivateSchoolDetail() {
         {/* True Cost Breakdown */}
         {details.length > 0 && (
           <section className="rounded-lg border border-orange-200 bg-orange-50 p-6 md:col-span-2">
-            <h2 className="text-xl font-semibold text-gray-900">True Annual Cost</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <h2 className="text-xl font-semibold text-stone-900">True Annual Cost</h2>
+            <p className="mt-1 text-sm text-stone-600">
               Headline fees don't tell the whole story. These are the additional costs that aren't included in the advertised fee.
             </p>
 
@@ -327,30 +327,30 @@ export default function PrivateSchoolDetail() {
                     key={detail.id}
                     className="rounded-lg border border-orange-300 bg-white p-5"
                   >
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="font-semibold text-stone-900">
                       {detail.fee_age_group || "General"}
                     </h3>
 
                     {/* Headline cost */}
-                    <div className="mt-4 border-b border-gray-200 pb-3">
+                    <div className="mt-4 border-b border-stone-200 pb-3">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Headline annual fee</span>
-                        <span className="font-medium text-gray-900">
+                        <span className="text-stone-600">Headline annual fee</span>
+                        <span className="font-medium text-stone-900">
                           {formatFee(costs.headline)}
                         </span>
                       </div>
                     </div>
 
                     {/* Compulsory extras */}
-                    <div className="mt-3 border-b border-gray-200 pb-3">
+                    <div className="mt-3 border-b border-stone-200 pb-3">
                       <div className="mb-2 flex items-center justify-between text-sm">
-                        <span className="font-medium text-gray-700">Compulsory extras</span>
+                        <span className="font-medium text-stone-700">Compulsory extras</span>
                         <span className="font-semibold text-orange-700">
                           +{formatFee(costs.compulsory)}
                         </span>
                       </div>
 
-                      <div className="space-y-1 text-xs text-gray-600">
+                      <div className="space-y-1 text-xs text-stone-600">
                         {detail.lunches_compulsory && detail.lunches_per_term && (
                           <div>• Lunches: {formatFee(detail.lunches_per_term * 3)}/yr</div>
                         )}
@@ -384,14 +384,14 @@ export default function PrivateSchoolDetail() {
 
                     {/* Optional extras */}
                     {costs.optional > 0 && (
-                      <div className="mt-3 border-t border-gray-200 pt-3">
+                      <div className="mt-3 border-t border-stone-200 pt-3">
                         <div className="mb-2 flex items-center justify-between text-xs">
-                          <span className="font-medium text-gray-600">Optional extras</span>
-                          <span className="font-medium text-gray-700">
+                          <span className="font-medium text-stone-600">Optional extras</span>
+                          <span className="font-medium text-stone-700">
                             +{formatFee(costs.optional)}
                           </span>
                         </div>
-                        <div className="space-y-1 text-xs text-gray-500">
+                        <div className="space-y-1 text-xs text-stone-500">
                           {!detail.lunches_compulsory && detail.lunches_per_term && (
                             <div>• Lunches: {formatFee(detail.lunches_per_term * 3)}/yr</div>
                           )}
@@ -416,9 +416,9 @@ export default function PrivateSchoolDetail() {
 
                     {/* One-time costs */}
                     {(detail.registration_fee || detail.deposit_fee) && (
-                      <div className="mt-3 border-t border-gray-200 pt-3">
-                        <div className="text-xs font-medium text-gray-600">One-time costs (first year):</div>
-                        <div className="mt-1 space-y-1 text-xs text-gray-500">
+                      <div className="mt-3 border-t border-stone-200 pt-3">
+                        <div className="text-xs font-medium text-stone-600">One-time costs (first year):</div>
+                        <div className="mt-1 space-y-1 text-xs text-stone-500">
                           {detail.registration_fee && (
                             <div>• Registration: {formatFee(detail.registration_fee)}</div>
                           )}
@@ -434,7 +434,7 @@ export default function PrivateSchoolDetail() {
             </div>
 
             {firstDetail?.hidden_costs_notes && (
-              <p className="mt-4 text-xs text-gray-600 italic">
+              <p className="mt-4 text-xs text-stone-600 italic">
                 {firstDetail.hidden_costs_notes}
               </p>
             )}
@@ -442,37 +442,37 @@ export default function PrivateSchoolDetail() {
         )}
 
         {/* School Hours */}
-        <section className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-gray-900">School Hours</h2>
-          <p className="mt-1 text-sm text-gray-500">
+        <section className="rounded-lg border border-stone-200 bg-white p-6">
+          <h2 className="text-xl font-semibold text-stone-900">School Hours</h2>
+          <p className="mt-1 text-sm text-stone-500">
             School day start and end times.
           </p>
           {firstDetail ? (
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">School day starts</span>
-                <span className="font-medium text-gray-900">
+                <span className="text-stone-600">School day starts</span>
+                <span className="font-medium text-stone-900">
                   {formatTime(firstDetail.school_day_start)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">School day ends</span>
-                <span className="font-medium text-gray-900">
+                <span className="text-stone-600">School day ends</span>
+                <span className="font-medium text-stone-900">
                   {formatTime(firstDetail.school_day_end)}
                 </span>
               </div>
             </div>
           ) : (
-            <p className="mt-4 text-sm text-gray-400">
+            <p className="mt-4 text-sm text-stone-400">
               No hours data available yet.
             </p>
           )}
         </section>
 
         {/* Transport */}
-        <section className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-gray-900">Transport</h2>
-          <p className="mt-1 text-sm text-gray-500">
+        <section className="rounded-lg border border-stone-200 bg-white p-6">
+          <h2 className="text-xl font-semibold text-stone-900">Transport</h2>
+          <p className="mt-1 text-sm text-stone-500">
             School transport availability, routes, and eligibility.
           </p>
           {providesTransport != null ? (
@@ -481,85 +481,85 @@ export default function PrivateSchoolDetail() {
                 <span
                   className={`inline-block h-3 w-3 rounded-full ${providesTransport ? "bg-green-500" : "bg-red-400"}`}
                 />
-                <span className="font-medium text-gray-900">
+                <span className="font-medium text-stone-900">
                   {providesTransport
                     ? "Transport provided"
                     : "No school transport"}
                 </span>
               </div>
               {transportNotes && (
-                <p className="text-sm text-gray-600">{transportNotes}</p>
+                <p className="text-sm text-stone-600">{transportNotes}</p>
               )}
             </div>
           ) : (
-            <p className="mt-4 text-sm text-gray-400">
+            <p className="mt-4 text-sm text-stone-400">
               No transport data available yet.
             </p>
           )}
         </section>
 
         {/* Holiday Schedule */}
-        <section className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-gray-900">
+        <section className="rounded-lg border border-stone-200 bg-white p-6">
+          <h2 className="text-xl font-semibold text-stone-900">
             Holiday Schedule
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-stone-500">
             Private schools often have different term dates from state schools.
           </p>
           {holidayNotes ? (
-            <p className="mt-4 text-sm text-gray-600">{holidayNotes}</p>
+            <p className="mt-4 text-sm text-stone-600">{holidayNotes}</p>
           ) : (
-            <p className="mt-4 text-sm text-gray-400">
+            <p className="mt-4 text-sm text-stone-400">
               No holiday schedule data available yet.
             </p>
           )}
         </section>
 
         {/* General Information */}
-        <section className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-gray-900">
+        <section className="rounded-lg border border-stone-200 bg-white p-6">
+          <h2 className="text-xl font-semibold text-stone-900">
             General Information
           </h2>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500">Address</dt>
-              <dd className="text-right font-medium text-gray-900">
+              <dt className="text-stone-500">Address</dt>
+              <dd className="text-right font-medium text-stone-900">
                 {school.address}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">Postcode</dt>
-              <dd className="font-medium text-gray-900">{school.postcode}</dd>
+              <dt className="text-stone-500">Postcode</dt>
+              <dd className="font-medium text-stone-900">{school.postcode}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">Age Range</dt>
-              <dd className="font-medium text-gray-900">
+              <dt className="text-stone-500">Age Range</dt>
+              <dd className="font-medium text-stone-900">
                 {school.age_range_from}&ndash;{school.age_range_to}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">Gender Policy</dt>
-              <dd className="font-medium text-gray-900">
+              <dt className="text-stone-500">Gender Policy</dt>
+              <dd className="font-medium text-stone-900">
                 {school.gender_policy}
               </dd>
             </div>
             {school.faith && (
               <div className="flex justify-between">
-                <dt className="text-gray-500">Faith</dt>
-                <dd className="font-medium text-gray-900">{school.faith}</dd>
+                <dt className="text-stone-500">Faith</dt>
+                <dd className="font-medium text-stone-900">{school.faith}</dd>
               </div>
             )}
             <div className="flex justify-between">
-              <dt className="text-gray-500">Council</dt>
-              <dd className="font-medium text-gray-900">{school.council}</dd>
+              <dt className="text-stone-500">Council</dt>
+              <dd className="font-medium text-stone-900">{school.council}</dd>
             </div>
           </dl>
         </section>
 
         {/* Location Map */}
-        <section className="rounded-lg border border-gray-200 bg-white">
+        <section className="rounded-lg border border-stone-200 bg-white">
           <div className="p-4">
-            <h2 className="text-xl font-semibold text-gray-900">Location</h2>
+            <h2 className="text-xl font-semibold text-stone-900">Location</h2>
           </div>
           <div className="h-[300px]">
             {school.lat != null && school.lng != null ? (
@@ -570,7 +570,7 @@ export default function PrivateSchoolDetail() {
                 selectedSchoolId={school.id}
               />
             ) : (
-              <div className="flex h-full items-center justify-center text-gray-400">
+              <div className="flex h-full items-center justify-center text-stone-400">
                 No location data available
               </div>
             )}

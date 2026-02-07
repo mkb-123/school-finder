@@ -44,7 +44,7 @@ export default function FilterPanel({
       <div>
         <label
           htmlFor="filter-age"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-stone-700"
         >
           Child&apos;s Age
         </label>
@@ -53,7 +53,7 @@ export default function FilterPanel({
           value={filters.age}
           onChange={(e) => set("age", e.target.value)}
           aria-label="Filter by child's age"
-          className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
         >
           <option value="">Any</option>
           {Array.from({ length: 14 }, (_, i) => i + 4).map((a) => (
@@ -68,7 +68,7 @@ export default function FilterPanel({
       <div>
         <label
           htmlFor="filter-gender"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-stone-700"
         >
           Child&apos;s Gender
         </label>
@@ -77,7 +77,7 @@ export default function FilterPanel({
           value={filters.gender}
           onChange={(e) => set("gender", e.target.value)}
           aria-label="Filter by child's gender"
-          className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
         >
           <option value="">Any</option>
           <option value="male">Male</option>
@@ -89,7 +89,7 @@ export default function FilterPanel({
       <div>
         <label
           htmlFor="filter-type"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-stone-700"
         >
           School Type
         </label>
@@ -98,7 +98,7 @@ export default function FilterPanel({
           value={filters.schoolType}
           onChange={(e) => set("schoolType", e.target.value)}
           aria-label="Filter by school type"
-          className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
         >
           <option value="">Any</option>
           <option value="state">State</option>
@@ -110,7 +110,7 @@ export default function FilterPanel({
       <div>
         <label
           htmlFor="filter-rating"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-stone-700"
         >
           Minimum Ofsted Rating
         </label>
@@ -119,7 +119,7 @@ export default function FilterPanel({
           value={filters.minRating}
           onChange={(e) => set("minRating", e.target.value)}
           aria-label="Filter by minimum Ofsted rating"
-          className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
         >
           <option value="">Any</option>
           <option value="Outstanding">Outstanding only</option>
@@ -132,7 +132,7 @@ export default function FilterPanel({
       <div>
         <label
           htmlFor="filter-distance"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-stone-700"
         >
           Max Distance (km)
         </label>
@@ -145,38 +145,38 @@ export default function FilterPanel({
           value={filters.maxDistance}
           onChange={(e) => set("maxDistance", e.target.value)}
           aria-label="Filter by maximum distance in kilometres"
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
         />
       </div>
 
       {/* Club filters */}
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-gray-700">Clubs</legend>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
+        <legend className="text-sm font-medium text-stone-700">Clubs</legend>
+        <label className="flex items-center gap-2 text-sm text-stone-700">
           <input
             type="checkbox"
             checked={filters.hasBreakfastClub}
             onChange={(e) => set("hasBreakfastClub", e.target.checked)}
             aria-label="Only show schools with breakfast club"
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-2 focus:ring-brand-500"
           />
           Has breakfast club
         </label>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
+        <label className="flex items-center gap-2 text-sm text-stone-700">
           <input
             type="checkbox"
             checked={filters.hasAfterSchoolClub}
             onChange={(e) => set("hasAfterSchoolClub", e.target.checked)}
             aria-label="Only show schools with after-school club"
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-2 focus:ring-brand-500"
           />
           Has after-school club
         </label>
       </fieldset>
 
       {/* Map legend */}
-      <div className="border-t border-gray-200 pt-4">
-        <p className="text-sm font-medium text-gray-700">Ofsted Colours</p>
+      <div className="border-t border-stone-200 pt-4">
+        <p className="text-sm font-medium text-stone-700">Ofsted Colours</p>
         <div className="mt-2 space-y-1 text-xs">
           <div className="flex items-center gap-2">
             <span className="inline-block h-3 w-3 rounded-full bg-green-600" aria-hidden="true" />
@@ -195,27 +195,27 @@ export default function FilterPanel({
             Inadequate
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-block h-3 w-3 rounded-full bg-gray-500" aria-hidden="true" />
+            <span className="inline-block h-3 w-3 rounded-full bg-stone-500" aria-hidden="true" />
             Not rated
           </div>
         </div>
       </div>
 
       {/* SEND toggle */}
-      <div className="border-t border-gray-200 pt-4">
+      <div className="border-t border-stone-200 pt-4">
         <SendToggle />
       </div>
     </div>
   );
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
+    <div className="rounded-lg border border-stone-200 bg-white p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+        <h2 className="text-lg font-semibold text-stone-900">Filters</h2>
         <div className="flex items-center gap-2">
           {schoolCount !== undefined && (
             <span
-              className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+              className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-medium text-brand-800"
               aria-live="polite"
               aria-atomic="true"
             >
@@ -226,7 +226,7 @@ export default function FilterPanel({
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden"
+            className="rounded-md p-1.5 text-stone-500 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-brand-500 lg:hidden"
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? "Collapse filters" : "Expand filters"}
           >
@@ -247,7 +247,7 @@ export default function FilterPanel({
           </button>
         </div>
       </div>
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-xs text-stone-500">
         Set constraints to narrow your results.
       </p>
 

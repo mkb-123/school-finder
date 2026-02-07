@@ -192,7 +192,7 @@ export default function Map({
 
   return (
     <div
-      className="h-full w-full overflow-hidden rounded-lg border border-gray-200"
+      className="h-full w-full overflow-hidden rounded-lg border border-stone-200"
       role="img"
       aria-label={`Map showing ${schools.length} school${schools.length !== 1 ? "s" : ""}`}
     >
@@ -256,11 +256,11 @@ export default function Map({
                         ? `/private-schools/${school.id}`
                         : `/schools/${school.id}`
                     }
-                    className="font-semibold text-blue-700 hover:underline"
+                    className="font-semibold text-brand-700 hover:underline"
                   >
                     {school.name}
                   </Link>
-                  <div className="mt-1 text-xs text-gray-600">
+                  <div className="mt-1 text-xs text-stone-600">
                     {school.postcode}
                   </div>
                   <div className="mt-1 flex items-center gap-1.5">
@@ -274,11 +274,11 @@ export default function Map({
                     </span>
                   </div>
                   {school.distance_km != null && (
-                    <div className="mt-1 text-xs text-gray-500">
+                    <div className="mt-1 text-xs text-stone-500">
                       {school.distance_km.toFixed(1)} km away
                     </div>
                   )}
-                  <div className="mt-1 text-xs text-gray-500">
+                  <div className="mt-1 text-xs text-stone-500">
                     Ages {school.age_range_from}&ndash;{school.age_range_to} |{" "}
                     {school.gender_policy}
                   </div>
@@ -314,10 +314,10 @@ export default function Map({
             >
               <Popup>
                 <div className="min-w-[180px]">
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-stone-900">
                     {count} schools in this area
                   </p>
-                  <ul className="mt-1 max-h-32 overflow-y-auto text-xs text-gray-600">
+                  <ul className="mt-1 max-h-32 overflow-y-auto text-xs text-stone-600">
                     {cluster.schools.slice(0, 8).map((s) => (
                       <li key={s.id} className="py-0.5">
                         <Link
@@ -326,22 +326,22 @@ export default function Map({
                               ? `/private-schools/${s.id}`
                               : `/schools/${s.id}`
                           }
-                          className="text-blue-700 hover:underline"
+                          className="text-brand-700 hover:underline"
                         >
                           {s.name}
                         </Link>
-                        <span className="ml-1 text-gray-400">
+                        <span className="ml-1 text-stone-400">
                           ({ofstedLabel(s.ofsted_rating)})
                         </span>
                       </li>
                     ))}
                     {count > 8 && (
-                      <li className="py-0.5 text-gray-400">
+                      <li className="py-0.5 text-stone-400">
                         ...and {count - 8} more
                       </li>
                     )}
                   </ul>
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-stone-400">
                     Zoom in to see individual schools
                   </p>
                 </div>
@@ -365,10 +365,10 @@ export default function Map({
           >
             <Popup>
               <div className="min-w-[140px]">
-                <p className="font-semibold text-gray-900">{stop.name}</p>
-                <p className="text-xs text-gray-600">{stop.schoolName}</p>
+                <p className="font-semibold text-stone-900">{stop.name}</p>
+                <p className="text-xs text-stone-600">{stop.schoolName}</p>
                 {stop.pickupTime && (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-stone-500">
                     Pick-up: {stop.pickupTime}
                   </p>
                 )}

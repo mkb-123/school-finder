@@ -16,37 +16,49 @@ export default function Navbar() {
 
   return (
     <nav
-      className="border-b border-gray-200 bg-white"
+      className="bg-white shadow-sm"
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="flex h-16 items-center justify-between">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="flex h-14 items-center justify-between">
           {/* Logo / brand */}
           <Link
             to="/"
-            className="text-lg font-bold text-blue-600"
+            className="flex items-center gap-2"
             aria-label="School Finder home"
           >
-            School Finder
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
+              SF
+            </span>
+            <span className="font-display text-xl text-stone-900">
+              School Finder
+            </span>
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex md:items-center md:space-x-1">
+          <div className="hidden md:flex md:items-center md:gap-1">
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
                 end={link.to === "/"}
                 className={({ isActive }) =>
-                  `rounded-md px-3 py-2 text-sm font-medium ${
+                  `relative px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "text-brand-700"
+                      : "text-stone-500 hover:text-stone-900"
                   }`
                 }
               >
-                {link.label}
+                {({ isActive }) => (
+                  <>
+                    {link.label}
+                    {isActive && (
+                      <span className="absolute inset-x-1 -bottom-[13px] h-0.5 rounded-full bg-brand-600" />
+                    )}
+                  </>
+                )}
               </NavLink>
             ))}
           </div>
@@ -54,7 +66,7 @@ export default function Navbar() {
           {/* Mobile menu button */}
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 md:hidden"
+            className="inline-flex items-center justify-center rounded-md p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-expanded={mobileMenuOpen}
             aria-label="Open main menu"
@@ -97,7 +109,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="border-t border-gray-200 md:hidden">
+        <div className="border-t border-stone-100 md:hidden">
           <div className="space-y-1 px-4 py-3">
             {NAV_LINKS.map((link) => (
               <NavLink
@@ -108,8 +120,8 @@ export default function Navbar() {
                 className={({ isActive }) =>
                   `block rounded-md px-3 py-2 text-sm font-medium ${
                     isActive
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-brand-50 text-brand-700"
+                      : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
                   }`
                 }
               >

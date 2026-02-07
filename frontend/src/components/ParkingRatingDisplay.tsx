@@ -15,7 +15,7 @@ interface ParkingRatingDisplayProps {
 }
 
 const getChaosColor = (score: number | null | undefined): string => {
-  if (!score) return "text-gray-400";
+  if (!score) return "text-stone-400";
   if (score <= 2) return "text-green-600";
   if (score <= 3.5) return "text-amber-600";
   return "text-red-600";
@@ -36,9 +36,9 @@ const formatScore = (score: number | null | undefined): string => {
 export default function ParkingRatingDisplay({ summary, compact = false }: ParkingRatingDisplayProps) {
   if (!summary || summary.total_ratings === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center text-sm text-gray-500">
+      <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 text-center text-sm text-stone-500">
         <svg
-          className="mx-auto h-8 w-8 text-gray-400"
+          className="mx-auto h-8 w-8 text-stone-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -63,7 +63,7 @@ export default function ParkingRatingDisplay({ summary, compact = false }: Parki
     return (
       <div className="flex items-center gap-2 text-sm">
         <svg
-          className="h-5 w-5 text-gray-400"
+          className="h-5 w-5 text-stone-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -79,28 +79,28 @@ export default function ParkingRatingDisplay({ summary, compact = false }: Parki
         <span className={`font-medium ${overallColor}`}>
           {overallLabel} ({formatScore(summary.overall_chaos_score)}/5)
         </span>
-        <span className="text-gray-400">• {summary.total_ratings} ratings</span>
+        <span className="text-stone-400">• {summary.total_ratings} ratings</span>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
+    <div className="rounded-lg border border-stone-200 bg-white p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-stone-900">
           Parking & Drop-off Chaos
         </h3>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-stone-500">
           {summary.total_ratings} parent rating{summary.total_ratings !== 1 ? "s" : ""}
         </span>
       </div>
 
-      <div className="mb-6 rounded-lg bg-gray-50 p-4">
+      <div className="mb-6 rounded-lg bg-stone-50 p-4">
         <div className="text-center">
           <div className={`text-4xl font-bold ${overallColor}`}>
             {formatScore(summary.overall_chaos_score)}
           </div>
-          <div className="mt-1 text-sm text-gray-600">out of 5</div>
+          <div className="mt-1 text-sm text-stone-600">out of 5</div>
           <div className={`mt-2 text-sm font-medium ${overallColor}`}>
             {overallLabel}
           </div>
@@ -116,9 +116,9 @@ export default function ParkingRatingDisplay({ summary, compact = false }: Parki
           { label: "Restrictions/hazards", value: summary.avg_restrictions_hazards },
         ].map(({ label, value }) => (
           <div key={label} className="flex items-center justify-between">
-            <span className="text-sm text-gray-700">{label}</span>
+            <span className="text-sm text-stone-700">{label}</span>
             <div className="flex items-center gap-2">
-              <div className="h-2 w-32 overflow-hidden rounded-full bg-gray-200">
+              <div className="h-2 w-32 overflow-hidden rounded-full bg-stone-200">
                 <div
                   className={`h-full ${
                     value && value <= 2
@@ -138,7 +138,7 @@ export default function ParkingRatingDisplay({ summary, compact = false }: Parki
         ))}
       </div>
 
-      <div className="mt-4 border-t border-gray-200 pt-4 text-xs text-gray-500">
+      <div className="mt-4 border-t border-stone-200 pt-4 text-xs text-stone-500">
         <p>
           Ratings are on a 1-5 scale where 5 is worst. Based on parent submissions
           about school gate congestion, parking availability, and safety concerns.

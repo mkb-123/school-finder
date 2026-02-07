@@ -66,15 +66,15 @@ const BusRouteCard: FC<BusRouteCardProps> = ({ route, nearbyStops }) => {
   );
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-stone-900">
             {route.route_name}
           </h3>
           <div className="mt-1 flex flex-wrap gap-2">
-            <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+            <span className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-medium text-brand-800">
               {routeTypeLabel}
             </span>
             {route.is_free ? (
@@ -89,15 +89,15 @@ const BusRouteCard: FC<BusRouteCardProps> = ({ route, nearbyStops }) => {
           </div>
         </div>
         {route.provider && (
-          <p className="text-sm text-gray-500">{route.provider}</p>
+          <p className="text-sm text-stone-500">{route.provider}</p>
         )}
       </div>
 
       {/* Cost Information */}
       {!route.is_free && (route.cost_per_term || route.cost_per_year) && (
-        <div className="mt-3 rounded-md bg-gray-50 p-3">
-          <p className="text-sm font-medium text-gray-700">Cost</p>
-          <div className="mt-1 flex flex-wrap gap-x-4 text-sm text-gray-600">
+        <div className="mt-3 rounded-md bg-stone-50 p-3">
+          <p className="text-sm font-medium text-stone-700">Cost</p>
+          <div className="mt-1 flex flex-wrap gap-x-4 text-sm text-stone-600">
             {route.cost_per_term && (
               <span>£{route.cost_per_term.toFixed(2)}/term</span>
             )}
@@ -106,7 +106,7 @@ const BusRouteCard: FC<BusRouteCardProps> = ({ route, nearbyStops }) => {
             )}
           </div>
           {route.cost_notes && (
-            <p className="mt-1 text-xs text-gray-500">{route.cost_notes}</p>
+            <p className="mt-1 text-xs text-stone-500">{route.cost_notes}</p>
           )}
         </div>
       )}
@@ -116,8 +116,8 @@ const BusRouteCard: FC<BusRouteCardProps> = ({ route, nearbyStops }) => {
         route.year_groups_eligible ||
         route.eligibility_notes) && (
         <div className="mt-3">
-          <p className="text-sm font-medium text-gray-700">Eligibility</p>
-          <ul className="mt-1 space-y-1 text-sm text-gray-600">
+          <p className="text-sm font-medium text-stone-700">Eligibility</p>
+          <ul className="mt-1 space-y-1 text-sm text-stone-600">
             {route.distance_eligibility_km && (
               <li>
                 • Must live {route.distance_eligibility_km}+ km from school
@@ -136,8 +136,8 @@ const BusRouteCard: FC<BusRouteCardProps> = ({ route, nearbyStops }) => {
         route.morning_departure_time ||
         route.afternoon_departure_time) && (
         <div className="mt-3">
-          <p className="text-sm font-medium text-gray-700">Schedule</p>
-          <div className="mt-1 text-sm text-gray-600">
+          <p className="text-sm font-medium text-stone-700">Schedule</p>
+          <div className="mt-1 text-sm text-stone-600">
             {route.operates_days && <p>Operates: {route.operates_days}</p>}
             <div className="mt-1 flex gap-4">
               {route.morning_departure_time && (
@@ -174,21 +174,21 @@ const BusRouteCard: FC<BusRouteCardProps> = ({ route, nearbyStops }) => {
       {/* Stops */}
       {route.stops.length > 0 && (
         <details className="mt-3">
-          <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
+          <summary className="cursor-pointer text-sm font-medium text-stone-700 hover:text-stone-900">
             View all stops ({route.stops.length})
           </summary>
           <div className="mt-2 space-y-2">
             {route.stops.map((stop) => (
               <div
                 key={stop.id}
-                className="rounded-md bg-gray-50 p-2 text-sm"
+                className="rounded-md bg-stone-50 p-2 text-sm"
               >
-                <p className="font-medium text-gray-900">{stop.stop_name}</p>
+                <p className="font-medium text-stone-900">{stop.stop_name}</p>
                 {stop.stop_location && (
-                  <p className="text-xs text-gray-600">{stop.stop_location}</p>
+                  <p className="text-xs text-stone-600">{stop.stop_location}</p>
                 )}
                 {(stop.morning_pickup_time || stop.afternoon_dropoff_time) && (
-                  <div className="mt-1 flex gap-3 text-xs text-gray-600">
+                  <div className="mt-1 flex gap-3 text-xs text-stone-600">
                     {stop.morning_pickup_time && (
                       <span>
                         Morning: {formatTime(stop.morning_pickup_time)}
@@ -209,7 +209,7 @@ const BusRouteCard: FC<BusRouteCardProps> = ({ route, nearbyStops }) => {
 
       {/* Notes */}
       {route.notes && (
-        <p className="mt-3 text-xs text-gray-500 italic">{route.notes}</p>
+        <p className="mt-3 text-xs text-stone-500 italic">{route.notes}</p>
       )}
 
       {/* Booking Link */}
@@ -219,7 +219,7 @@ const BusRouteCard: FC<BusRouteCardProps> = ({ route, nearbyStops }) => {
             href={route.booking_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium text-blue-600 hover:text-blue-700"
+            className="text-sm font-medium text-brand-600 hover:text-brand-700"
           >
             Booking information →
           </a>

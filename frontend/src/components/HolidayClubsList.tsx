@@ -27,9 +27,9 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
 
   if (!clubs || clubs.length === 0) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+      <div className="bg-stone-50 border border-stone-200 rounded-lg p-6 text-center">
         <svg
-          className="mx-auto h-12 w-12 text-gray-400"
+          className="mx-auto h-12 w-12 text-stone-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -41,10 +41,10 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">
+        <h3 className="mt-2 text-sm font-medium text-stone-900">
           No holiday clubs listed
         </h3>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-stone-500">
           Holiday club information is not currently available for this school.
         </p>
       </div>
@@ -61,22 +61,22 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
       {/* Header and Filters */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-stone-900">
             Holiday Clubs {schoolName && `at ${schoolName}`}
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-stone-600 mt-1">
             Childcare provision during school holidays
           </p>
         </div>
 
         {/* Filter Toggle */}
-        <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+        <div className="flex items-center space-x-2 bg-stone-100 rounded-lg p-1">
           <button
             onClick={() => setFilterSchoolRun(null)}
             className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
               filterSchoolRun === null
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-stone-900 shadow-sm'
+                : 'text-stone-600 hover:text-stone-900'
             }`}
           >
             All ({clubs.length})
@@ -85,8 +85,8 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
             onClick={() => setFilterSchoolRun(true)}
             className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
               filterSchoolRun === true
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-stone-900 shadow-sm'
+                : 'text-stone-600 hover:text-stone-900'
             }`}
           >
             School-run ({clubs.filter((c) => c.is_school_run).length})
@@ -95,8 +95,8 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
             onClick={() => setFilterSchoolRun(false)}
             className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
               filterSchoolRun === false
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-stone-900 shadow-sm'
+                : 'text-stone-600 hover:text-stone-900'
             }`}
           >
             External ({clubs.filter((c) => !c.is_school_run).length})
@@ -121,8 +121,8 @@ export default function HolidayClubsList({ clubs, schoolName }: HolidayClubsList
           ))}
         </div>
       ) : (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-          <p className="text-sm text-gray-600">
+        <div className="bg-stone-50 border border-stone-200 rounded-lg p-6 text-center">
+          <p className="text-sm text-stone-600">
             No {filterSchoolRun ? 'school-run' : 'external'} holiday clubs found.
           </p>
         </div>

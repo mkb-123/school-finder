@@ -166,10 +166,10 @@ export default function Journey() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
-      <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+      <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">
         School Run Planner
       </h1>
-      <p className="mt-1 text-sm text-gray-600 sm:text-base">
+      <p className="mt-1 text-sm text-stone-600 sm:text-base">
         Plan the school run with realistic travel time estimates. Times are
         calculated for drop-off (8:00-8:45am) and pick-up (5:00-5:30pm) to
         account for peak traffic conditions.
@@ -179,8 +179,8 @@ export default function Journey() {
         {/* Controls */}
         <aside className="space-y-4 lg:col-span-4" aria-label="Journey settings">
           {/* Route Settings */}
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
-            <h2 className="text-lg font-semibold text-gray-900">
+          <div className="rounded-lg border border-stone-200 bg-white p-4">
+            <h2 className="text-lg font-semibold text-stone-900">
               Route Settings
             </h2>
 
@@ -189,7 +189,7 @@ export default function Journey() {
               <div>
                 <label
                   htmlFor="journeyPostcode"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-stone-700"
                 >
                   Your Postcode
                 </label>
@@ -199,13 +199,13 @@ export default function Journey() {
                   placeholder="e.g. MK9 1AB"
                   value={postcode}
                   onChange={(e) => setPostcode(e.target.value.toUpperCase())}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
               </div>
 
               {/* Transport Mode */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-stone-700">
                   Transport Mode
                 </label>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -215,10 +215,10 @@ export default function Journey() {
                       onClick={() => setMode(m.value)}
                       aria-pressed={mode === m.value}
                       aria-label={`Transport mode: ${m.label}`}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 ${
                         mode === m.value
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          ? "bg-brand-600 text-white"
+                          : "bg-stone-100 text-stone-700 hover:bg-stone-200"
                       }`}
                     >
                       {m.label}
@@ -229,7 +229,7 @@ export default function Journey() {
 
               {/* School Selector */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-stone-700">
                   Select Schools (up to 5)
                 </label>
                 <input
@@ -237,11 +237,11 @@ export default function Journey() {
                   placeholder="Search schools..."
                   value={schoolSearch}
                   onChange={(e) => setSchoolSearch(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
-                <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-gray-200">
+                <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-stone-200">
                   {loadingSchools && (
-                    <p className="p-2 text-xs text-gray-400">Loading schools...</p>
+                    <p className="p-2 text-xs text-stone-400">Loading schools...</p>
                   )}
                   {filteredSchools.map((school) => {
                     const isSelected = selectedSchoolIds.includes(school.id);
@@ -253,17 +253,17 @@ export default function Journey() {
                         disabled={isDisabled}
                         className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition ${
                           isSelected
-                            ? "bg-blue-50 font-medium text-blue-800"
+                            ? "bg-brand-50 font-medium text-brand-800"
                             : isDisabled
-                              ? "cursor-not-allowed bg-gray-50 text-gray-300"
-                              : "text-gray-700 hover:bg-gray-50"
+                              ? "cursor-not-allowed bg-stone-50 text-stone-300"
+                              : "text-stone-700 hover:bg-stone-50"
                         }`}
                       >
                         <span
                           className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
                             isSelected
-                              ? "border-blue-600 bg-blue-600 text-white"
-                              : "border-gray-300"
+                              ? "border-brand-600 bg-brand-600 text-white"
+                              : "border-stone-300"
                           }`}
                         >
                           {isSelected && (
@@ -282,7 +282,7 @@ export default function Journey() {
                   })}
                 </div>
                 {selectedSchoolIds.length > 0 && (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-stone-500">
                     {selectedSchoolIds.length} school{selectedSchoolIds.length !== 1 ? "s" : ""} selected
                   </p>
                 )}
@@ -293,7 +293,7 @@ export default function Journey() {
                 onClick={handleCalculate}
                 disabled={loading || !postcode.trim() || selectedSchoolIds.length === 0}
                 aria-label="Calculate journey times for selected schools"
-                className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300"
+                className="w-full rounded-md bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-stone-300"
               >
                 {loading ? "Calculating..." : "Calculate Journey Times"}
               </button>
@@ -310,10 +310,10 @@ export default function Journey() {
           {/* Journey Results */}
           {journeys.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-stone-900">
                 Travel Times
               </h2>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-stone-500">
                 Sorted by drop-off time (quickest first). Times estimated for
                 peak hours. Pick-up times are for 5:00-5:30pm (after work).
               </p>
@@ -325,7 +325,7 @@ export default function Journey() {
                   rank={idx + 1}
                 />
               ))}
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-stone-400">
                 Note: estimates use straight-line distance with a route factor.
                 Actual times may vary based on road conditions, school
                 parking, and drop-off restrictions.
@@ -336,14 +336,14 @@ export default function Journey() {
           {/* Bus Routes Section */}
           {journeys.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-stone-900">
                 School Bus Routes
               </h2>
               {loadingBusData && (
-                <p className="text-sm text-gray-500">Loading bus route information...</p>
+                <p className="text-sm text-stone-500">Loading bus route information...</p>
               )}
               {!loadingBusData && Object.keys(busRoutes).length === 0 && (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-stone-500">
                   No bus routes available for selected schools.
                 </p>
               )}
@@ -353,7 +353,7 @@ export default function Journey() {
                 if (!school || routes.length === 0) return null;
                 return (
                   <div key={schoolId} className="space-y-2">
-                    <h3 className="text-base font-semibold text-gray-800">
+                    <h3 className="text-base font-semibold text-stone-800">
                       {school.name}
                     </h3>
                     {routes.map((route) => (
@@ -371,11 +371,11 @@ export default function Journey() {
 
           {/* Empty state */}
           {journeys.length === 0 && !loading && !error && (
-            <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <h2 className="text-lg font-semibold text-gray-900">
+            <div className="rounded-lg border border-stone-200 bg-white p-4">
+              <h2 className="text-lg font-semibold text-stone-900">
                 Travel Times
               </h2>
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-stone-500">
                 Enter your postcode, select up to 5 schools, and click
                 &quot;Calculate Journey Times&quot; to see estimates for
                 drop-off and pick-up.
