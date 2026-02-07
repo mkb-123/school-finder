@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { get, post } from "../api/client";
 
 // ---------------------------------------------------------------------------
@@ -172,6 +172,9 @@ function getWeightDescription(key: WeightKey): string {
 }
 
 export default function DecisionSupport() {
+  const [searchParams] = useSearchParams();
+  const council = searchParams.get("council") || "Milton Keynes";
+
   // --- State ---
   const [weights, setWeights] = useState<Weights>(DEFAULT_WEIGHTS);
   const [allSchools, setAllSchools] = useState<SchoolListItem[]>([]);
@@ -193,7 +196,7 @@ export default function DecisionSupport() {
 
   // --- Load school list on mount ---
   useEffect(() => {
-    get<SchoolListItem[]>("/schools", { council: "Milton Keynes" })
+    get<SchoolListItem[]>("/schools", { council })
       .then((data) => {
         setAllSchools(data);
         // Pre-select the first 10 (or all if less)
@@ -201,7 +204,7 @@ export default function DecisionSupport() {
         setSelectedIds(initial);
       })
       .catch(() => setError("Failed to load schools"));
-  }, []);
+  }, [council]);
 
   // --- Fetch scores when selectedIds or weights change ---
   const fetchScores = useCallback(async () => {

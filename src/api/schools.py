@@ -8,7 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from src.db.base import SchoolFilters, SchoolRepository
 from src.db.factory import get_school_repository
 from src.schemas.filters import SchoolFilterParams
-from src.schemas.holiday_club import HolidayClubResponse
 from src.schemas.school import (
     AdmissionsCriteriaResponse,
     AdmissionsEstimateResponse,
@@ -102,11 +101,11 @@ async def get_school(
 
     ofsted_history = await repo.get_ofsted_history(school_id)
     trajectory_data = calculate_trajectory(ofsted_history)
-    ofsted_trajectory = OfstedTrajectoryResponse(
-        school_id=school_id,
-        history=ofsted_history,
-        **trajectory_data
-    ) if ofsted_history else None
+    ofsted_trajectory = (
+        OfstedTrajectoryResponse(school_id=school_id, history=ofsted_history, **trajectory_data)
+        if ofsted_history
+        else None
+    )
 
     # Calculate parking summary
     parking_ratings = await repo.get_parking_ratings_for_school(school_id)
@@ -266,8 +265,4 @@ async def get_school_ofsted_trajectory(
     history = await repo.get_ofsted_history(school_id)
     trajectory_data = calculate_trajectory(history)
 
-    return OfstedTrajectoryResponse(
-        school_id=school_id,
-        history=history,
-        **trajectory_data
-    )
+    return OfstedTrajectoryResponse(school_id=school_id, history=history, **trajectory_data)

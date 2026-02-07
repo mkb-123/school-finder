@@ -103,8 +103,14 @@ async def geocode_postcode(
 
         # Non-200 from postcodes.io – fall through to local lookup
         logger.warning("postcodes.io returned %s for %s", response.status_code, clean)
+    except httpx.HTTPError:
+        logger.warning("postcodes.io request failed for %s", clean)
     except Exception:
-        logger.warning("postcodes.io unreachable – using local fallback for %s", clean)
+        logger.warning(
+            "Unexpected error geocoding %s – using local fallback",
+            clean,
+            exc_info=True,
+        )
 
     # --- Fallback to local data ---
     fallback = _fallback_lookup(clean)
