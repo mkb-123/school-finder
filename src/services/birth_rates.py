@@ -71,7 +71,8 @@ async def list_ons_datasets(search: str | None = None) -> list[dict]:
         if search:
             search_lower = search.lower()
             items = [
-                item for item in items
+                item
+                for item in items
                 if search_lower in (item.get("title", "") or "").lower()
                 or search_lower in (item.get("description", "") or "").lower()
             ]
@@ -104,11 +105,13 @@ async def get_population_estimates(
         for item in data.get("items", []):
             title = (item.get("title", "") or "").lower()
             if "population" in title or "birth" in title:
-                results.append({
-                    "id": item.get("id"),
-                    "title": item.get("title"),
-                    "description": item.get("description", "")[:200],
-                })
+                results.append(
+                    {
+                        "id": item.get("id"),
+                        "title": item.get("title"),
+                        "description": item.get("description", "")[:200],
+                    }
+                )
 
         return results
 
@@ -161,18 +164,17 @@ def estimate_reception_demand(
             pct_change = 0.0
             trend = "stable"
 
-        notes = (
-            f"Based on {bd.live_births} births in {bd.geography_name} "
-            f"during calendar year {bd.year}."
-        )
+        notes = f"Based on {bd.live_births} births in {bd.geography_name} during calendar year {bd.year}."
 
-        forecasts.append(DemandForecast(
-            reception_year=reception_year,
-            estimated_children=bd.live_births,
-            trend=trend,
-            trend_pct_change=round(pct_change, 1),
-            notes=notes,
-        ))
+        forecasts.append(
+            DemandForecast(
+                reception_year=reception_year,
+                estimated_children=bd.live_births,
+                trend=trend,
+                trend_pct_change=round(pct_change, 1),
+                notes=notes,
+            )
+        )
 
     return forecasts
 

@@ -14,11 +14,8 @@ Usage
 
 from __future__ import annotations
 
-import argparse
-import asyncio
 import logging
 import pathlib
-import sys
 
 import polars as pl
 from sqlalchemy import create_engine, select
@@ -452,66 +449,7 @@ class ReviewsPerformanceAgent(BaseAgent):
             self._logger.info("Committed %d performance rows", len(records))
 
 
-# ------------------------------------------------------------------
-# CLI entry point
-# ------------------------------------------------------------------
-
-
-def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse command-line arguments for the reviews & performance agent.
-
-    Parameters
-    ----------
-    argv:
-        Argument list.  Defaults to ``sys.argv[1:]`` when ``None``.
-
-    Returns
-    -------
-    argparse.Namespace
-        Parsed arguments containing at least ``council``.
-    """
-    parser = argparse.ArgumentParser(
-        description="Download Ofsted and DfE data for schools in a council.",
-    )
-    parser.add_argument(
-        "--council",
-        required=True,
-        help='Council name, e.g. "Milton Keynes".',
-    )
-    parser.add_argument(
-        "--cache-dir",
-        default="./data/cache",
-        help="Directory for cached HTTP responses and CSVs (default: ./data/cache).",
-    )
-    parser.add_argument(
-        "--delay",
-        type=float,
-        default=1.0,
-        help="Seconds between HTTP requests (default: 1.0).",
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv: list[str] | None = None) -> None:
-    """CLI entry point for the reviews & performance agent.
-
-    Parameters
-    ----------
-    argv:
-        Optional argument list for testing; defaults to ``sys.argv[1:]``.
-    """
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
-    args = _parse_args(argv)
-    agent = ReviewsPerformanceAgent(
-        council=args.council,
-        cache_dir=args.cache_dir,
-        delay=args.delay,
-    )
-    asyncio.run(agent.run())
-
-
 if __name__ == "__main__":
-    sys.exit(main() or 0)
+    from src.agents.base_agent import run_agent_cli
+
+    run_agent_cli(ReviewsPerformanceAgent, "Download Ofsted and DfE data for schools in a council.")

@@ -25,11 +25,8 @@ Usage
 
 from __future__ import annotations
 
-import argparse
-import asyncio
 import logging
 import re
-import sys
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup, Tag
@@ -1019,56 +1016,16 @@ class AdmissionsCriteriaAgent(BaseAgent):
             self._logger.info("Committed %d criteria rows for school_id=%d", len(records), school_id)
 
 
-# ------------------------------------------------------------------
-# CLI entry point
-# ------------------------------------------------------------------
-
-
-def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse command-line arguments for the admissions criteria agent."""
-    parser = argparse.ArgumentParser(
-        description="Scrape admissions oversubscription criteria for schools in a council.",
-    )
-    parser.add_argument(
-        "--council",
-        required=True,
-        help='Council name, e.g. "Milton Keynes".',
-    )
-    parser.add_argument(
-        "--cache-dir",
-        default="./data/cache",
-        help="Directory for cached HTTP responses (default: ./data/cache).",
-    )
-    parser.add_argument(
-        "--delay",
-        type=float,
-        default=1.0,
-        help="Seconds between HTTP requests (default: 1.0).",
-    )
-    parser.add_argument(
-        "--max-depth",
-        type=int,
-        default=2,
-        help="Maximum link-following depth from homepage (default: 2).",
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv: list[str] | None = None) -> None:
-    """CLI entry point for the admissions criteria agent."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
-    args = _parse_args(argv)
-    agent = AdmissionsCriteriaAgent(
-        council=args.council,
-        cache_dir=args.cache_dir,
-        delay=args.delay,
-        max_depth=args.max_depth,
-    )
-    asyncio.run(agent.run())
-
-
 if __name__ == "__main__":
-    sys.exit(main() or 0)
+    from src.agents.base_agent import run_agent_cli
+
+    run_agent_cli(
+        AdmissionsCriteriaAgent,
+        "Scrape admissions oversubscription criteria for schools in a council.",
+        extra_args_fn=lambda p: p.add_argument(
+            "--max-depth",
+            type=int,
+            default=2,
+            help="Maximum link-following depth from homepage (default: 2).",
+        ),
+    )
