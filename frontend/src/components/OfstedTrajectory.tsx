@@ -29,45 +29,16 @@ const ratingColors: Record<string, string> = {
   'Inadequate': 'text-red-700 bg-red-50 border-red-200',
 };
 
+const trajectoryConfig: Record<string, { icon: typeof TrendingUp; color: string; label: string }> = {
+  improving: { icon: TrendingUp, color: 'text-green-700 bg-green-50 border-green-200', label: 'Improving' },
+  declining: { icon: TrendingDown, color: 'text-red-700 bg-red-50 border-red-200', label: 'Declining' },
+  stable: { icon: Minus, color: 'text-blue-700 bg-blue-50 border-blue-200', label: 'Stable' },
+  unknown: { icon: Minus, color: 'text-gray-700 bg-gray-50 border-gray-200', label: 'Unknown' },
+};
+
 export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
-  const getTrajectoryIcon = () => {
-    switch (trajectory.trajectory) {
-      case 'improving':
-        return <TrendingUp className="w-5 h-5 text-green-600" />;
-      case 'declining':
-        return <TrendingDown className="w-5 h-5 text-red-600" />;
-      case 'stable':
-        return <Minus className="w-5 h-5 text-blue-600" />;
-      default:
-        return null;
-    }
-  };
-
-  const getTrajectoryText = () => {
-    switch (trajectory.trajectory) {
-      case 'improving':
-        return 'Improving';
-      case 'declining':
-        return 'Declining';
-      case 'stable':
-        return 'Stable';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const getTrajectoryColor = () => {
-    switch (trajectory.trajectory) {
-      case 'improving':
-        return 'text-green-700 bg-green-50 border-green-200';
-      case 'declining':
-        return 'text-red-700 bg-red-50 border-red-200';
-      case 'stable':
-        return 'text-blue-700 bg-blue-50 border-blue-200';
-      default:
-        return 'text-gray-700 bg-gray-50 border-gray-200';
-    }
-  };
+  const config = trajectoryConfig[trajectory.trajectory] ?? trajectoryConfig.unknown;
+  const TrajectoryIcon = config.icon;
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-GB', {
@@ -77,94 +48,125 @@ export function OfstedTrajectory({ trajectory }: OfstedTrajectoryProps) {
     });
   };
 
+  // Empty state when there is no history
+  if (trajectory.history.length === 0) {
+    return (
+      <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6" aria-labelledby="ofsted-heading">
+        <h2 id="ofsted-heading" className="text-lg font-semibold text-gray-900">Ofsted Rating History</h2>
+        <div className="mt-4 flex items-center gap-3 rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
+          <svg className="h-5 w-5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          No Ofsted inspection history available for this school.
+        </div>
+      </section>
+    );
+  }
+
+  const inspectionAgeYears = trajectory.inspection_age_years;
+
   return (
-    <div className="bg-white rounded-lg shadow p-6 space-y-6">
-      <div className="flex items-start justify-between">
+    <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 space-y-6" aria-labelledby="ofsted-heading">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Ofsted Trajectory</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Inspection history and direction of travel
+          <h2 id="ofsted-heading" className="text-lg font-semibold text-gray-900">Ofsted Rating History</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            How this school's Ofsted rating has changed over time
           </p>
         </div>
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${getTrajectoryColor()}`}>
-          {getTrajectoryIcon()}
-          <span className="font-semibold">{getTrajectoryText()}</span>
+        <div
+          className={`inline-flex items-center gap-2 self-start rounded-full border px-3 py-1.5 text-sm font-semibold ${config.color}`}
+          aria-label={`Rating trend: ${config.label}`}
+        >
+          <TrajectoryIcon className="h-4 w-4" aria-hidden="true" />
+          {config.label}
         </div>
       </div>
 
-      {trajectory.is_stale && trajectory.inspection_age_years && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+      {/* Stale rating warning */}
+      {trajectory.is_stale && inspectionAgeYears != null && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4" role="alert">
+          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" aria-hidden="true" />
           <div>
-            <p className="font-semibold text-amber-900">Rating may be stale</p>
-            <p className="text-sm text-amber-800 mt-1">
-              The last inspection was {trajectory.inspection_age_years!.toFixed(1)} years ago (over 5 years).
+            <p className="text-sm font-semibold text-amber-900">Rating may be outdated</p>
+            <p className="mt-0.5 text-sm text-amber-800">
+              The last inspection was {inspectionAgeYears.toFixed(1)} years ago (over 5 years).
               A new inspection may be due soon.
             </p>
           </div>
         </div>
       )}
 
-      {trajectory.inspection_age_years !== null && trajectory.inspection_age_years !== undefined && !trajectory.is_stale && (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Clock className="w-4 h-4" />
-          <span>
-            Last inspected {trajectory.inspection_age_years!.toFixed(1)} years ago
-          </span>
+      {/* Last inspected note */}
+      {inspectionAgeYears != null && !trajectory.is_stale && (
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Clock className="h-4 w-4" aria-hidden="true" />
+          <span>Last inspected {inspectionAgeYears.toFixed(1)} years ago</span>
         </div>
       )}
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Inspection History</h3>
-        <div className="space-y-4">
-          {trajectory.history.map((inspection, index) => (
-            <div
-              key={inspection.id}
-              className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold border ${ratingColors[inspection.rating]}`}>
+      {/* Inspection Timeline */}
+      <div>
+        <h3 className="text-base font-semibold text-gray-900">Inspection History</h3>
+        <ol className="mt-4 space-y-4" aria-label="Ofsted inspection timeline">
+          {trajectory.history.map((inspection, index) => {
+            const ratingStyle = ratingColors[inspection.rating] ?? 'text-gray-700 bg-gray-50 border-gray-200';
+            const isCurrent = index === 0;
+
+            return (
+              <li
+                key={inspection.id}
+                className={`rounded-xl border p-4 ${isCurrent ? 'border-gray-300 bg-white' : 'border-gray-200 bg-white'}`}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`inline-block rounded-full border px-3 py-1 text-sm font-semibold ${ratingStyle}`}>
                       {inspection.rating}
                     </span>
-                    {index === 0 && (
-                      <span className="text-xs text-gray-500 font-medium">Current</span>
+                    {isCurrent && (
+                      <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-0.5 text-xs font-medium text-white">
+                        Current
+                      </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Inspected {formatDate(inspection.inspection_date)}
-                  </p>
+                  {inspection.report_url && (
+                    <a
+                      href={inspection.report_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      View report
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  )}
                 </div>
-                {inspection.report_url && (
-                  <a
-                    href={inspection.report_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:text-blue-700 underline"
-                  >
-                    View report
-                  </a>
+
+                <p className="text-sm text-gray-500">
+                  Inspected {formatDate(inspection.inspection_date)}
+                </p>
+
+                {inspection.strengths_quote && (
+                  <div className="mt-3 rounded-lg bg-green-50 border border-green-100 p-3">
+                    <p className="text-xs font-semibold text-green-800 mb-1">Strengths</p>
+                    <p className="text-sm text-green-900 leading-relaxed">"{inspection.strengths_quote}"</p>
+                  </div>
                 )}
-              </div>
 
-              {inspection.strengths_quote && (
-                <div className="mb-2">
-                  <p className="text-xs font-semibold text-gray-700 mb-1">Strengths:</p>
-                  <p className="text-sm text-gray-600 italic">"{inspection.strengths_quote}"</p>
-                </div>
-              )}
-
-              {inspection.improvements_quote && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-700 mb-1">Areas for improvement:</p>
-                  <p className="text-sm text-gray-600 italic">"{inspection.improvements_quote}"</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                {inspection.improvements_quote && (
+                  <div className="mt-2 rounded-lg bg-amber-50 border border-amber-100 p-3">
+                    <p className="text-xs font-semibold text-amber-800 mb-1">Areas for improvement</p>
+                    <p className="text-sm text-amber-900 leading-relaxed">"{inspection.improvements_quote}"</p>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
       </div>
-    </div>
+    </section>
   );
 }
