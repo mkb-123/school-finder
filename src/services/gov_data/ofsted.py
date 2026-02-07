@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import httpx
@@ -317,8 +317,12 @@ class OfstedService(BaseGovDataService):
         return None
 
     @staticmethod
-    def _parse_date(date_str: str) -> str | None:
-        """Parse a date string into ISO format YYYY-MM-DD."""
+    def _parse_date(date_str: str) -> date | None:
+        """Parse a date string into a Python date object.
+
+        SQLAlchemy's Date column type requires a ``datetime.date`` object,
+        not a string.
+        """
         formats = [
             "%Y-%m-%d",
             "%d/%m/%Y",
@@ -330,7 +334,7 @@ class OfstedService(BaseGovDataService):
         for fmt in formats:
             try:
                 dt = datetime.strptime(date_str, fmt)
-                return dt.strftime("%Y-%m-%d")
+                return dt.date()
             except ValueError:
                 continue
         return None
