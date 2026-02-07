@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from src.api.admissions import router as admissions_router
 from src.api.bus_routes import router as bus_routes_router
 from src.api.compare import router as compare_router
 from src.api.councils import router as councils_router
@@ -73,6 +74,7 @@ app.include_router(journey_router)
 app.include_router(parking_router)
 app.include_router(holiday_clubs_router)
 app.include_router(bus_routes_router)
+app.include_router(admissions_router)
 
 # Serve frontend SPA in production.
 # Static assets (JS, CSS, images) are served directly from dist/assets/.

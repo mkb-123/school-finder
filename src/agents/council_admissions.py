@@ -66,6 +66,13 @@ _ALLOCATION_LINK_KEYWORDS: list[str] = [
     "primary admissions",
     "results",
     "outcomes",
+    # MK Council-specific link text patterns
+    "starting primary",
+    "starting secondary",
+    "admission arrangements",
+    "catchment",
+    "admission appeals",
+    "waiting lists",
 ]
 
 _ALLOCATION_LINK_PATTERN: re.Pattern[str] = re.compile(

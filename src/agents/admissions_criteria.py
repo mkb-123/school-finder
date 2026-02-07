@@ -459,6 +459,47 @@ class AdmissionsCriteriaAgent(BaseAgent):
     # Criteria parsing (enhanced with more strategies)
     # ------------------------------------------------------------------
 
+    # Maximum number of criteria items a school can reasonably have.
+    # UK schools typically have 5-8 oversubscription criteria; anything above 12
+    # is almost certainly over-extraction (nav menus, policy lists, etc.).
+    _MAX_CRITERIA = 12
+
+    def _validate_criteria(self, criteria: list[dict[str, object]]) -> list[dict[str, object]] | None:
+        """Validate and filter extracted criteria.
+
+        Returns None if the criteria look like over-extraction (too many items,
+        too many 'Other' categories, or items that look like navigation/policy lists).
+        """
+        if not criteria:
+            return None
+
+        if len(criteria) > self._MAX_CRITERIA:
+            self._logger.debug(
+                "Rejected %d criteria (exceeds max %d) for school_id=%s",
+                len(criteria),
+                self._MAX_CRITERIA,
+                criteria[0].get("school_id"),
+            )
+            return None
+
+        # If more than half are "Other", it's probably not real criteria
+        other_count = sum(1 for c in criteria if c.get("category") == "Other")
+        if len(criteria) > 3 and other_count > len(criteria) * 0.6:
+            self._logger.debug(
+                "Rejected criteria: %d/%d are 'Other' category",
+                other_count,
+                len(criteria),
+            )
+            return None
+
+        # Check for obvious nav/menu items (very short descriptions, "pdf" suffix)
+        pdf_count = sum(1 for c in criteria if "pdf" in str(c.get("description", "")).lower()[-10:])
+        if pdf_count > len(criteria) * 0.3:
+            self._logger.debug("Rejected criteria: too many PDF-like items")
+            return None
+
+        return criteria
+
     def _parse_criteria(self, school_id: int, soup: BeautifulSoup) -> list[dict[str, object]]:
         """Extract oversubscription criteria from a parsed HTML page.
 
@@ -472,31 +513,37 @@ class AdmissionsCriteriaAgent(BaseAgent):
         """
         # Strategy 1: Ordered lists
         criteria = self._parse_from_ordered_lists(school_id, soup)
+        criteria = self._validate_criteria(criteria) if criteria else None
         if criteria:
             return criteria
 
         # Strategy 2: Unordered lists in admissions sections
         criteria = self._parse_from_unordered_lists(school_id, soup)
+        criteria = self._validate_criteria(criteria) if criteria else None
         if criteria:
             return criteria
 
         # Strategy 3: Tables
         criteria = self._parse_from_tables(school_id, soup)
+        criteria = self._validate_criteria(criteria) if criteria else None
         if criteria:
             return criteria
 
         # Strategy 4: Definition lists
         criteria = self._parse_from_definition_lists(school_id, soup)
+        criteria = self._validate_criteria(criteria) if criteria else None
         if criteria:
             return criteria
 
         # Strategy 5: Numbered text
         criteria = self._parse_from_numbered_text(school_id, soup)
+        criteria = self._validate_criteria(criteria) if criteria else None
         if criteria:
             return criteria
 
         # Strategy 6: Sections with headings
         criteria = self._parse_from_sections(school_id, soup)
+        criteria = self._validate_criteria(criteria) if criteria else None
         if criteria:
             return criteria
 
