@@ -80,11 +80,31 @@ async def list_schools(
 async def get_school(
     school_id: int,
     repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+    lat: float | None = None,
+    lng: float | None = None,
+    postcode: str | None = None,
 ) -> SchoolDetailResponse:
     """Get full details for a single school including clubs, performance, etc."""
     school = await repo.get_school_by_id(school_id)
     if school is None:
         raise HTTPException(status_code=404, detail="School not found")
+
+    # Compute distance_km from user's location when coordinates are available
+    user_lat = lat
+    user_lng = lng
+    if user_lat is None and user_lng is None and postcode:
+        try:
+            from src.services.geocoding import geocode_postcode
+
+            user_lat, user_lng = await geocode_postcode(postcode)
+        except Exception:
+            logger.warning("Failed to geocode postcode '%s' for distance calc", postcode)
+
+    distance_km: float | None = None
+    if user_lat is not None and user_lng is not None and school.lat is not None and school.lng is not None:
+        from src.services.catchment import haversine_distance
+
+        distance_km = haversine_distance(user_lat, user_lng, school.lat, school.lng)
 
     clubs = await repo.get_clubs_for_school(school_id)
     holiday_clubs = await repo.get_holiday_clubs_for_school(school_id)
@@ -138,8 +158,11 @@ async def get_school(
         )
 
     base = SchoolResponse.model_validate(school, from_attributes=True)
+    base_data = base.model_dump()
+    if distance_km is not None:
+        base_data["distance_km"] = round(distance_km, 3)
     return SchoolDetailResponse(
-        **base.model_dump(),
+        **base_data,
         clubs=clubs,
         holiday_clubs=holiday_clubs,
         performance=performance,
