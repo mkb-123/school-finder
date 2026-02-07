@@ -56,6 +56,8 @@ interface MapProps {
   busStops?: BusStopMarker[];
   /** Whether to show the legend. Defaults to true. */
   showLegend?: boolean;
+  /** User's search postcode, propagated to school detail links. */
+  userPostcode?: string;
 }
 
 const MILTON_KEYNES: LatLngExpression = [52.0406, -0.7594];
@@ -183,10 +185,17 @@ export default function Map({
   onSchoolSelect,
   busStops = [],
   showLegend = true,
+  userPostcode,
 }: MapProps) {
   const [currentZoom, setCurrentZoom] = useState(zoom);
   const [legendExpanded, setLegendExpanded] = useState(false);
   const flyToRef = useRef<((lat: number, lng: number) => void) | null>(null);
+
+  /** Build a school detail URL, appending ?postcode=... when available. */
+  const schoolDetailUrl = (s: School) => {
+    const base = s.is_private ? `/private-schools/${s.id}` : `/schools/${s.id}`;
+    return userPostcode ? `${base}?postcode=${encodeURIComponent(userPostcode)}` : base;
+  };
 
   const schoolsWithCoords = useMemo(
     () => schools.filter((s) => s.lat != null && s.lng != null),
@@ -264,11 +273,7 @@ export default function Map({
               <Popup>
                 <div className="min-w-[200px] max-w-[260px]">
                   <Link
-                    to={
-                      school.is_private
-                        ? `/private-schools/${school.id}`
-                        : `/schools/${school.id}`
-                    }
+                    to={schoolDetailUrl(school)}
                     className="text-sm font-semibold text-brand-700 hover:underline"
                   >
                     {school.name}
@@ -295,11 +300,7 @@ export default function Map({
                     {school.gender_policy}
                   </p>
                   <Link
-                    to={
-                      school.is_private
-                        ? `/private-schools/${school.id}`
-                        : `/schools/${school.id}`
-                    }
+                    to={schoolDetailUrl(school)}
                     className="mt-2 inline-block text-xs font-medium text-brand-600 hover:text-brand-800 hover:underline"
                   >
                     View full details
@@ -343,11 +344,7 @@ export default function Map({
                     {cluster.schools.slice(0, 8).map((s) => (
                       <li key={s.id} className="py-0.5">
                         <Link
-                          to={
-                            s.is_private
-                              ? `/private-schools/${s.id}`
-                              : `/schools/${s.id}`
-                          }
+                          to={schoolDetailUrl(s)}
                           className="text-brand-700 hover:underline"
                         >
                           {s.name}

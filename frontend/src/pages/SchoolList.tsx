@@ -291,6 +291,7 @@ export default function SchoolList() {
                 isPrivate={s.is_private}
                 ethos={s.ethos}
                 ageRange={`${s.age_range_from}\u2013${s.age_range_to}`}
+                postcode={postcode || undefined}
               />
             </div>
           ))}
@@ -306,6 +307,7 @@ export default function SchoolList() {
             schools={filteredSchools}
             selectedSchoolId={selectedSchoolId}
             onSchoolSelect={handleSchoolSelect}
+            userPostcode={postcode || undefined}
           />
         </section>
       </div>
