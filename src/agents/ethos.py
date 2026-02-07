@@ -267,8 +267,9 @@ class EthosAgent(BaseAgent):
             if _ETHOS_PATTERN.search(combined):
                 text = elem.get_text(separator=" ", strip=True)
                 # Get first substantial paragraph (skip welcome messages)
-                paragraphs = [p.strip() for p in text.split("\n")
-                            if len(p.strip()) >= 30 and not self._is_generic_welcome(p)]
+                paragraphs = [
+                    p.strip() for p in text.split("\n") if len(p.strip()) >= 30 and not self._is_generic_welcome(p)
+                ]
                 if paragraphs:
                     # Try to extract motto if embedded
                     embedded_motto = self._extract_motto_from_text(paragraphs[0])
@@ -337,7 +338,7 @@ class EthosAgent(BaseAgent):
             if match:
                 motto = match.group(1).strip()
                 # Clean up any trailing text
-                motto = re.split(r'[.!?]\s+[A-Z]', motto)[0]  # Stop at next sentence
+                motto = re.split(r"[.!?]\s+[A-Z]", motto)[0]  # Stop at next sentence
                 if 10 <= len(motto) <= 150:
                     return motto
 
@@ -412,7 +413,10 @@ class EthosAgent(BaseAgent):
         str
             Generic ethos statement.
         """
-        return f"{school_name} is committed to providing high-quality education and supporting every child to reach their full potential."
+        return (
+            f"{school_name} is committed to providing high-quality education "
+            "and supporting every child to reach their full potential."
+        )
 
     # ------------------------------------------------------------------
     # Database persistence

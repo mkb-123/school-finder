@@ -41,11 +41,11 @@ async def compare_schools(
         # Get Ofsted trajectory
         ofsted_history = await repo.get_ofsted_history(school_id)
         trajectory_data = calculate_trajectory(ofsted_history)
-        ofsted_trajectory = OfstedTrajectoryResponse(
-            school_id=school_id,
-            history=ofsted_history,
-            **trajectory_data
-        ) if ofsted_history else None
+        ofsted_trajectory = (
+            OfstedTrajectoryResponse(school_id=school_id, history=ofsted_history, **trajectory_data)
+            if ofsted_history
+            else None
+        )
 
         # Calculate parking summary
         parking_ratings = await repo.get_parking_ratings_for_school(school_id)

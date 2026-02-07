@@ -260,22 +260,28 @@ class TestOfstedTrajectory:
         past = today - datetime.timedelta(days=3 * 365)
 
         # Outstanding → Good (declining)
-        result1 = calculate_trajectory([
-            create_mock_inspection(1, today, "Good"),
-            create_mock_inspection(1, past, "Outstanding"),
-        ])
+        result1 = calculate_trajectory(
+            [
+                create_mock_inspection(1, today, "Good"),
+                create_mock_inspection(1, past, "Outstanding"),
+            ]
+        )
         assert result1["trajectory"] == "declining"
 
         # Good → Requires Improvement (declining)
-        result2 = calculate_trajectory([
-            create_mock_inspection(1, today, "Requires Improvement"),
-            create_mock_inspection(1, past, "Good"),
-        ])
+        result2 = calculate_trajectory(
+            [
+                create_mock_inspection(1, today, "Requires Improvement"),
+                create_mock_inspection(1, past, "Good"),
+            ]
+        )
         assert result2["trajectory"] == "declining"
 
         # Requires Improvement → Inadequate (declining)
-        result3 = calculate_trajectory([
-            create_mock_inspection(1, today, "Inadequate"),
-            create_mock_inspection(1, past, "Requires Improvement"),
-        ])
+        result3 = calculate_trajectory(
+            [
+                create_mock_inspection(1, today, "Inadequate"),
+                create_mock_inspection(1, past, "Requires Improvement"),
+            ]
+        )
         assert result3["trajectory"] == "declining"
