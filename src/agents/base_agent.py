@@ -7,11 +7,14 @@ backoff.
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import hashlib
 import logging
 import pathlib
+import sys
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 
 import httpx
 from bs4 import BeautifulSoup
@@ -250,3 +253,49 @@ class BaseAgent(ABC):
         """
         url_hash = hashlib.sha256(url.encode()).hexdigest()
         return self.cache_dir / f"{url_hash}.html"
+
+
+# ------------------------------------------------------------------
+# Shared CLI entry point
+# ------------------------------------------------------------------
+
+
+def run_agent_cli(
+    agent_class: type[BaseAgent],
+    description: str,
+    extra_args_fn: Callable[[argparse.ArgumentParser], None] | None = None,
+    argv: list[str] | None = None,
+) -> None:
+    """Shared CLI runner for all data-collection agents.
+
+    Handles argument parsing, logging setup, agent instantiation, and
+    async execution.  Agents with only the standard three parameters
+    (council, cache-dir, delay) need no ``extra_args_fn``.  Agents with
+    additional CLI flags pass a callback that adds them to the parser.
+
+    Parameters
+    ----------
+    agent_class:
+        The concrete :class:`BaseAgent` subclass to instantiate.
+    description:
+        One-line description shown in ``--help``.
+    extra_args_fn:
+        Optional callback ``fn(parser)`` that adds extra arguments to the
+        :class:`argparse.ArgumentParser` before parsing.
+    argv:
+        Argument list; defaults to ``sys.argv[1:]`` when ``None``.
+    """
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--council", required=True, help='Council name, e.g. "Milton Keynes".')
+    parser.add_argument("--cache-dir", default=_DEFAULT_CACHE_DIR, help="Directory for cached HTTP responses.")
+    parser.add_argument("--delay", type=float, default=_DEFAULT_DELAY, help="Seconds between HTTP requests.")
+    if extra_args_fn:
+        extra_args_fn(parser)
+
+    args = parser.parse_args(argv)
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+    kwargs = {k.replace("-", "_"): v for k, v in vars(args).items()}
+    agent = agent_class(**kwargs)
+    asyncio.run(agent.run())
+    sys.exit(0)

@@ -67,11 +67,6 @@ class SchoolRepository(ABC):
     # ------------------------------------------------------------------
 
     @abstractmethod
-    async def find_schools_in_catchment(self, lat: float, lng: float, council: str) -> list[School]:
-        """Return schools whose catchment area covers the given point within a council."""
-        ...
-
-    @abstractmethod
     async def find_schools_by_filters(self, filters: SchoolFilters) -> list[School]:
         """Return schools matching the supplied filter criteria."""
         ...

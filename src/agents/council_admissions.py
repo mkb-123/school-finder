@@ -19,11 +19,8 @@ Usage
 
 from __future__ import annotations
 
-import argparse
-import asyncio
 import logging
 import re
-import sys
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, Tag
@@ -795,49 +792,7 @@ class CouncilAdmissionsAgent(BaseAgent):
         return saved
 
 
-# ------------------------------------------------------------------
-# CLI entry point
-# ------------------------------------------------------------------
-
-
-def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Scrape council websites for bulk admissions allocation data.",
-    )
-    parser.add_argument(
-        "--council",
-        required=True,
-        help='Council name, e.g. "Milton Keynes".',
-    )
-    parser.add_argument(
-        "--cache-dir",
-        default="./data/cache",
-        help="Directory for cached HTTP responses (default: ./data/cache).",
-    )
-    parser.add_argument(
-        "--delay",
-        type=float,
-        default=1.0,
-        help="Seconds between HTTP requests (default: 1.0).",
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv: list[str] | None = None) -> None:
-    """CLI entry point for the council admissions agent."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
-    args = _parse_args(argv)
-    agent = CouncilAdmissionsAgent(
-        council=args.council,
-        cache_dir=args.cache_dir,
-        delay=args.delay,
-    )
-    asyncio.run(agent.run())
-
-
 if __name__ == "__main__":
-    sys.exit(main() or 0)
+    from src.agents.base_agent import run_agent_cli
+
+    run_agent_cli(CouncilAdmissionsAgent, "Extract admissions data from council-published documents.")

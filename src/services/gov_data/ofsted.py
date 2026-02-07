@@ -3,8 +3,8 @@
 Downloads the monthly Management Information CSV from GOV.UK, parses it with
 Polars, and updates school records with real Ofsted ratings and inspection dates.
 
-Consolidates the previous two parallel implementations (src/agents/ofsted.py
-and src/data/import_ofsted_data.py) into a single service.
+Consolidates Ofsted data fetching into a single service.  See also
+src/data/import_ofsted.py for the CLI-based CSV import.
 
 Data source: https://www.gov.uk/government/statistical-data-sets/monthly-management-information-ofsteds-school-inspections-outcomes
 """

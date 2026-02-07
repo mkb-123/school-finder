@@ -21,9 +21,7 @@ import polars as pl
 
 logger = logging.getLogger(__name__)
 
-_GIAS_URL_TEMPLATE = (
-    "https://ea-edubase-api-prod.azurewebsites.net/edubase/edubasealldata{date}.csv"
-)
+_GIAS_URL_TEMPLATE = "https://ea-edubase-api-prod.azurewebsites.net/edubase/edubasealldata{date}.csv"
 _HTTP_TIMEOUT = 60.0
 _USER_AGENT = "SchoolFinder/0.1 (+https://github.com/school-finder)"
 
@@ -91,22 +89,24 @@ def extract_school_updates(df: pl.DataFrame) -> list[dict]:
         ofsted_rating = row.get("OfstedRating (name)", "")
         ofsted_date = row.get("OfstedLastInsp", "")
 
-        results.append({
-            "urn": urn,
-            "name": row.get("EstablishmentName", ""),
-            "type_of_establishment": row.get("TypeOfEstablishment (name)", ""),
-            "phase": row.get("PhaseOfEducation (name)", ""),
-            "gender_policy": row.get("Gender (name)", ""),
-            "faith": row.get("ReligiousCharacter (name)", ""),
-            "age_range_from": _safe_int(row.get("StatutoryLowAge", "")),
-            "age_range_to": _safe_int(row.get("StatutoryHighAge", "")),
-            "postcode": row.get("Postcode", ""),
-            "website": row.get("SchoolWebsite", ""),
-            "ofsted_rating": ofsted_rating if ofsted_rating else None,
-            "ofsted_date": ofsted_date if ofsted_date else None,
-            "number_of_pupils": _safe_int(row.get("NumberOfPupils", "")),
-            "status": status,
-        })
+        results.append(
+            {
+                "urn": urn,
+                "name": row.get("EstablishmentName", ""),
+                "type_of_establishment": row.get("TypeOfEstablishment (name)", ""),
+                "phase": row.get("PhaseOfEducation (name)", ""),
+                "gender_policy": row.get("Gender (name)", ""),
+                "faith": row.get("ReligiousCharacter (name)", ""),
+                "age_range_from": _safe_int(row.get("StatutoryLowAge", "")),
+                "age_range_to": _safe_int(row.get("StatutoryHighAge", "")),
+                "postcode": row.get("Postcode", ""),
+                "website": row.get("SchoolWebsite", ""),
+                "ofsted_rating": ofsted_rating if ofsted_rating else None,
+                "ofsted_date": ofsted_date if ofsted_date else None,
+                "number_of_pupils": _safe_int(row.get("NumberOfPupils", "")),
+                "status": status,
+            }
+        )
 
     return results
 

@@ -12,8 +12,9 @@ Provides travel-time and distance estimates between a home postcode and a school
 from __future__ import annotations
 
 import enum
-import math
 from dataclasses import dataclass
+
+from src.services.catchment import haversine_distance as _haversine_distance
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -112,26 +113,6 @@ _TIME_MULTIPLIERS: dict[TimeOfDay, dict[TravelMode, float]] = {
         TravelMode.TRANSIT: 1.0,
     },
 }
-
-
-# ---------------------------------------------------------------------------
-# Haversine helper (duplicated from catchment to avoid circular imports)
-# ---------------------------------------------------------------------------
-
-
-def _haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
-    """Return the great-circle distance in km between two points (decimal degrees)."""
-    earth_radius_km = 6371.0
-
-    lat1_rad = math.radians(lat1)
-    lat2_rad = math.radians(lat2)
-    delta_lat = math.radians(lat2 - lat1)
-    delta_lng = math.radians(lng2 - lng1)
-
-    a = math.sin(delta_lat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lng / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    return earth_radius_km * c
 
 
 # ---------------------------------------------------------------------------
