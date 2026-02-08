@@ -64,34 +64,22 @@ export default function PrivateSchools() {
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Council selection
-  const [councils, setCouncils] = useState<string[]>([]);
-  const [selectedCouncil, setSelectedCouncil] = useState<string>("Milton Keynes");
-
   // Filter state
   const [maxFee, setMaxFee] = useState<string>("");
   const [ageRange, setAgeRange] = useState<string>("");
   const [gender, setGender] = useState<string>("");
   const [transportOnly, setTransportOnly] = useState(false);
 
-  // Fetch available councils
+  // Fetch all nearby private schools (not scoped to a single council)
   useEffect(() => {
-    get<string[]>("/councils")
-      .then(setCouncils)
-      .catch(() => {});
-  }, []);
-
-  // Fetch private schools from the API
-  useEffect(() => {
-    if (!selectedCouncil) return;
     setLoading(true);
     setError(null);
 
-    get<PrivateSchoolListItem[]>("/private-schools", { council: selectedCouncil })
+    get<PrivateSchoolListItem[]>("/private-schools")
       .then((data) => setSchools(data))
       .catch((err) => setError(err.detail ?? "Failed to load private schools"))
       .finally(() => setLoading(false));
-  }, [selectedCouncil]);
+  }, []);
 
   const hasActiveFilters = ageRange !== "" || gender !== "" || transportOnly || maxFee !== "";
 
@@ -137,28 +125,10 @@ export default function PrivateSchools() {
           <div>
             <h1 className="font-display text-2xl font-bold text-stone-900 sm:text-3xl">Private Schools</h1>
             <p className="mt-0.5 text-sm text-stone-600 sm:text-base">
-              Browse independent and private schools in {selectedCouncil || "your area"}.
+              Browse independent and private schools in your area.
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Council selector */}
-      <div className="mb-6 rounded-xl border border-stone-200 bg-white p-4 shadow-sm animate-fade-in">
-        <label htmlFor="council-select-private" className="block text-sm font-medium text-stone-700 mb-2">
-          Select Council
-        </label>
-        <select
-          id="council-select-private"
-          value={selectedCouncil}
-          onChange={(e) => setSelectedCouncil(e.target.value)}
-          className="w-full max-w-md rounded-lg border border-stone-300 px-3 py-2.5 text-sm transition-colors duration-200 focus:border-private-500 focus:outline-none focus:ring-2 focus:ring-private-500/20"
-        >
-          <option value="">Select a council</option>
-          {councils.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
       </div>
 
       {/* Error state */}
@@ -370,7 +340,7 @@ export default function PrivateSchools() {
               </h3>
               <p className="mt-2 max-w-sm text-sm leading-relaxed text-stone-500">
                 {schools.length === 0
-                  ? `We haven't found any private schools in ${selectedCouncil} yet. Try selecting a different council.`
+                  ? "We haven't found any private schools in this area yet."
                   : "Try widening your search criteria or removing some filters to see more results."}
               </p>
               {hasActiveFilters && (

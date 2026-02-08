@@ -6,7 +6,6 @@ const NAV_LINKS = [
   { to: "/", label: "Home" },
   { to: "/schools", label: "Schools" },
   { to: "/private-schools", label: "Private Schools" },
-  { to: "/private-schools/fees", label: "Fee Comparison" },
   { to: "/compare", label: "Compare" },
   { to: "/term-dates", label: "Term Dates" },
   { to: "/decision-support", label: "Help Me Decide" },

@@ -280,7 +280,7 @@ _PRIVATE_DETAIL_ROWS: list[tuple[str, str, float, float, float, time, time, bool
     ),
     # KWS Milton Keynes
     (
-        "KWS Milton Keynes",
+        "KWS",
         "Primary (7-11)",
         3500.0,
         10500.0,
@@ -292,7 +292,7 @@ _PRIVATE_DETAIL_ROWS: list[tuple[str, str, float, float, float, time, time, bool
         "Follows own term dates. Three terms per year.",
     ),
     (
-        "KWS Milton Keynes",
+        "KWS",
         "Secondary (11-16)",
         4200.0,
         12600.0,
@@ -304,7 +304,7 @@ _PRIVATE_DETAIL_ROWS: list[tuple[str, str, float, float, float, time, time, bool
         "Follows own term dates. Three terms per year.",
     ),
     (
-        "KWS Milton Keynes",
+        "KWS",
         "Sixth Form (16-18)",
         4800.0,
         14400.0,
@@ -401,6 +401,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--council", required=True, help="Local authority name to filter by.")
     parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="Path to the SQLite database file.")
     parser.add_argument("--force-download", action="store_true", default=False, help="Force re-download.")
+    parser.add_argument(
+        "--private-only",
+        action="store_true",
+        default=False,
+        help="Only re-seed private schools (radius import + fee details). Skips state school import, Ofsted, and performance data.",
+    )
+    parser.add_argument(
+        "--private-radius-km",
+        type=float,
+        default=30.0,
+        help="Radius in km for private school import (default: 30).",
+    )
     return parser.parse_args(argv)
 
 
@@ -419,71 +431,113 @@ def main(argv: list[str] | None = None) -> None:
     council: str = args.council
     db_path: Path = args.db
     force_download: bool = args.force_download
+    private_only: bool = args.private_only
+    private_radius_km: float = args.private_radius_km
 
     print("School Finder - Database Seed (Government Data Only)")
     print(f"  Council filter : {council}")
     print(f"  Database       : {db_path}")
+    if private_only:
+        print(f"  Mode           : private schools only (radius {private_radius_km} km)")
     print()
 
-    # ------------------------------------------------------------------
-    # Step 1: GIAS - School register
-    # ------------------------------------------------------------------
-    print("[1/4] Fetching school register from GIAS ...")
     gias = GIASService()
-    try:
-        gias_stats = gias.refresh(
-            council=council,
-            force_download=force_download,
-            db_path=str(db_path),
-        )
-        print(f"  Inserted: {gias_stats['inserted']}")
-        print(f"  Updated:  {gias_stats['updated']}")
-        print(f"  Total:    {gias_stats['total']}")
-        print(f"  With coordinates: {gias_stats['with_coordinates']}")
-    except Exception as exc:
-        print(f"  ERROR: GIAS download failed: {exc}")
-        print("  Cannot proceed without school data.")
-        sys.exit(1)
+
+    if not private_only:
+        # ------------------------------------------------------------------
+        # Step 1: GIAS - School register
+        # ------------------------------------------------------------------
+        print("[1/4] Fetching school register from GIAS ...")
+        try:
+            gias_stats = gias.refresh(
+                council=council,
+                force_download=force_download,
+                db_path=str(db_path),
+            )
+            print(f"  Inserted: {gias_stats['inserted']}")
+            print(f"  Updated:  {gias_stats['updated']}")
+            print(f"  Total:    {gias_stats['total']}")
+            print(f"  With coordinates: {gias_stats['with_coordinates']}")
+        except Exception as exc:
+            print(f"  ERROR: GIAS download failed: {exc}")
+            print("  Cannot proceed without school data.")
+            sys.exit(1)
 
     # ------------------------------------------------------------------
-    # Step 2: Ofsted - Inspection ratings
+    # Private schools by radius (not limited to council)
     # ------------------------------------------------------------------
-    print("\n[2/4] Fetching Ofsted ratings ...")
-    ofsted = OfstedService()
+    step_label = "[1/2]" if private_only else "[1b/4]"
+    print(f"\n{step_label} Importing private schools within {private_radius_km} km radius ...")
     try:
-        ofsted_stats = ofsted.refresh(
-            council=council,
-            force_download=force_download,
-            db_path=str(db_path),
-        )
-        print(f"  Updated:   {ofsted_stats['updated']}")
-        print(f"  Skipped:   {ofsted_stats['skipped']}")
-        print(f"  Not found: {ofsted_stats['not_found']}")
+        # Compute centroid of schools already imported for the council
+        session_tmp = _ensure_database(db_path)
+        council_schools = session_tmp.query(School).filter_by(council=council).all()
+        session_tmp.close()
+        if council_schools:
+            lats = [s.lat for s in council_schools if s.lat is not None]
+            lngs = [s.lng for s in council_schools if s.lng is not None]
+            if lats and lngs:
+                center_lat = sum(lats) / len(lats)
+                center_lng = sum(lngs) / len(lngs)
+                pvt_radius_stats = gias.refresh_private_schools_by_radius(
+                    center_lat=center_lat,
+                    center_lng=center_lng,
+                    radius_km=private_radius_km,
+                    force_download=force_download,
+                    db_path=str(db_path),
+                )
+                print(f"  Inserted: {pvt_radius_stats['inserted']}")
+                print(f"  Updated:  {pvt_radius_stats['updated']}")
+                print(f"  Total private schools (within {private_radius_km} km): {pvt_radius_stats['total']}")
+            else:
+                print("  SKIP: No geocoded schools to compute centroid.")
+        else:
+            print("  SKIP: No council schools found to compute centroid.")
     except Exception as exc:
-        print(f"  WARNING: Ofsted import failed: {exc}")
-        print("  Continuing without Ofsted data.")
+        print(f"  WARNING: Private school radius import failed: {exc}")
+        print("  Continuing without additional private schools.")
+
+    if not private_only:
+        # ------------------------------------------------------------------
+        # Step 2: Ofsted - Inspection ratings
+        # ------------------------------------------------------------------
+        print("\n[2/4] Fetching Ofsted ratings ...")
+        ofsted = OfstedService()
+        try:
+            ofsted_stats = ofsted.refresh(
+                council=council,
+                force_download=force_download,
+                db_path=str(db_path),
+            )
+            print(f"  Updated:   {ofsted_stats['updated']}")
+            print(f"  Skipped:   {ofsted_stats['skipped']}")
+            print(f"  Not found: {ofsted_stats['not_found']}")
+        except Exception as exc:
+            print(f"  WARNING: Ofsted import failed: {exc}")
+            print("  Continuing without Ofsted data.")
+
+        # ------------------------------------------------------------------
+        # Step 3: EES - Performance data (KS2 + KS4)
+        # ------------------------------------------------------------------
+        print("\n[3/4] Fetching performance data from EES API ...")
+        ees = EESService()
+        try:
+            perf_stats = ees.refresh_performance(
+                council=council,
+                force_download=force_download,
+                db_path=str(db_path),
+            )
+            for key, sub_stats in perf_stats.items():
+                print(f"  {key.upper()}: imported={sub_stats.get('imported', 0)}, skipped={sub_stats.get('skipped', 0)}")
+        except Exception as exc:
+            print(f"  WARNING: Performance data import failed: {exc}")
+            print("  Continuing without performance data.")
 
     # ------------------------------------------------------------------
-    # Step 3: EES - Performance data (KS2 + KS4)
+    # Private school details (researched fee data)
     # ------------------------------------------------------------------
-    print("\n[3/4] Fetching performance data from EES API ...")
-    ees = EESService()
-    try:
-        perf_stats = ees.refresh_performance(
-            council=council,
-            force_download=force_download,
-            db_path=str(db_path),
-        )
-        for key, sub_stats in perf_stats.items():
-            print(f"  {key.upper()}: imported={sub_stats.get('imported', 0)}, skipped={sub_stats.get('skipped', 0)}")
-    except Exception as exc:
-        print(f"  WARNING: Performance data import failed: {exc}")
-        print("  Continuing without performance data.")
-
-    # ------------------------------------------------------------------
-    # Step 4: Private school details (researched fee data)
-    # ------------------------------------------------------------------
-    print("\n[4/4] Seeding private school details ...")
+    step_label = "[2/2]" if private_only else "[4/4]"
+    print(f"\n{step_label} Seeding private school details ...")
     session = _ensure_database(db_path)
     try:
         pvt_count = _seed_private_school_details(session)
@@ -492,7 +546,8 @@ def main(argv: list[str] | None = None) -> None:
         # ------------------------------------------------------------------
         # Summary
         # ------------------------------------------------------------------
-        all_schools = session.query(School).filter_by(council=council).all()
+        council_schools = session.query(School).filter_by(council=council).all()
+        all_private = session.query(School).filter_by(is_private=True).all()
         total_clubs = session.query(SchoolClub).count()
 
         print()
@@ -500,32 +555,33 @@ def main(argv: list[str] | None = None) -> None:
         print(f"  SUMMARY: {council}")
         print("=" * 60)
 
-        primary_count = sum(1 for s in all_schools if s.age_range_to and s.age_range_to <= 13 and not s.is_private)
+        primary_count = sum(1 for s in council_schools if s.age_range_to and s.age_range_to <= 13 and not s.is_private)
         secondary_count = sum(
             1
-            for s in all_schools
+            for s in council_schools
             if s.age_range_from
             and s.age_range_from >= 11
             and s.age_range_to
             and s.age_range_to >= 16
             and not s.is_private
         )
-        private_count = sum(1 for s in all_schools if s.is_private)
+        private_in_council = sum(1 for s in council_schools if s.is_private)
 
-        print(f"  Total schools       : {len(all_schools)}")
+        print(f"  State schools       : {len(council_schools) - private_in_council}")
         print(f"  State primary       : {primary_count}")
         print(f"  State secondary     : {secondary_count}")
-        print(f"  Private/independent : {private_count}")
+        print(f"  Private (in council): {private_in_council}")
+        print(f"  Private (all nearby): {len(all_private)}")
         print(f"  Clubs in DB         : {total_clubs}")
         print()
 
-        rating_counts = Counter(s.ofsted_rating for s in all_schools if s.ofsted_rating)
-        print("  Ofsted ratings:")
+        rating_counts = Counter(s.ofsted_rating for s in council_schools if s.ofsted_rating)
+        print("  Ofsted ratings (council):")
         for rating in ["Outstanding", "Good", "Requires Improvement", "Inadequate"]:
             c = rating_counts.get(rating, 0)
             if c:
                 print(f"    {rating:25s}: {c}")
-        no_rating = sum(1 for s in all_schools if not s.ofsted_rating)
+        no_rating = sum(1 for s in council_schools if not s.ofsted_rating)
         if no_rating:
             print(f"    {'(no rating)':25s}: {no_rating}")
 

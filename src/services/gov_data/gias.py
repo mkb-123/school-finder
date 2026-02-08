@@ -154,6 +154,16 @@ def osgb36_to_wgs84(easting: float, northing: float) -> tuple[float, float]:
     return _helmert_osgb36_to_wgs84(lat_osgb, lon_osgb)
 
 
+def _haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """Return great-circle distance in km between two WGS84 coordinate pairs."""
+    earth_radius_km = 6371.0
+    lat1_r, lat2_r = math.radians(lat1), math.radians(lat2)
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1_r) * math.cos(lat2_r) * math.sin(dlng / 2) ** 2
+    return earth_radius_km * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -419,6 +429,85 @@ class GIASService(BaseGovDataService):
         self._logger.info("Schools with coordinates: %d/%d", geo_count, len(schools))
 
         inserted, updated = self._upsert_schools(db, schools)
+
+        return {
+            "inserted": inserted,
+            "updated": updated,
+            "total": inserted + updated,
+            "with_coordinates": geo_count,
+        }
+
+    def refresh_private_schools_by_radius(
+        self,
+        center_lat: float,
+        center_lng: float,
+        radius_km: float = 30.0,
+        force_download: bool = False,
+        db_path: str | None = None,
+    ) -> dict[str, int]:
+        """Import private schools from the GIAS CSV within *radius_km* of a centre point.
+
+        Unlike :meth:`refresh`, this does NOT filter by council. It scans the
+        entire GIAS dataset and imports any independent school whose coordinates
+        fall within the given radius.
+
+        Parameters
+        ----------
+        center_lat, center_lng:
+            WGS84 coordinates of the search centre (e.g. council centroid).
+        radius_km:
+            Maximum distance from the centre point (default 30 km).
+        force_download:
+            If True, bypass cache and re-download the CSV.
+        db_path:
+            Override database path. Uses config default if ``None``.
+
+        Returns
+        -------
+        dict
+            Statistics: {inserted, updated, total, with_coordinates}.
+        """
+        settings = get_settings()
+        db = db_path or settings.SQLITE_PATH
+
+        csv_path = self.download_csv(force=force_download)
+        self._logger.info("Reading GIAS CSV for radius private school import: %s", csv_path)
+
+        rows = _read_gias_csv(csv_path)
+
+        # Filter to open private schools with valid coordinates within radius
+        private_schools: list[School] = []
+        skipped = 0
+        for row in rows:
+            if not _is_private(row):
+                continue
+            status = row.get(COL_STATUS, "").strip()
+            if status not in _OPEN_STATUSES:
+                continue
+
+            school = _row_to_school(row)
+            if school is None:
+                skipped += 1
+                continue
+            if school.lat is None or school.lng is None:
+                skipped += 1
+                continue
+
+            dist = _haversine_distance(center_lat, center_lng, school.lat, school.lng)
+            if dist <= radius_km:
+                private_schools.append(school)
+            else:
+                skipped += 1
+
+        self._logger.info(
+            "Found %d private schools within %.0f km (%d skipped)",
+            len(private_schools),
+            radius_km,
+            skipped,
+        )
+
+        geo_count = sum(1 for s in private_schools if s.lat is not None)
+        inserted, updated = self._upsert_schools(db, private_schools)
 
         return {
             "inserted": inserted,

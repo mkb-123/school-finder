@@ -24,9 +24,12 @@ class SchoolFilterParams(BaseModel):
 
 
 class PrivateSchoolFilterParams(BaseModel):
-    """Query parameters for filtering private schools."""
+    """Query parameters for filtering private schools.
 
-    council: str | None = None
+    Private schools are not scoped to a council. All nearby private schools
+    (imported by radius during seeding) are returned.
+    """
+
     age: int | None = None
     gender: str | None = None
     max_fee: float | None = None
