@@ -131,21 +131,16 @@ export default function SchoolCard({
           </div>
         </div>
 
-        {/* Badges — Ofsted or Independent label */}
-        <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
-          {!isPrivate && (
+        {/* Badges — Ofsted rating (state schools only) */}
+        {!isPrivate && (
+          <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${ratingStyle.badge}`}
             >
               {ofstedRating}
             </span>
-          )}
-          {isPrivate && (
-            <span className="inline-flex items-center rounded-full bg-private-50 px-2.5 py-1 text-xs font-semibold text-private-700 ring-1 ring-private-600/20">
-              Independent
-            </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Ethos — readable, not italic */}

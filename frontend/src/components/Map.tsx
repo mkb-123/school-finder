@@ -241,8 +241,8 @@ export default function Map({
               center={[school.lat!, school.lng!]}
               radius={school.catchment_radius_km * 1000}
               pathOptions={{
-                color: ofstedColor(school.ofsted_rating),
-                fillColor: ofstedColor(school.ofsted_rating),
+                color: school.is_private ? "#7c3aed" : ofstedColor(school.ofsted_rating),
+                fillColor: school.is_private ? "#7c3aed" : ofstedColor(school.ofsted_rating),
                 fillOpacity: 0.1,
                 weight: 2,
                 dashArray: "6 4",
@@ -253,7 +253,9 @@ export default function Map({
 
         {/* Individual school pins */}
         {singles.map((school) => {
-          const color = ofstedColor(school.ofsted_rating);
+          // Private schools get a distinct violet colour instead of Ofsted rating
+          const PRIVATE_COLOR = "#7c3aed";
+          const color = school.is_private ? PRIVATE_COLOR : ofstedColor(school.ofsted_rating);
           const isSelected = school.id === selectedSchoolId;
           return (
             <CircleMarker
@@ -286,7 +288,7 @@ export default function Map({
                       aria-hidden="true"
                     />
                     <span className="text-xs font-medium text-stone-700">
-                      {ofstedLabel(school.ofsted_rating)}
+                      {school.is_private ? "Independent" : ofstedLabel(school.ofsted_rating)}
                     </span>
                   </div>
                   {school.distance_km != null && (
@@ -350,7 +352,7 @@ export default function Map({
                           {s.name}
                         </Link>
                         <span className="ml-1 text-stone-400">
-                          ({ofstedLabel(s.ofsted_rating)})
+                          ({s.is_private ? "Independent" : ofstedLabel(s.ofsted_rating)})
                         </span>
                       </li>
                     ))}

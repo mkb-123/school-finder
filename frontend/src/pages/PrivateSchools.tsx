@@ -379,7 +379,7 @@ export default function PrivateSchools() {
               <SchoolCard
                 id={s.id}
                 name={s.name}
-                type="Independent"
+                type={s.type ?? "Independent"}
                 ofstedRating={s.ofsted_rating ?? "Not rated"}
                 distance={
                   s.postcode
