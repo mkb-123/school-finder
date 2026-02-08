@@ -62,6 +62,15 @@ class School(Base):
     absence_policy: Mapped[list[AbsencePolicy]] = relationship("AbsencePolicy", back_populates="school", lazy="select")
     ofsted_history: Mapped[list[OfstedHistory]] = relationship("OfstedHistory", back_populates="school", lazy="select")
     bus_routes: Mapped[list[BusRoute]] = relationship("BusRoute", back_populates="school", lazy="select")
+    bursaries: Mapped[list[Bursary]] = relationship("Bursary", back_populates="school", lazy="select")
+    scholarships: Mapped[list[Scholarship]] = relationship("Scholarship", back_populates="school", lazy="select")
+    entry_assessments: Mapped[list[EntryAssessment]] = relationship(
+        "EntryAssessment", back_populates="school", lazy="select"
+    )
+    open_days: Mapped[list[OpenDay]] = relationship("OpenDay", back_populates="school", lazy="select")
+    sibling_discounts: Mapped[list[SiblingDiscount]] = relationship(
+        "SiblingDiscount", back_populates="school", lazy="select"
+    )
 
     def __repr__(self) -> str:
         return f"<School(id={self.id}, name={self.name!r}, council={self.council!r})>"
@@ -512,3 +521,158 @@ class BusStop(Base):
 
     def __repr__(self) -> str:
         return f"<BusStop(id={self.id}, route_id={self.route_id}, stop_name={self.stop_name!r})>"
+
+
+# ---------------------------------------------------------------------------
+# Private School Extended Models
+# ---------------------------------------------------------------------------
+
+
+class Bursary(Base):
+    """Means-tested financial assistance offered by a private school."""
+
+    __tablename__ = "bursaries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+
+    # Coverage
+    max_percentage: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Up to 100%
+    min_percentage: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Eligibility
+    # Max household income for consideration
+    income_threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
+    eligibility_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Application
+    application_deadline: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
+    application_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # Stats
+    percentage_of_pupils: Mapped[float | None] = mapped_column(Float, nullable=True)  # % of pupils receiving bursaries
+
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    school: Mapped[School] = relationship("School", back_populates="bursaries")
+
+    def __repr__(self) -> str:
+        return f"<Bursary(school_id={self.school_id}, max={self.max_percentage}%)>"
+
+
+class Scholarship(Base):
+    """Merit-based financial award offered by a private school."""
+
+    __tablename__ = "scholarships"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+
+    # Type: academic, music, sport, art, drama, stem, all_rounder
+    scholarship_type: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # Value
+    value_description: Mapped[str | None] = mapped_column(String(100), nullable=True)  # e.g. "up to 25%"
+    value_percentage: Mapped[int | None] = mapped_column(Integer, nullable=True)  # numeric if known
+
+    # Entry points where this scholarship is available
+    entry_points: Mapped[str | None] = mapped_column(String(100), nullable=True)  # e.g. "7+, 11+, 16+"
+
+    # Assessment
+    assessment_method: Mapped[str | None] = mapped_column(Text, nullable=True)  # e.g. "Exam and interview"
+    application_deadline: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
+
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    school: Mapped[School] = relationship("School", back_populates="scholarships")
+
+    def __repr__(self) -> str:
+        return f"<Scholarship(school_id={self.school_id}, type={self.scholarship_type!r})>"
+
+
+class EntryAssessment(Base):
+    """Entry assessment details for a specific age entry point at a private school."""
+
+    __tablename__ = "entry_assessments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+
+    # Entry point: "4+", "7+", "11+", "13+", "16+"
+    entry_point: Mapped[str] = mapped_column(String(10), nullable=False)
+
+    # Assessment details
+    # e.g. "Written exam, interview, taster day"
+    assessment_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    subjects_tested: Mapped[str | None] = mapped_column(String(255), nullable=True)  # e.g. "English, Maths, Reasoning"
+
+    # Timing
+    registration_deadline: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
+    assessment_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
+    offer_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
+
+    # Cost
+    registration_fee: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    school: Mapped[School] = relationship("School", back_populates="entry_assessments")
+
+    def __repr__(self) -> str:
+        return f"<EntryAssessment(school_id={self.school_id}, entry_point={self.entry_point!r})>"
+
+
+class OpenDay(Base):
+    """Upcoming open day or taster day event at a school."""
+
+    __tablename__ = "open_days"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+
+    # Event details
+    event_date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
+    event_time: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g. "09:30 - 12:00"
+    event_type: Mapped[str] = mapped_column(String(50), nullable=False)  # "Open Morning", "Open Evening", "Taster Day"
+
+    # Logistics
+    registration_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    booking_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    school: Mapped[School] = relationship("School", back_populates="open_days")
+
+    def __repr__(self) -> str:
+        return f"<OpenDay(school_id={self.school_id}, date={self.event_date}, type={self.event_type!r})>"
+
+
+class SiblingDiscount(Base):
+    """Sibling fee discount offered by a private school."""
+
+    __tablename__ = "sibling_discounts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+
+    # Discount tiers
+    second_child_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    third_child_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fourth_child_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    # Details
+    # e.g. "Both children must attend simultaneously"
+    conditions: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stacks_with_bursary: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    school: Mapped[School] = relationship("School", back_populates="sibling_discounts")
+
+    def __repr__(self) -> str:
+        return f"<SiblingDiscount(school_id={self.school_id})>"

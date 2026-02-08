@@ -12,17 +12,22 @@ from src.db.models import (
     AdmissionsCriteria,
     AdmissionsHistory,
     Base,
+    Bursary,
     BusRoute,
     BusStop,
+    EntryAssessment,
     HolidayClub,
+    OpenDay,
     ParkingRating,
     PrivateSchoolDetails,
+    Scholarship,
     School,
     SchoolClassSize,
     SchoolClub,
     SchoolPerformance,
     SchoolTermDate,
     SchoolUniform,
+    SiblingDiscount,
 )
 
 # ---------------------------------------------------------------------------
@@ -354,3 +359,58 @@ class SQLiteSchoolRepository(SchoolRepository):
             result = await session.execute(stmt, {"lat": lat, "lng": lng, "max_dist": max_distance_km})
             rows = result.all()
             return [(row[0], row[1], row[2], row[3]) for row in rows]
+
+    # ------------------------------------------------------------------
+    # Private school extended data
+    # ------------------------------------------------------------------
+
+    async def get_bursaries_for_school(self, school_id: int) -> list[Bursary]:
+        stmt = select(Bursary).where(Bursary.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_scholarships_for_school(self, school_id: int) -> list[Scholarship]:
+        stmt = select(Scholarship).where(Scholarship.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_entry_assessments_for_school(self, school_id: int) -> list[EntryAssessment]:
+        stmt = (
+            select(EntryAssessment)
+            .where(EntryAssessment.school_id == school_id)
+            .order_by(EntryAssessment.entry_point)
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_open_days_for_school(self, school_id: int) -> list[OpenDay]:
+        stmt = select(OpenDay).where(OpenDay.school_id == school_id).order_by(OpenDay.event_date)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_sibling_discounts_for_school(self, school_id: int) -> list[SiblingDiscount]:
+        stmt = select(SiblingDiscount).where(SiblingDiscount.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_all_private_schools_with_fees(self, council: str | None = None) -> list[School]:
+        stmt = (
+            select(School)
+            .where(School.is_private == True)  # noqa: E712
+            .options(
+                selectinload(School.private_details),
+                selectinload(School.bursaries),
+                selectinload(School.scholarships),
+            )
+            .order_by(School.name)
+        )
+        if council:
+            stmt = stmt.where(School.council == council)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())

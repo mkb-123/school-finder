@@ -1,5 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import {
+  GraduationCap,
+  Globe,
+  ExternalLink,
+  ChevronRight,
+  PlusCircle,
+  Clock,
+  Bus,
+  Calendar,
+  PoundSterling,
+  Info,
+  MapPin,
+  Award,
+  BookOpen,
+  ClipboardCheck,
+  Users,
+  CalendarDays,
+} from "lucide-react";
 import { get } from "../api/client";
 import Map, { type School } from "../components/Map";
 
@@ -41,10 +59,80 @@ interface PrivateDetail {
   hidden_costs_notes: string | null;
 }
 
-/** Extended school response with private details. */
+interface BursaryData {
+  id: number;
+  max_percentage: number | null;
+  min_percentage: number | null;
+  income_threshold: number | null;
+  eligibility_notes: string | null;
+  application_deadline: string | null;
+  application_url: string | null;
+  percentage_of_pupils: number | null;
+  notes: string | null;
+}
+
+interface ScholarshipData {
+  id: number;
+  scholarship_type: string;
+  value_description: string | null;
+  value_percentage: number | null;
+  entry_points: string | null;
+  assessment_method: string | null;
+  application_deadline: string | null;
+  notes: string | null;
+}
+
+interface EntryAssessmentData {
+  id: number;
+  entry_point: string;
+  assessment_type: string | null;
+  subjects_tested: string | null;
+  registration_deadline: string | null;
+  assessment_date: string | null;
+  offer_date: string | null;
+  registration_fee: number | null;
+  notes: string | null;
+}
+
+interface OpenDayData {
+  id: number;
+  event_date: string;
+  event_time: string | null;
+  event_type: string;
+  registration_required: boolean;
+  booking_url: string | null;
+  description: string | null;
+}
+
+interface SiblingDiscountData {
+  id: number;
+  second_child_percent: number | null;
+  third_child_percent: number | null;
+  fourth_child_percent: number | null;
+  conditions: string | null;
+  stacks_with_bursary: boolean | null;
+  notes: string | null;
+}
+
+/** Extended school response with private details and admissions info. */
 interface PrivateSchoolResponse extends School {
   private_details: PrivateDetail[];
+  bursaries?: BursaryData[];
+  scholarships?: ScholarshipData[];
+  entry_assessments?: EntryAssessmentData[];
+  open_days?: OpenDayData[];
+  sibling_discounts?: SiblingDiscountData[];
 }
+
+/* ------------------------------------------------------------------ */
+/* Tabs                                                                */
+/* ------------------------------------------------------------------ */
+const ALL_TABS = ["Overview", "Fees", "Admissions", "Hours & Transport", "True Cost"] as const;
+type Tab = (typeof ALL_TABS)[number];
+
+/* ------------------------------------------------------------------ */
+/* Helpers                                                             */
+/* ------------------------------------------------------------------ */
 
 /** Format a time string like "08:15:00" to "8:15 AM". */
 function formatTime(timeStr: string | null): string {
@@ -146,41 +234,81 @@ function calculateTrueAnnualCost(detail: PrivateDetail): {
   };
 }
 
-/** Skeleton loading state for the detail page. */
+/* ------------------------------------------------------------------ */
+/* No-data placeholder component                                       */
+/* ------------------------------------------------------------------ */
+function NoData({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-stone-50 border border-dashed border-stone-200 p-5 text-sm text-stone-500">
+      <Icon className="h-5 w-5 flex-shrink-0 text-stone-400" aria-hidden="true" />
+      <div>
+        <p className="font-medium text-stone-700">{title}</p>
+        <p className="mt-0.5">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Skeleton loading state                                              */
+/* ------------------------------------------------------------------ */
 function DetailSkeleton() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
       <div className="animate-pulse">
-        {/* Back link skeleton */}
-        <div className="mb-6 h-4 w-40 rounded bg-stone-200" />
+        {/* Breadcrumb skeleton */}
+        <div className="flex gap-2 mb-6">
+          <div className="h-3 w-16 rounded bg-stone-200" />
+          <div className="h-3 w-4 rounded bg-stone-100" />
+          <div className="h-3 w-28 rounded bg-stone-200" />
+          <div className="h-3 w-4 rounded bg-stone-100" />
+          <div className="h-3 w-40 rounded bg-stone-200" />
+        </div>
 
         {/* Header skeleton */}
         <div className="space-y-3">
-          <div className="h-8 w-3/4 rounded bg-stone-200" />
-          <div className="h-4 w-1/2 rounded bg-stone-100" />
-          <div className="flex gap-2">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-private-50" />
+            <div className="flex-1">
+              <div className="h-7 w-3/4 rounded bg-stone-200" />
+              <div className="mt-2 h-4 w-1/2 rounded bg-stone-100" />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-2">
             <div className="h-7 w-20 rounded-full bg-stone-100" />
             <div className="h-7 w-16 rounded-full bg-stone-100" />
-            <div className="h-7 w-24 rounded-full bg-violet-100" />
+            <div className="h-7 w-24 rounded-full bg-private-50" />
           </div>
         </div>
 
+        {/* Fee banner skeleton */}
+        <div className="mt-6 h-20 rounded-xl bg-private-50" />
+
+        {/* Tabs skeleton */}
+        <div className="mt-6 flex gap-4 border-b border-stone-200 pb-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-4 w-20 rounded bg-stone-200" />
+          ))}
+        </div>
+
         {/* Content grid skeleton */}
-        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="h-64 rounded-lg border border-stone-200 bg-white" />
-          <div className="h-64 rounded-lg border border-stone-200 bg-white" />
-          <div className="h-48 rounded-lg border border-stone-200 bg-white" />
-          <div className="h-48 rounded-lg border border-stone-200 bg-white" />
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="h-64 rounded-xl border border-stone-200 bg-white" />
+          <div className="h-64 rounded-xl border border-stone-200 bg-white" />
         </div>
       </div>
     </main>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Main component                                                      */
+/* ------------------------------------------------------------------ */
 export default function PrivateSchoolDetail() {
   const { id } = useParams<{ id: string }>();
   const [school, setSchool] = useState<PrivateSchoolResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<Tab>("Overview");
 
   useEffect(() => {
     if (!id) return;
@@ -191,6 +319,27 @@ export default function PrivateSchoolDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  /** Handle keyboard navigation for tabs (arrow keys). */
+  function handleTabKeyDown(e: React.KeyboardEvent, tabIndex: number) {
+    const tabs = visibleTabs;
+    let nextIndex = tabIndex;
+    if (e.key === "ArrowRight") {
+      nextIndex = (tabIndex + 1) % tabs.length;
+    } else if (e.key === "ArrowLeft") {
+      nextIndex = (tabIndex - 1 + tabs.length) % tabs.length;
+    } else if (e.key === "Home") {
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      nextIndex = tabs.length - 1;
+    } else {
+      return;
+    }
+    e.preventDefault();
+    setActiveTab(tabs[nextIndex]);
+    const tabBtn = document.getElementById(`private-tab-${tabs[nextIndex]}`);
+    tabBtn?.focus();
+  }
+
   if (loading) {
     return <DetailSkeleton />;
   }
@@ -198,11 +347,9 @@ export default function PrivateSchoolDetail() {
   if (!school) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-        <div className="flex flex-col items-center py-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-stone-100">
-            <svg className="h-8 w-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+        <div className="flex flex-col items-center py-16 text-center animate-fade-in">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-private-50">
+            <GraduationCap className="h-8 w-8 text-private-300" aria-hidden="true" />
           </div>
           <h1 className="mt-4 text-xl font-bold text-stone-900 sm:text-2xl">School not found</h1>
           <p className="mt-2 max-w-md text-sm text-stone-500">
@@ -210,7 +357,7 @@ export default function PrivateSchoolDetail() {
           </p>
           <Link
             to="/private-schools"
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-private-600 px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-private-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-private-500 focus:ring-offset-2"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -223,8 +370,6 @@ export default function PrivateSchoolDetail() {
   }
 
   const details = school.private_details ?? [];
-
-  // Extract shared fields from the first detail entry (hours, transport, etc.)
   const firstDetail = details.length > 0 ? details[0] : null;
   const providesTransport = firstDetail?.provides_transport ?? null;
   const transportNotes = firstDetail?.transport_notes ?? null;
@@ -236,163 +381,714 @@ export default function PrivateSchoolDetail() {
   const feeMax = termlyFees.length > 0 ? Math.max(...termlyFees) : null;
   const feeIncreasePct = firstDetail?.fee_increase_pct ?? null;
 
+  // Admissions data
+  const bursaries = school.bursaries ?? [];
+  const scholarships = school.scholarships ?? [];
+  const entryAssessments = school.entry_assessments ?? [];
+  const openDays = school.open_days ?? [];
+  const siblingDiscounts = school.sibling_discounts ?? [];
+
+  // Determine which tabs to show
+  const visibleTabs = ALL_TABS.filter((tab) => {
+    if (tab === "Overview") return true;
+    if (tab === "Fees") return true; // Always show — has empty state
+    if (tab === "Admissions") return true; // Always show — has empty state
+    if (tab === "Hours & Transport") return true;
+    if (tab === "True Cost") return details.length > 0;
+    return true;
+  });
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8" role="main">
-      {/* Back link with proper touch target */}
-      <Link
-        to="/private-schools"
-        className="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 -ml-3 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
-        aria-label="Back to private schools list"
-      >
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        Back to private schools
-      </Link>
+      {/* Breadcrumb navigation */}
+      <nav className="mb-5 animate-fade-in" aria-label="Breadcrumb">
+        <ol className="flex items-center gap-1.5 text-sm">
+          <li>
+            <Link to="/" className="text-stone-400 transition-colors hover:text-stone-600">
+              Home
+            </Link>
+          </li>
+          <ChevronRight className="h-3.5 w-3.5 text-stone-300" aria-hidden="true" />
+          <li>
+            <Link to="/private-schools" className="text-stone-400 transition-colors hover:text-stone-600">
+              Private Schools
+            </Link>
+          </li>
+          <ChevronRight className="h-3.5 w-3.5 text-stone-300" aria-hidden="true" />
+          <li>
+            <span className="font-medium text-stone-700" aria-current="page">
+              {school.name}
+            </span>
+          </li>
+        </ol>
+      </nav>
 
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-stone-900 sm:text-3xl">{school.name}</h1>
-          <p className="mt-1 text-sm text-stone-600 sm:text-base">{school.address}</p>
-          <p className="text-xs text-stone-500 sm:text-sm">{school.postcode}</p>
-          {school.ethos && (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600">
-              {school.ethos}
-            </p>
+      <div className="flex flex-wrap items-start justify-between gap-4 animate-fade-in">
+        <div className="flex items-start gap-3">
+          {/* School type icon */}
+          <div className="mt-1 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-private-100 text-private-600">
+            <GraduationCap className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-stone-900 sm:text-3xl">{school.name}</h1>
+            <div className="mt-1 flex items-center gap-1.5 text-sm text-stone-600">
+              <MapPin className="h-3.5 w-3.5 text-stone-400" aria-hidden="true" />
+              <span>{school.address}, {school.postcode}</span>
+            </div>
+            {school.ethos && (
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600">
+                {school.ethos}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-shrink-0 flex-col gap-2 sm:flex-row">
+          <Link
+            to={`/compare?ids=${school.id}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-private-200 bg-private-50 px-3.5 py-2 text-sm font-medium text-private-700 transition-all duration-200 hover:bg-private-100 hover:border-private-300 active:scale-[0.98]"
+          >
+            <PlusCircle className="h-4 w-4" aria-hidden="true" />
+            Add to comparison
+          </Link>
+          {school.website && (
+            <a
+              href={school.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-sm font-medium text-stone-700 transition-all duration-200 hover:border-stone-300 hover:shadow-sm"
+            >
+              <Globe className="h-4 w-4 text-private-500" aria-hidden="true" />
+              School website
+              <ExternalLink className="h-3 w-3 text-stone-400" aria-hidden="true" />
+            </a>
           )}
         </div>
       </div>
 
       {/* Quick facts */}
-      <div className="mt-4 flex flex-wrap gap-2 text-sm" aria-label="School quick facts">
+      <div className="mt-4 flex flex-wrap gap-2 text-sm animate-fade-in" aria-label="School quick facts">
         <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">
           Ages {school.age_range_from}&ndash;{school.age_range_to}
         </span>
         <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">
           {school.gender_policy}
         </span>
-        <span className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1 font-medium text-violet-700 ring-1 ring-violet-600/20">
+        <span className="inline-flex items-center rounded-full bg-private-50 px-3 py-1 font-medium text-private-700 ring-1 ring-private-600/20">
           Independent
         </span>
         {school.faith && (
           <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">{school.faith}</span>
         )}
-        <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-500 text-xs">
+        <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-400 text-xs">
           URN: {school.urn}
         </span>
       </div>
 
-      {/* Fee summary banner */}
+      {/* Sticky fee summary banner */}
       {feeMin != null && feeMax != null && (
-        <div className="mt-6 rounded-xl bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-200 p-4 sm:p-5">
+        <div className="sticky top-14 z-20 -mx-4 mt-5 border-y border-private-200 bg-gradient-to-r from-private-50 to-indigo-50 px-4 py-3 sticky-header-blur sm:static sm:mx-0 sm:mt-6 sm:rounded-xl sm:border sm:py-4 sm:px-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-brand-800">Termly fees</p>
-              <p className="mt-0.5 text-xl font-bold text-brand-900 sm:text-2xl">
+              <p className="text-xs font-medium uppercase tracking-wider text-private-600">Termly fees</p>
+              <p className="mt-0.5 text-lg font-bold text-private-900 sm:text-xl">
                 {feeMin === feeMax
                   ? `${formatFee(feeMin)} per term`
-                  : `${formatFee(feeMin)} -- ${formatFee(feeMax)} per term`}
+                  : `${formatFee(feeMin)} \u2013 ${formatFee(feeMax)} per term`}
               </p>
             </div>
-            {feeIncreasePct != null && (
-              <div className="rounded-lg bg-white/60 px-3 py-2 text-right">
-                <p className="text-xs text-brand-700">Est. annual increase</p>
-                <p className="text-sm font-semibold text-brand-900">~{feeIncreasePct}%</p>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {feeIncreasePct != null && (
+                <div className="rounded-lg bg-white/70 px-3 py-1.5 text-right">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-private-600">Est. increase</p>
+                  <p className="text-sm font-semibold text-private-900">~{feeIncreasePct}%/yr</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Content grid */}
-      <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Fees per age group */}
-        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
-          <h2 className="text-lg font-semibold text-stone-900">Fee Breakdown</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Fees by age group, shown per term and per year.
-          </p>
-          {details.length > 0 ? (
-            <div className="mt-4 divide-y divide-stone-100">
-              {details.map((d) => (
-                <div
-                  key={d.id}
-                  className="flex items-center justify-between py-3 text-sm"
+      {/* Tab navigation */}
+      <div className="relative mt-6">
+        <div className="border-b border-stone-200">
+          <nav
+            className="-mb-px flex overflow-x-auto scrollbar-hide"
+            role="tablist"
+            aria-label="School information sections"
+          >
+            {visibleTabs.map((tab, idx) => (
+              <button
+                key={tab}
+                id={`private-tab-${tab}`}
+                role="tab"
+                aria-selected={activeTab === tab}
+                aria-controls={`private-tabpanel-${tab}`}
+                tabIndex={activeTab === tab ? 0 : -1}
+                onClick={() => setActiveTab(tab)}
+                onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                className={`flex-shrink-0 whitespace-nowrap border-b-2 px-3.5 py-3 text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-private-500 sm:px-4 ${
+                  activeTab === tab
+                    ? "border-private-600 text-private-700"
+                    : "border-transparent text-stone-500 hover:border-stone-300 hover:text-stone-700"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </nav>
+        </div>
+        {/* Right-edge fade for scrollable tabs on mobile */}
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-stone-50 to-transparent sm:hidden" aria-hidden="true" />
+      </div>
+
+      {/* Tab content */}
+      <div
+        className="mt-6 animate-fade-in"
+        id={`private-tabpanel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`private-tab-${activeTab}`}
+        key={activeTab}
+      >
+        {/* ============================================================ */}
+        {/* OVERVIEW TAB                                                   */}
+        {/* ============================================================ */}
+        {activeTab === "Overview" && (
+          <div className="space-y-6">
+            {/* Quick links */}
+            {school.website && (
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href={school.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 shadow-sm transition-all duration-200 hover:border-stone-300 hover:shadow-md"
                 >
-                  <span className="font-medium text-stone-700">
-                    {d.fee_age_group ?? "General"}
-                  </span>
-                  <div className="text-right">
-                    <span className="font-semibold text-stone-900">
-                      {formatFee(d.termly_fee)}
-                    </span>
-                    <span className="ml-1 text-stone-400">/term</span>
-                    {d.annual_fee != null && (
-                      <span className="ml-3 text-xs text-stone-500">
-                        ({formatFee(d.annual_fee)}/yr)
-                      </span>
-                    )}
+                  <Globe className="h-4 w-4 text-private-500" aria-hidden="true" />
+                  School website
+                  <ExternalLink className="h-3.5 w-3.5 text-stone-400" aria-hidden="true" />
+                </a>
+              </div>
+            )}
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* General Information */}
+              <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+                <h2 className="text-lg font-semibold text-stone-900">
+                  General Information
+                </h2>
+                <dl className="mt-4 divide-y divide-stone-100 text-sm">
+                  <div className="flex justify-between py-2.5">
+                    <dt className="text-stone-500">Address</dt>
+                    <dd className="max-w-[60%] text-right font-medium text-stone-900">
+                      {school.address}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between py-2.5">
+                    <dt className="text-stone-500">Postcode</dt>
+                    <dd className="font-medium text-stone-900">{school.postcode}</dd>
+                  </div>
+                  <div className="flex justify-between py-2.5">
+                    <dt className="text-stone-500">Age Range</dt>
+                    <dd className="font-medium text-stone-900">
+                      {school.age_range_from}&ndash;{school.age_range_to}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between py-2.5">
+                    <dt className="text-stone-500">Gender Policy</dt>
+                    <dd className="font-medium text-stone-900">
+                      {school.gender_policy}
+                    </dd>
+                  </div>
+                  {school.faith && (
+                    <div className="flex justify-between py-2.5">
+                      <dt className="text-stone-500">Faith</dt>
+                      <dd className="font-medium text-stone-900">{school.faith}</dd>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-2.5">
+                    <dt className="text-stone-500">Council</dt>
+                    <dd className="font-medium text-stone-900">{school.council}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              {/* Location Map */}
+              <section className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+                <div className="p-5 sm:p-6 pb-0 sm:pb-0">
+                  <h2 className="text-lg font-semibold text-stone-900">Location</h2>
+                </div>
+                <div className="mt-4 h-[300px]">
+                  {school.lat != null && school.lng != null ? (
+                    <Map
+                      center={[school.lat, school.lng]}
+                      zoom={14}
+                      schools={[school]}
+                      selectedSchoolId={school.id}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-stone-400">
+                      No location data available
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            {/* Holiday Schedule (shown in Overview since it's general info) */}
+            <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+              <div className="flex items-center gap-2.5">
+                <Calendar className="h-5 w-5 text-private-500" aria-hidden="true" />
+                <h2 className="text-lg font-semibold text-stone-900">Holiday Schedule</h2>
+              </div>
+              <p className="mt-1 ml-7.5 text-sm text-stone-500">
+                Private schools often have different term dates from state schools.
+              </p>
+              {holidayNotes ? (
+                <p className="mt-4 text-sm leading-relaxed text-stone-600">{holidayNotes}</p>
+              ) : (
+                <div className="mt-4">
+                  <NoData
+                    icon={Calendar}
+                    title="No holiday schedule data available"
+                    description="Check the school's website for published term dates."
+                  />
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+
+        {/* ============================================================ */}
+        {/* FEES TAB                                                       */}
+        {/* ============================================================ */}
+        {activeTab === "Fees" && (
+          <div className="space-y-6">
+            {/* Fee Breakdown */}
+            <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+              <div className="flex items-center gap-2.5">
+                <PoundSterling className="h-5 w-5 text-private-500" aria-hidden="true" />
+                <h2 className="text-lg font-semibold text-stone-900">Fee Breakdown</h2>
+              </div>
+              <p className="mt-1 text-sm text-stone-500">
+                Fees by age group, shown per term and per year.
+              </p>
+              {details.length > 0 ? (
+                <div className="mt-5 divide-y divide-stone-100">
+                  {details.map((d) => (
+                    <div
+                      key={d.id}
+                      className="flex items-center justify-between py-3.5 text-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block h-2 w-2 rounded-full bg-private-400" aria-hidden="true" />
+                        <span className="font-medium text-stone-700">
+                          {d.fee_age_group ?? "General"}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-semibold text-stone-900">
+                          {formatFee(d.termly_fee)}
+                        </span>
+                        <span className="ml-1 text-stone-400">/term</span>
+                        {d.annual_fee != null && (
+                          <span className="ml-3 text-xs text-stone-500">
+                            ({formatFee(d.annual_fee)}/yr)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <NoData
+                    icon={PoundSterling}
+                    title="No fee data available"
+                    description="Fee information for this school has not been collected yet. Check the school's website for the latest fees."
+                  />
+                </div>
+              )}
+            </section>
+
+            {/* Fee increase note */}
+            {feeIncreasePct != null && (
+              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/50 p-4 text-sm">
+                <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" aria-hidden="true" />
+                <div>
+                  <p className="font-medium text-amber-900">Annual fee increase</p>
+                  <p className="mt-0.5 text-amber-800">
+                    Fees at this school have typically increased by approximately <strong>{feeIncreasePct}%</strong> per year.
+                    Factor this into your long-term budget planning.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ============================================================ */}
+        {/* HOURS & TRANSPORT TAB                                          */}
+        {/* ============================================================ */}
+        {activeTab === "Hours & Transport" && (
+          <div className="space-y-6">
+            {/* School Hours */}
+            <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+              <div className="flex items-center gap-2.5">
+                <Clock className="h-5 w-5 text-private-500" aria-hidden="true" />
+                <h2 className="text-lg font-semibold text-stone-900">School Hours</h2>
+              </div>
+              <p className="mt-1 text-sm text-stone-500">
+                Daily start and end times for the school day.
+              </p>
+              {firstDetail && (firstDetail.school_day_start || firstDetail.school_day_end) ? (
+                <div className="mt-5 grid grid-cols-2 gap-4">
+                  <div className="rounded-xl bg-green-50 border border-green-200 p-5 text-center transition-shadow hover:shadow-sm">
+                    <p className="text-xs font-medium uppercase tracking-wider text-green-700">Start</p>
+                    <p className="mt-1.5 text-2xl font-bold text-green-900">
+                      {formatTime(firstDetail.school_day_start)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-amber-50 border border-amber-200 p-5 text-center transition-shadow hover:shadow-sm">
+                    <p className="text-xs font-medium uppercase tracking-wider text-amber-700">End</p>
+                    <p className="mt-1.5 text-2xl font-bold text-amber-900">
+                      {formatTime(firstDetail.school_day_end)}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
-              <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              No fee data available yet.
-            </div>
-          )}
-        </section>
+              ) : (
+                <div className="mt-5">
+                  <NoData
+                    icon={Clock}
+                    title="No hours data available"
+                    description="School hours have not been collected yet."
+                  />
+                </div>
+              )}
+            </section>
 
-        {/* School Hours */}
-        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
-          <h2 className="text-lg font-semibold text-stone-900">School Hours</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Daily start and end times for the school day.
-          </p>
-          {firstDetail && (firstDetail.school_day_start || firstDetail.school_day_end) ? (
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-center">
-                <p className="text-xs font-medium uppercase tracking-wide text-green-700">Start</p>
-                <p className="mt-1 text-xl font-bold text-green-900">
-                  {formatTime(firstDetail.school_day_start)}
-                </p>
+            {/* Transport */}
+            <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+              <div className="flex items-center gap-2.5">
+                <Bus className="h-5 w-5 text-private-500" aria-hidden="true" />
+                <h2 className="text-lg font-semibold text-stone-900">Transport</h2>
               </div>
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-center">
-                <p className="text-xs font-medium uppercase tracking-wide text-amber-700">End</p>
-                <p className="mt-1 text-xl font-bold text-amber-900">
-                  {formatTime(firstDetail.school_day_end)}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
-              <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              No hours data available yet.
-            </div>
-          )}
-        </section>
+              <p className="mt-1 text-sm text-stone-500">
+                School transport availability and details.
+              </p>
+              {providesTransport != null ? (
+                <div className="mt-5 space-y-3">
+                  <div className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ${
+                    providesTransport
+                      ? "bg-green-50 text-green-800 ring-1 ring-green-600/20"
+                      : "bg-stone-100 text-stone-700"
+                  }`}>
+                    <span
+                      className={`inline-block h-2 w-2 rounded-full ${providesTransport ? "bg-green-500" : "bg-stone-400"}`}
+                      aria-hidden="true"
+                    />
+                    {providesTransport ? "Transport provided" : "No school transport"}
+                  </div>
+                  {transportNotes && (
+                    <p className="text-sm leading-relaxed text-stone-600">{transportNotes}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <NoData
+                    icon={Bus}
+                    title="No transport data available"
+                    description="Transport information has not been collected yet."
+                  />
+                </div>
+              )}
+            </section>
+          </div>
+        )}
 
-        {/* True Cost Breakdown */}
-        {details.length > 0 && (
-          <section className="rounded-xl border border-orange-200 bg-orange-50/50 p-5 sm:p-6 md:col-span-2">
-            <div className="flex items-start gap-3">
+        {/* ============================================================ */}
+        {/* ADMISSIONS TAB                                                  */}
+        {/* ============================================================ */}
+        {activeTab === "Admissions" && (
+          <div className="space-y-6">
+            {/* Bursaries */}
+            <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+              <div className="flex items-center gap-2.5">
+                <BookOpen className="h-5 w-5 text-amber-500" aria-hidden="true" />
+                <h2 className="text-lg font-semibold text-stone-900">Bursaries</h2>
+              </div>
+              <p className="mt-1 text-sm text-stone-500">
+                Means-tested financial assistance to reduce fees.
+              </p>
+              {bursaries.length > 0 ? (
+                <div className="mt-5 space-y-4">
+                  {bursaries.map((b) => (
+                    <div key={b.id} className="rounded-lg bg-amber-50/50 border border-amber-100 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-stone-900">
+                          Up to {b.max_percentage}% fee reduction
+                        </span>
+                        {b.application_deadline && (
+                          <span className="text-xs text-amber-700">
+                            Deadline: {new Date(b.application_deadline).toLocaleDateString("en-GB")}
+                          </span>
+                        )}
+                      </div>
+                      {b.eligibility_notes && (
+                        <p className="mt-2 text-sm text-stone-600">{b.eligibility_notes}</p>
+                      )}
+                      {b.income_threshold && (
+                        <p className="mt-1 text-xs text-stone-500">
+                          Income threshold: {formatFee(b.income_threshold)}
+                        </p>
+                      )}
+                      {b.percentage_of_pupils != null && (
+                        <p className="mt-1 text-xs text-stone-500">
+                          {b.percentage_of_pupils}% of pupils receive bursary support
+                        </p>
+                      )}
+                      {b.notes && <p className="mt-2 text-xs text-stone-500 italic">{b.notes}</p>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <NoData
+                    icon={BookOpen}
+                    title="No bursary data available"
+                    description="Bursary information has not been collected yet. Contact the school directly for means-tested fee assistance."
+                  />
+                </div>
+              )}
+            </section>
+
+            {/* Scholarships */}
+            <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+              <div className="flex items-center gap-2.5">
+                <Award className="h-5 w-5 text-private-500" aria-hidden="true" />
+                <h2 className="text-lg font-semibold text-stone-900">Scholarships</h2>
+              </div>
+              <p className="mt-1 text-sm text-stone-500">
+                Merit-based awards for academic, music, sport, or other talents.
+              </p>
+              {scholarships.length > 0 ? (
+                <div className="mt-5 divide-y divide-stone-100">
+                  {scholarships.map((s) => (
+                    <div key={s.id} className="py-3.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex rounded-full bg-private-50 px-2.5 py-0.5 text-xs font-medium text-private-700 ring-1 ring-private-600/20 capitalize">
+                            {s.scholarship_type}
+                          </span>
+                          {s.value_description && (
+                            <span className="text-sm font-medium text-stone-900">
+                              {s.value_description}
+                            </span>
+                          )}
+                        </div>
+                        {s.entry_points && (
+                          <span className="text-xs text-stone-500">Entry: {s.entry_points}</span>
+                        )}
+                      </div>
+                      {s.assessment_method && (
+                        <p className="mt-1.5 text-sm text-stone-600">{s.assessment_method}</p>
+                      )}
+                      {s.application_deadline && (
+                        <p className="mt-1 text-xs text-stone-500">
+                          Deadline: {new Date(s.application_deadline).toLocaleDateString("en-GB")}
+                        </p>
+                      )}
+                      {s.notes && <p className="mt-1 text-xs text-stone-500 italic">{s.notes}</p>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <NoData
+                    icon={Award}
+                    title="No scholarship data available"
+                    description="Scholarship information has not been collected yet. Check the school's website for available awards."
+                  />
+                </div>
+              )}
+            </section>
+
+            {/* Entry Assessments */}
+            <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+              <div className="flex items-center gap-2.5">
+                <ClipboardCheck className="h-5 w-5 text-private-500" aria-hidden="true" />
+                <h2 className="text-lg font-semibold text-stone-900">Entry Assessments</h2>
+              </div>
+              <p className="mt-1 text-sm text-stone-500">
+                What to expect at each entry point.
+              </p>
+              {entryAssessments.length > 0 ? (
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  {entryAssessments.map((ea) => (
+                    <div key={ea.id} className="rounded-lg border border-stone-200 p-4 transition-shadow hover:shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-private-100 text-sm font-bold text-private-700">
+                          {ea.entry_point}
+                        </span>
+                        <span className="text-sm font-medium text-stone-900">
+                          Entry at {ea.entry_point}
+                        </span>
+                      </div>
+                      {ea.assessment_type && (
+                        <p className="mt-2 text-sm text-stone-600">{ea.assessment_type}</p>
+                      )}
+                      {ea.subjects_tested && (
+                        <p className="mt-1 text-xs text-stone-500">Subjects: {ea.subjects_tested}</p>
+                      )}
+                      <div className="mt-2 space-y-0.5 text-xs text-stone-500">
+                        {ea.registration_deadline && (
+                          <p>Registration deadline: {new Date(ea.registration_deadline).toLocaleDateString("en-GB")}</p>
+                        )}
+                        {ea.assessment_date && (
+                          <p>Assessment date: {new Date(ea.assessment_date).toLocaleDateString("en-GB")}</p>
+                        )}
+                        {ea.offer_date && (
+                          <p>Offers by: {new Date(ea.offer_date).toLocaleDateString("en-GB")}</p>
+                        )}
+                        {ea.registration_fee != null && (
+                          <p>Registration fee: {formatFee(ea.registration_fee)}</p>
+                        )}
+                      </div>
+                      {ea.notes && <p className="mt-2 text-xs text-stone-500 italic">{ea.notes}</p>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <NoData
+                    icon={ClipboardCheck}
+                    title="No entry assessment data available"
+                    description="Entry assessment details have not been collected yet. Contact the admissions office for assessment requirements."
+                  />
+                </div>
+              )}
+            </section>
+
+            {/* Open Days */}
+            <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+              <div className="flex items-center gap-2.5">
+                <CalendarDays className="h-5 w-5 text-private-500" aria-hidden="true" />
+                <h2 className="text-lg font-semibold text-stone-900">Open Days</h2>
+              </div>
+              <p className="mt-1 text-sm text-stone-500">
+                Upcoming events where you can visit the school.
+              </p>
+              {openDays.length > 0 ? (
+                <div className="mt-5 space-y-3">
+                  {openDays.map((od) => (
+                    <div key={od.id} className="flex items-center justify-between rounded-lg border border-stone-200 p-4 transition-shadow hover:shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-private-50 text-private-700">
+                          <span className="text-xs font-medium uppercase">
+                            {new Date(od.event_date).toLocaleDateString("en-GB", { month: "short" })}
+                          </span>
+                          <span className="text-lg font-bold leading-tight">
+                            {new Date(od.event_date).getDate()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-stone-900">{od.event_type}</p>
+                          {od.event_time && (
+                            <p className="text-xs text-stone-500">{od.event_time}</p>
+                          )}
+                          {od.description && (
+                            <p className="mt-0.5 text-xs text-stone-500">{od.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {od.registration_required && (
+                          <span className="text-xs text-amber-700">Booking required</span>
+                        )}
+                        {od.booking_url && (
+                          <a
+                            href={od.booking_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-lg bg-private-600 px-3 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:bg-private-700"
+                          >
+                            Book
+                            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <NoData
+                    icon={CalendarDays}
+                    title="No upcoming open days listed"
+                    description="Open day information has not been collected yet. Check the school's website for upcoming visit opportunities."
+                  />
+                </div>
+              )}
+            </section>
+
+            {/* Sibling Discounts */}
+            {siblingDiscounts.length > 0 && (
+              <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+                <div className="flex items-center gap-2.5">
+                  <Users className="h-5 w-5 text-private-500" aria-hidden="true" />
+                  <h2 className="text-lg font-semibold text-stone-900">Sibling Discounts</h2>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {siblingDiscounts.map((sd) => (
+                    <div key={sd.id} className="rounded-lg bg-green-50/50 border border-green-100 p-4">
+                      <div className="flex flex-wrap gap-3">
+                        {sd.second_child_percent != null && (
+                          <div className="text-center">
+                            <p className="text-xs text-stone-500">2nd child</p>
+                            <p className="text-lg font-bold text-green-700">{sd.second_child_percent}%</p>
+                          </div>
+                        )}
+                        {sd.third_child_percent != null && (
+                          <div className="text-center">
+                            <p className="text-xs text-stone-500">3rd child</p>
+                            <p className="text-lg font-bold text-green-700">{sd.third_child_percent}%</p>
+                          </div>
+                        )}
+                        {sd.fourth_child_percent != null && (
+                          <div className="text-center">
+                            <p className="text-xs text-stone-500">4th child</p>
+                            <p className="text-lg font-bold text-green-700">{sd.fourth_child_percent}%</p>
+                          </div>
+                        )}
+                      </div>
+                      {sd.conditions && (
+                        <p className="mt-2 text-sm text-stone-600">{sd.conditions}</p>
+                      )}
+                      {sd.stacks_with_bursary != null && (
+                        <p className="mt-1 text-xs text-stone-500">
+                          {sd.stacks_with_bursary
+                            ? "Can be combined with bursaries"
+                            : "Cannot be combined with bursaries"}
+                        </p>
+                      )}
+                      {sd.notes && <p className="mt-1 text-xs text-stone-500 italic">{sd.notes}</p>}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* ============================================================ */}
+        {/* TRUE COST TAB                                                  */}
+        {/* ============================================================ */}
+        {activeTab === "True Cost" && details.length > 0 && (
+          <div className="space-y-6">
+            {/* Explainer */}
+            <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50/50 p-5">
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-orange-100">
                 <svg className="h-5 w-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -406,13 +1102,14 @@ export default function PrivateSchoolDetail() {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Cost cards */}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {details.map((detail) => {
                 const costs = calculateTrueAnnualCost(detail);
                 return (
                   <div
                     key={detail.id}
-                    className="rounded-xl border border-orange-200 bg-white p-5"
+                    className="rounded-xl border border-stone-200 bg-white p-5 transition-shadow duration-200 hover:shadow-md"
                   >
                     <h3 className="font-semibold text-stone-900">
                       {detail.fee_age_group || "General"}
@@ -477,7 +1174,7 @@ export default function PrivateSchoolDetail() {
                       </div>
                     </div>
 
-                    {/* True annual cost */}
+                    {/* True annual cost — highlight */}
                     <div className="mt-3 rounded-lg bg-orange-100 px-4 py-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-orange-900">True annual cost</span>
@@ -489,14 +1186,14 @@ export default function PrivateSchoolDetail() {
 
                     {/* Optional extras */}
                     {costs.optional > 0 && (
-                      <details className="mt-3 border-t border-stone-200 pt-3">
-                        <summary className="flex cursor-pointer items-center justify-between text-xs font-medium text-stone-600 hover:text-stone-900">
+                      <details className="mt-3 border-t border-stone-200 pt-3 group">
+                        <summary className="flex cursor-pointer items-center justify-between text-xs font-medium text-stone-600 hover:text-stone-900 transition-colors">
                           <span>Optional extras</span>
                           <span className="font-medium text-stone-700">
                             +{formatFee(costs.optional)}
                           </span>
                         </summary>
-                        <div className="mt-2 space-y-1 text-xs text-stone-500">
+                        <div className="mt-2 space-y-1 text-xs text-stone-500 animate-fade-in">
                           {!detail.lunches_compulsory && detail.lunches_per_term && (
                             <div className="flex justify-between">
                               <span>Lunches</span>
@@ -563,127 +1260,12 @@ export default function PrivateSchoolDetail() {
             </div>
 
             {firstDetail?.hidden_costs_notes && (
-              <p className="mt-4 text-xs text-stone-600 italic">
+              <p className="text-xs text-stone-600 italic">
                 {firstDetail.hidden_costs_notes}
               </p>
             )}
-          </section>
+          </div>
         )}
-
-        {/* Transport */}
-        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
-          <h2 className="text-lg font-semibold text-stone-900">Transport</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            School transport availability and details.
-          </p>
-          {providesTransport != null ? (
-            <div className="mt-4 space-y-3">
-              <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${
-                providesTransport
-                  ? "bg-green-50 text-green-800 ring-1 ring-green-600/20"
-                  : "bg-stone-100 text-stone-700"
-              }`}>
-                <span
-                  className={`inline-block h-2 w-2 rounded-full ${providesTransport ? "bg-green-500" : "bg-stone-400"}`}
-                  aria-hidden="true"
-                />
-                {providesTransport ? "Transport provided" : "No school transport"}
-              </div>
-              {transportNotes && (
-                <p className="text-sm leading-relaxed text-stone-600">{transportNotes}</p>
-              )}
-            </div>
-          ) : (
-            <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
-              <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              No transport data available yet.
-            </div>
-          )}
-        </section>
-
-        {/* Holiday Schedule */}
-        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
-          <h2 className="text-lg font-semibold text-stone-900">
-            Holiday Schedule
-          </h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Private schools often have different term dates from state schools.
-          </p>
-          {holidayNotes ? (
-            <p className="mt-4 text-sm leading-relaxed text-stone-600">{holidayNotes}</p>
-          ) : (
-            <div className="mt-4 flex items-center gap-3 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
-              <svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              No holiday schedule data available yet.
-            </div>
-          )}
-        </section>
-
-        {/* General Information */}
-        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
-          <h2 className="text-lg font-semibold text-stone-900">
-            General Information
-          </h2>
-          <dl className="mt-4 divide-y divide-stone-100 text-sm">
-            <div className="flex justify-between py-2.5">
-              <dt className="text-stone-500">Address</dt>
-              <dd className="max-w-[60%] text-right font-medium text-stone-900">
-                {school.address}
-              </dd>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <dt className="text-stone-500">Postcode</dt>
-              <dd className="font-medium text-stone-900">{school.postcode}</dd>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <dt className="text-stone-500">Age Range</dt>
-              <dd className="font-medium text-stone-900">
-                {school.age_range_from}&ndash;{school.age_range_to}
-              </dd>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <dt className="text-stone-500">Gender Policy</dt>
-              <dd className="font-medium text-stone-900">
-                {school.gender_policy}
-              </dd>
-            </div>
-            {school.faith && (
-              <div className="flex justify-between py-2.5">
-                <dt className="text-stone-500">Faith</dt>
-                <dd className="font-medium text-stone-900">{school.faith}</dd>
-              </div>
-            )}
-            <div className="flex justify-between py-2.5">
-              <dt className="text-stone-500">Council</dt>
-              <dd className="font-medium text-stone-900">{school.council}</dd>
-            </div>
-          </dl>
-        </section>
-
-        {/* Location Map */}
-        <section className="overflow-hidden rounded-xl border border-stone-200 bg-white">
-          <div className="p-5 sm:p-6 pb-0 sm:pb-0">
-            <h2 className="text-lg font-semibold text-stone-900">Location</h2>
-          </div>
-          <div className="mt-4 h-[300px]">
-            {school.lat != null && school.lng != null ? (
-              <Map
-                center={[school.lat, school.lng]}
-                zoom={14}
-                schools={[school]}
-                selectedSchoolId={school.id}
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-stone-400">
-                No location data available
-              </div>
-            )}
-          </div>
-        </section>
       </div>
     </main>
   );

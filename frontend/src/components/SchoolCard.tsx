@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, ChevronRight, Sun, BookOpen } from "lucide-react";
+import { MapPin, ChevronRight, Sun, BookOpen, GraduationCap, School } from "lucide-react";
 
 interface SchoolCardProps {
   id?: number;
@@ -14,6 +14,8 @@ interface SchoolCardProps {
   ethos?: string | null;
   ageRange?: string | null;
   postcode?: string;
+  /** Fee range string for private schools, e.g. "3,500 - 6,200 per term" */
+  feeRange?: string | null;
 }
 
 const RATING_STYLES: Record<string, { badge: string; dot: string }> = {
@@ -49,6 +51,9 @@ const RATING_BORDER: Record<string, string> = {
 
 const DEFAULT_BORDER = "border-l-stone-300";
 
+/** Border colour for private school cards — always violet */
+const PRIVATE_BORDER = "border-l-private-500";
+
 export default function SchoolCard({
   id,
   name,
@@ -62,9 +67,12 @@ export default function SchoolCard({
   ethos,
   ageRange,
   postcode,
+  feeRange,
 }: SchoolCardProps) {
   const ratingStyle = RATING_STYLES[ofstedRating] ?? DEFAULT_STYLE;
-  const borderColor = RATING_BORDER[ofstedRating] ?? DEFAULT_BORDER;
+  const borderColor = isPrivate
+    ? PRIVATE_BORDER
+    : (RATING_BORDER[ofstedRating] ?? DEFAULT_BORDER);
   const basePath = id
     ? isPrivate
       ? `/private-schools/${id}`
@@ -72,30 +80,59 @@ export default function SchoolCard({
     : "#";
   const linkTo = postcode ? `${basePath}?postcode=${encodeURIComponent(postcode)}` : basePath;
 
+  // Private schools get a violet-tinted hover; state schools use brand teal
+  const hoverAccent = isPrivate
+    ? "hover:border-private-300 hover:shadow-md hover:shadow-private-100/50"
+    : "hover:border-stone-300 hover:shadow-md";
+
+  const nameHoverColor = isPrivate
+    ? "group-hover:text-private-700"
+    : "group-hover:text-brand-700";
+
   return (
     <Link
       to={linkTo}
-      className={`group block rounded-xl border border-stone-200 border-l-4 ${borderColor} bg-white p-4 shadow-sm transition-all hover:border-stone-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2`}
+      className={`group block rounded-xl border border-stone-200 border-l-4 ${borderColor} bg-white p-4 shadow-sm transition-all duration-200 ease-smooth ${hoverAccent} focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2`}
     >
-      {/* Top row: name + Ofsted badge */}
+      {/* Top row: type icon + name + badges */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold leading-snug text-stone-900 group-hover:text-brand-700 transition-colors">
-            {name}
-          </h3>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-stone-500">
-            <span>{type}</span>
-            {ageRange && (
-              <>
-                <span aria-hidden="true" className="text-stone-300">|</span>
-                <span>Ages {ageRange}</span>
-              </>
-            )}
+          <div className="flex items-start gap-2.5">
+            {/* School type icon */}
+            <div
+              className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors duration-200 ${
+                isPrivate
+                  ? "bg-private-50 text-private-500 group-hover:bg-private-100"
+                  : "bg-stone-100 text-stone-400 group-hover:bg-brand-50 group-hover:text-brand-500"
+              }`}
+              aria-hidden="true"
+            >
+              {isPrivate ? (
+                <GraduationCap className="h-4 w-4" />
+              ) : (
+                <School className="h-4 w-4" />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <h3 className={`text-base font-semibold leading-snug text-stone-900 ${nameHoverColor} transition-colors duration-200`}>
+                {name}
+              </h3>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-stone-500">
+                <span>{type}</span>
+                {ageRange && (
+                  <>
+                    <span aria-hidden="true" className="text-stone-300">|</span>
+                    <span>Ages {ageRange}</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Ofsted badge - prominent placement */}
-        <div className="flex flex-shrink-0 flex-col items-end gap-1">
+        {/* Badges — Ofsted or Independent label */}
+        <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
           {!isPrivate && (
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${ratingStyle.badge}`}
@@ -104,18 +141,28 @@ export default function SchoolCard({
             </span>
           )}
           {isPrivate && (
-            <span className="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-600/20">
+            <span className="inline-flex items-center rounded-full bg-private-50 px-2.5 py-1 text-xs font-semibold text-private-700 ring-1 ring-private-600/20">
               Independent
             </span>
           )}
         </div>
       </div>
 
-      {/* Ethos - readable, not italic */}
+      {/* Ethos — readable, not italic */}
       {ethos && (
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-stone-600">
           {ethos}
         </p>
+      )}
+
+      {/* Fee range for private schools */}
+      {isPrivate && feeRange && (
+        <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-private-50/70 px-2.5 py-1 text-xs font-medium text-private-800">
+          <svg className="h-3.5 w-3.5 text-private-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {feeRange}
+        </div>
       )}
 
       {/* Bottom row: distance, clubs, chevron */}
@@ -142,14 +189,18 @@ export default function SchoolCard({
           )}
         </div>
 
-        {/* Chevron - visual affordance for clickability */}
+        {/* Chevron — visual affordance for clickability */}
         <ChevronRight
-          className="h-4 w-4 flex-shrink-0 text-stone-300 transition-transform group-hover:translate-x-0.5 group-hover:text-stone-500"
+          className={`h-4 w-4 flex-shrink-0 transition-all duration-200 ${
+            isPrivate
+              ? "text-private-200 group-hover:translate-x-0.5 group-hover:text-private-500"
+              : "text-stone-300 group-hover:translate-x-0.5 group-hover:text-stone-500"
+          }`}
           aria-hidden="true"
         />
       </div>
 
-      {/* Ofsted inspection date - subtle */}
+      {/* Ofsted inspection date — subtle */}
       {!isPrivate && ofstedDate && (
         <p className="mt-2 text-xs text-stone-400">
           Last inspected {ofstedDate}
