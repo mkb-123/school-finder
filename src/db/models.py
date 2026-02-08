@@ -71,6 +71,16 @@ class School(Base):
     sibling_discounts: Mapped[list[SiblingDiscount]] = relationship(
         "SiblingDiscount", back_populates="school", lazy="select"
     )
+    curricula: Mapped[list[PrivateSchoolCurriculum]] = relationship(
+        "PrivateSchoolCurriculum", back_populates="school", lazy="select"
+    )
+    facilities: Mapped[list[PrivateSchoolFacility]] = relationship(
+        "PrivateSchoolFacility", back_populates="school", lazy="select"
+    )
+    isi_inspections: Mapped[list[ISIInspection]] = relationship("ISIInspection", back_populates="school", lazy="select")
+    private_results: Mapped[list[PrivateSchoolResults]] = relationship(
+        "PrivateSchoolResults", back_populates="school", lazy="select"
+    )
 
     def __repr__(self) -> str:
         return f"<School(id={self.id}, name={self.name!r}, council={self.council!r})>"
@@ -676,3 +686,133 @@ class SiblingDiscount(Base):
 
     def __repr__(self) -> str:
         return f"<SiblingDiscount(school_id={self.school_id})>"
+
+
+# ---------------------------------------------------------------------------
+# Private School Extended Models (Phase 2)
+# ---------------------------------------------------------------------------
+
+
+class PrivateSchoolCurriculum(Base):
+    """Curriculum and qualifications offered by a private school."""
+
+    __tablename__ = "private_school_curricula"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+
+    # e.g. "GCSE", "A-level", "IB", "BTEC", "Pre-U", "iGCSE", "Scottish Highers"
+    qualification_type: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # e.g. "Mathematics, English, Sciences, ..." or NULL if general offering
+    subjects_offered: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # e.g. "KS3", "KS4", "KS5", "EYFS"
+    key_stage: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    school: Mapped[School] = relationship("School", back_populates="curricula")
+
+    def __repr__(self) -> str:
+        return f"<PrivateSchoolCurriculum(school_id={self.school_id}, type={self.qualification_type!r})>"
+
+
+class PrivateSchoolFacility(Base):
+    """Facilities available at a private school."""
+
+    __tablename__ = "private_school_facilities"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+
+    # e.g. "Sports", "Arts", "Science", "Technology", "Music", "Swimming", "Library", "Outdoor"
+    facility_type: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # e.g. "25m indoor swimming pool", "Full-size astroturf pitch"
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    school: Mapped[School] = relationship("School", back_populates="facilities")
+
+    def __repr__(self) -> str:
+        return f"<PrivateSchoolFacility(school_id={self.school_id}, name={self.name!r})>"
+
+
+class ISIInspection(Base):
+    """ISI (Independent Schools Inspectorate) inspection results for a private school.
+
+    Most UK private schools are inspected by ISI rather than Ofsted.
+    ISI uses a different rating system.
+    """
+
+    __tablename__ = "isi_inspections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+
+    inspection_date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
+
+    # ISI ratings: "Excellent", "Good", "Sound", "Unsatisfactory"
+    # or for compliance: "Met", "Not Met"
+    overall_rating: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # Sub-ratings (ISI educational quality inspection)
+    achievement_rating: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    personal_development_rating: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # Compliance inspection
+    compliance_met: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    # Inspection type: "Educational Quality", "Regulatory Compliance", "Full"
+    inspection_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    report_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # Key findings from report
+    key_findings: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recommendations: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    is_current: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    school: Mapped[School] = relationship("School", back_populates="isi_inspections")
+
+    def __repr__(self) -> str:
+        return (
+            f"<ISIInspection(school_id={self.school_id}, date={self.inspection_date}, rating={self.overall_rating!r})>"
+        )
+
+
+class PrivateSchoolResults(Base):
+    """Exam results and university destination data for a private school."""
+
+    __tablename__ = "private_school_results"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+
+    # e.g. "GCSE", "A-level", "IB", "University Destination"
+    result_type: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # Academic year, e.g. "2023/2024"
+    year: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    # Metric name: e.g. "% A*-A at GCSE", "% A*-B at A-level", "% Russell Group",
+    # "Average IB points", "% Oxbridge"
+    metric_name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    # Metric value as string to accommodate percentages, scores, etc.
+    metric_value: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    school: Mapped[School] = relationship("School", back_populates="private_results")
+
+    def __repr__(self) -> str:
+        return f"<PrivateSchoolResults(school_id={self.school_id}, type={self.result_type!r}, year={self.year!r})>"

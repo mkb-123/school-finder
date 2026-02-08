@@ -17,9 +17,13 @@ from src.db.models import (
     BusStop,
     EntryAssessment,
     HolidayClub,
+    ISIInspection,
     OpenDay,
     ParkingRating,
+    PrivateSchoolCurriculum,
     PrivateSchoolDetails,
+    PrivateSchoolFacility,
+    PrivateSchoolResults,
     Scholarship,
     School,
     SchoolClassSize,
@@ -154,6 +158,48 @@ class SQLiteSchoolRepository(SchoolRepository):
                 select(PrivateSchoolDetails.id)
                 .where(PrivateSchoolDetails.school_id == School.id)
                 .where(PrivateSchoolDetails.termly_fee <= filters.max_fee)
+                .correlate(School)
+                .exists()
+            )
+
+        # Min fee filter
+        if filters.min_fee is not None:
+            stmt = stmt.where(
+                select(PrivateSchoolDetails.id)
+                .where(PrivateSchoolDetails.school_id == School.id)
+                .where(PrivateSchoolDetails.termly_fee >= filters.min_fee)
+                .correlate(School)
+                .exists()
+            )
+
+        # Transport filter
+        if filters.has_transport is True:
+            stmt = stmt.where(
+                select(PrivateSchoolDetails.id)
+                .where(PrivateSchoolDetails.school_id == School.id)
+                .where(PrivateSchoolDetails.provides_transport == True)  # noqa: E712
+                .correlate(School)
+                .exists()
+            )
+
+        # Bursary availability filter
+        if filters.has_bursaries is True:
+            stmt = stmt.where(select(Bursary.id).where(Bursary.school_id == School.id).correlate(School).exists())
+
+        # Scholarship availability filter
+        if filters.has_scholarships is True:
+            stmt = stmt.where(
+                select(Scholarship.id).where(Scholarship.school_id == School.id).correlate(School).exists()
+            )
+
+        # Entry point filter (e.g. "11+", "7+")
+        if filters.entry_point is not None:
+            from src.db.models import EntryAssessment
+
+            stmt = stmt.where(
+                select(EntryAssessment.id)
+                .where(EntryAssessment.school_id == School.id)
+                .where(EntryAssessment.entry_point == filters.entry_point)
                 .correlate(School)
                 .exists()
             )
@@ -378,9 +424,7 @@ class SQLiteSchoolRepository(SchoolRepository):
 
     async def get_entry_assessments_for_school(self, school_id: int) -> list[EntryAssessment]:
         stmt = (
-            select(EntryAssessment)
-            .where(EntryAssessment.school_id == school_id)
-            .order_by(EntryAssessment.entry_point)
+            select(EntryAssessment).where(EntryAssessment.school_id == school_id).order_by(EntryAssessment.entry_point)
         )
         async with self._session_factory() as session:
             result = await session.execute(stmt)
@@ -411,6 +455,90 @@ class SQLiteSchoolRepository(SchoolRepository):
         )
         if council:
             stmt = stmt.where(School.council == council)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    # ------------------------------------------------------------------
+    # Private school extended data (Phase 2)
+    # ------------------------------------------------------------------
+
+    async def get_curricula_for_school(self, school_id: int) -> list[PrivateSchoolCurriculum]:
+        stmt = select(PrivateSchoolCurriculum).where(PrivateSchoolCurriculum.school_id == school_id)
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_facilities_for_school(self, school_id: int) -> list[PrivateSchoolFacility]:
+        stmt = (
+            select(PrivateSchoolFacility)
+            .where(PrivateSchoolFacility.school_id == school_id)
+            .order_by(PrivateSchoolFacility.facility_type, PrivateSchoolFacility.name)
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_isi_inspections_for_school(self, school_id: int) -> list[ISIInspection]:
+        stmt = (
+            select(ISIInspection)
+            .where(ISIInspection.school_id == school_id)
+            .order_by(ISIInspection.inspection_date.desc())
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_private_results_for_school(self, school_id: int) -> list[PrivateSchoolResults]:
+        stmt = (
+            select(PrivateSchoolResults)
+            .where(PrivateSchoolResults.school_id == school_id)
+            .order_by(PrivateSchoolResults.year.desc(), PrivateSchoolResults.result_type)
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_upcoming_open_days(self) -> list[tuple[OpenDay, School]]:
+        import datetime
+
+        stmt = (
+            select(OpenDay, School)
+            .join(School, OpenDay.school_id == School.id)
+            .where(School.is_private == True)  # noqa: E712
+            .where(OpenDay.event_date >= datetime.date.today())
+            .order_by(OpenDay.event_date)
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return [(row[0], row[1]) for row in result.all()]
+
+    async def get_private_schools_with_scholarships(self) -> list[School]:
+        stmt = (
+            select(School)
+            .where(School.is_private == True)  # noqa: E712
+            .where(select(Scholarship.id).where(Scholarship.school_id == School.id).correlate(School).exists())
+            .options(
+                selectinload(School.scholarships),
+                selectinload(School.private_details),
+            )
+            .order_by(School.name)
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_private_schools_with_bursaries(self) -> list[School]:
+        stmt = (
+            select(School)
+            .where(School.is_private == True)  # noqa: E712
+            .where(select(Bursary.id).where(Bursary.school_id == School.id).correlate(School).exists())
+            .options(
+                selectinload(School.bursaries),
+                selectinload(School.private_details),
+            )
+            .order_by(School.name)
+        )
         async with self._session_factory() as session:
             result = await session.execute(stmt)
             return list(result.scalars().all())

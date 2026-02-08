@@ -11,9 +11,13 @@ from src.db.models import (
     BusStop,
     EntryAssessment,
     HolidayClub,
+    ISIInspection,
     OpenDay,
     ParkingRating,
+    PrivateSchoolCurriculum,
     PrivateSchoolDetails,
+    PrivateSchoolFacility,
+    PrivateSchoolResults,
     Scholarship,
     School,
     SchoolClassSize,
@@ -42,6 +46,11 @@ class SchoolFilters:
     faith: str | None = None
     is_private: bool | None = None
     max_fee: float | None = None  # max termly fee for private school filtering
+    min_fee: float | None = None  # min termly fee for private school filtering
+    has_transport: bool | None = None  # filter by transport availability
+    has_bursaries: bool | None = None  # filter by bursary availability
+    has_scholarships: bool | None = None  # filter by scholarship availability
+    entry_point: str | None = None  # filter by entry point e.g. "11+"
     search: str | None = None  # name-based search (case-insensitive substring)
     limit: int | None = None  # max results to return
     offset: int | None = None  # number of results to skip
@@ -214,4 +223,39 @@ class SchoolRepository(ABC):
     @abstractmethod
     async def get_all_private_schools_with_fees(self, council: str | None = None) -> list[School]:
         """Return all private schools with their fee details eagerly loaded."""
+        ...
+
+    @abstractmethod
+    async def get_curricula_for_school(self, school_id: int) -> list[PrivateSchoolCurriculum]:
+        """Return curriculum/qualification offerings for a private school."""
+        ...
+
+    @abstractmethod
+    async def get_facilities_for_school(self, school_id: int) -> list[PrivateSchoolFacility]:
+        """Return facilities available at a private school."""
+        ...
+
+    @abstractmethod
+    async def get_isi_inspections_for_school(self, school_id: int) -> list[ISIInspection]:
+        """Return ISI inspection results for a private school, ordered by date descending."""
+        ...
+
+    @abstractmethod
+    async def get_private_results_for_school(self, school_id: int) -> list[PrivateSchoolResults]:
+        """Return exam results and university destination data for a private school."""
+        ...
+
+    @abstractmethod
+    async def get_upcoming_open_days(self) -> list[tuple[OpenDay, School]]:
+        """Return all upcoming open days across all private schools, with school info."""
+        ...
+
+    @abstractmethod
+    async def get_private_schools_with_scholarships(self) -> list[School]:
+        """Return all private schools that offer scholarships, with scholarships eagerly loaded."""
+        ...
+
+    @abstractmethod
+    async def get_private_schools_with_bursaries(self) -> list[School]:
+        """Return all private schools that offer bursaries, with bursaries eagerly loaded."""
         ...
