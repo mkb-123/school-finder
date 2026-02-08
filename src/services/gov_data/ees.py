@@ -39,6 +39,14 @@ DATASETS = {
         "id": "c8f753ef-b76f-41a3-8949-13382e131054",
         "description": "Key stage 4 institution level 2024 final data - Schools and colleges (performance)",
     },
+    "ks5_performance": {
+        "id": "aae22548-56ea-40db-b710-62231d3f0e0e",
+        "description": "16 to 18 institution level 2024 final - performance (multi-year: 2020/21 to 2023/24)",
+    },
+    "ks5_grades": {
+        "id": "0aa27be7-4958-4d9b-87c5-4af9ec6cd921",
+        "description": "16 to 18 institution level 2024 final - subject entries and grades (2023/24)",
+    },
     "absence": {
         "id": "1ef1689a-070a-4e0b-9314-512db23a3cc9",
         "description": "Absence by school level",
@@ -545,6 +553,377 @@ class EESService(BaseGovDataService):
         return stats
 
     # ------------------------------------------------------------------
+    # KS5 (A-level / 16-18) performance data
+    # ------------------------------------------------------------------
+
+    def refresh_ks5(
+        self,
+        council: str | None = None,
+        force_download: bool = False,
+        db_path: str | None = None,
+    ) -> dict[str, dict[str, int]]:
+        """Download and import 16-18 A-level performance and subject grades.
+
+        This imports two datasets:
+        - **ks5_performance**: headline metrics (APS, AAB%, best 3 A-levels)
+          across multiple years (2020/21 to 2023/24).  Includes independent
+          schools — value-added and retention are NOT available for
+          independents but APS, AAB%, and best-3 grades ARE.
+        - **ks5_grades**: per-subject grade distributions for the latest year
+          (2023/24).  Each row is one school + subject + grade level.
+
+        Returns
+        -------
+        dict
+            Nested statistics: {performance: {...}, grades: {...}}.
+        """
+        perf = self._refresh_ks5_performance(
+            council=council, force_download=force_download, db_path=db_path,
+        )
+        grades = self._refresh_ks5_grades(
+            council=council, force_download=force_download, db_path=db_path,
+        )
+        return {"performance": perf, "grades": grades}
+
+    def _refresh_ks5_performance(
+        self,
+        council: str | None = None,
+        force_download: bool = False,
+        db_path: str | None = None,
+    ) -> dict[str, int]:
+        """Import headline 16-18 performance metrics.
+
+        Key columns from the EES dataset:
+        - ``points_per_entry`` (APS per entry — the headline A-level measure)
+        - ``points_per_entry_grade`` (grade equivalent, e.g. "B-")
+        - ``aab_perc`` (% achieving AAB or better)
+        - ``best_three_alevels_ppe`` (APS for best 3 A-levels)
+        - ``best_three_alevels_grade`` (grade equivalent for best 3)
+        - ``value_added`` (NOT available for independent schools)
+
+        We filter to ``cohort == "A level"`` and ``disadvantaged_status == "All students"``.
+        """
+        settings = get_settings()
+        db = db_path or settings.SQLITE_PATH
+
+        csv_path = self.download_dataset("ks5_performance", force=force_download)
+        if csv_path is None:
+            return {"imported": 0, "skipped": 0, "not_found": 0, "error": "no_dataset_id"}
+
+        df = self._read_ees_csv(csv_path)
+        self._logger.info("KS5 performance CSV: %d rows, columns: %s", df.height, df.columns[:10])
+
+        urn_map = self._load_urn_map(db, council)
+        return self._import_ks5_performance(db, df, urn_map)
+
+    _KS5_SUPPRESS = frozenset({"", "SUPP", "NE", "NA", "x", "z", "null", "None", "c"})
+
+    def _import_ks5_performance(
+        self,
+        db_path: str,
+        df: pl.DataFrame,
+        urn_map: dict[str, int],
+    ) -> dict[str, int]:
+        """Parse KS5 performance CSV and insert SchoolPerformance records."""
+        stats = {"imported": 0, "skipped": 0, "not_found": 0}
+
+        urn_col = self._find_col(df, ["school_urn", "URN", "urn"])
+        if not urn_col:
+            self._logger.error("No URN column in KS5 performance data. Columns: %s", df.columns)
+            return stats
+
+        year_col = self._find_col(df, ["time_period", "year", "academic_year"])
+        cohort_col = self._find_col(df, ["cohort"])
+        disadv_col = self._find_col(df, ["disadvantaged_status"])
+        aps_col = self._find_col(df, ["points_per_entry"])
+        aps_grade_col = self._find_col(df, ["points_per_entry_grade"])
+        aab_col = self._find_col(df, ["aab_perc"])
+        best3_col = self._find_col(df, ["best_three_alevels_ppe"])
+        best3_grade_col = self._find_col(df, ["best_three_alevels_grade"])
+        pupil_col = self._find_col(df, ["pupil_count"])
+        va_col = self._find_col(df, ["value_added"])
+
+        self._logger.info(
+            "KS5 perf columns: urn=%s, year=%s, cohort=%s, aps=%s, aab=%s, best3=%s, va=%s",
+            urn_col, year_col, cohort_col, aps_col, aab_col, best3_col, va_col,
+        )
+
+        # Filter to A level cohort, all students
+        if cohort_col:
+            df = df.filter(pl.col(cohort_col) == "A level")
+        if disadv_col:
+            df = df.filter(pl.col(disadv_col) == "All students")
+
+        self._logger.info("KS5 after filtering to A level / All students: %d rows", df.height)
+
+        source_url = "https://explore-education-statistics.service.gov.uk/find-statistics/a-level-and-other-16-to-18-results"
+
+        engine = create_engine(f"sqlite:///{db_path}")
+        with Session(engine) as session:
+            for row in df.iter_rows(named=True):
+                urn = str(row.get(urn_col, "")).strip()
+                school_id = urn_map.get(urn)
+                if school_id is None:
+                    stats["not_found"] += 1
+                    continue
+
+                year = self._parse_year(row.get(year_col, "")) if year_col else 0
+                metrics_added = 0
+
+                # APS per entry (the headline A-level metric)
+                if aps_col:
+                    val = str(row.get(aps_col, "")).strip()
+                    grade = str(row.get(aps_grade_col, "")).strip() if aps_grade_col else ""
+                    if val and val not in self._KS5_SUPPRESS:
+                        display = f"{val} ({grade})" if grade and grade not in self._KS5_SUPPRESS else val
+                        session.add(
+                            SchoolPerformance(
+                                school_id=school_id,
+                                metric_type="A-level_APS",
+                                metric_value=display,
+                                year=year,
+                                source_url=source_url,
+                            )
+                        )
+                        metrics_added += 1
+
+                # AAB percentage
+                if aab_col:
+                    val = str(row.get(aab_col, "")).strip()
+                    if val and val not in self._KS5_SUPPRESS:
+                        session.add(
+                            SchoolPerformance(
+                                school_id=school_id,
+                                metric_type="A-level_AAB",
+                                metric_value=f"{val}%",
+                                year=year,
+                                source_url=source_url,
+                            )
+                        )
+                        metrics_added += 1
+
+                # Best 3 A-levels
+                if best3_col:
+                    val = str(row.get(best3_col, "")).strip()
+                    grade = str(row.get(best3_grade_col, "")).strip() if best3_grade_col else ""
+                    if val and val not in self._KS5_SUPPRESS:
+                        display = f"{val} ({grade})" if grade and grade not in self._KS5_SUPPRESS else val
+                        session.add(
+                            SchoolPerformance(
+                                school_id=school_id,
+                                metric_type="A-level_Best3",
+                                metric_value=display,
+                                year=year,
+                                source_url=source_url,
+                            )
+                        )
+                        metrics_added += 1
+
+                # Value added (NOT available for independent schools — will be suppressed)
+                if va_col:
+                    val = str(row.get(va_col, "")).strip()
+                    if val and val not in self._KS5_SUPPRESS:
+                        try:
+                            va_num = float(val)
+                            session.add(
+                                SchoolPerformance(
+                                    school_id=school_id,
+                                    metric_type="A-level_VA",
+                                    metric_value=f"{va_num:+.2f}",
+                                    year=year,
+                                    source_url=source_url,
+                                )
+                            )
+                            metrics_added += 1
+                        except ValueError:
+                            pass
+
+                # Number of A-level students (useful context)
+                if pupil_col:
+                    val = self._safe_int(row.get(pupil_col))
+                    if val is not None and val > 0:
+                        session.add(
+                            SchoolPerformance(
+                                school_id=school_id,
+                                metric_type="A-level_Students",
+                                metric_value=str(val),
+                                year=year,
+                                source_url=source_url,
+                            )
+                        )
+                        metrics_added += 1
+
+                if metrics_added > 0:
+                    stats["imported"] += metrics_added
+                else:
+                    stats["skipped"] += 1
+
+            session.commit()
+
+        self._logger.info("KS5 performance import: %s", stats)
+        return stats
+
+    # ------------------------------------------------------------------
+    # KS5 (A-level) subject-level grade distributions
+    # ------------------------------------------------------------------
+
+    def _refresh_ks5_grades(
+        self,
+        council: str | None = None,
+        force_download: bool = False,
+        db_path: str | None = None,
+    ) -> dict[str, int]:
+        """Import per-subject A-level grade distributions.
+
+        The subject grades dataset is in *long format*: each row is one
+        school + subject + grade level.  We aggregate to produce per-subject
+        summaries (total entries, % A*-A) for each school.
+        """
+        settings = get_settings()
+        db = db_path or settings.SQLITE_PATH
+
+        csv_path = self.download_dataset("ks5_grades", force=force_download)
+        if csv_path is None:
+            return {"imported": 0, "skipped": 0, "not_found": 0, "error": "no_dataset_id"}
+
+        df = self._read_ees_csv(csv_path)
+        self._logger.info("KS5 grades CSV: %d rows, columns: %s", df.height, df.columns[:15])
+
+        urn_map = self._load_urn_map(db, council)
+        return self._import_ks5_grades(db, df, urn_map)
+
+    def _import_ks5_grades(
+        self,
+        db_path: str,
+        df: pl.DataFrame,
+        urn_map: dict[str, int],
+    ) -> dict[str, int]:
+        """Parse KS5 subject grades CSV and produce per-school A-level subject summaries.
+
+        For each school we store a single ``A-level_Subjects`` metric with a
+        summary like ``"Maths (45 entries, 62% A*-A), Biology (30 entries, 48% A*-A), ..."``.
+        We also store the top subjects individually as ``A-level_Subject_{Name}``
+        for detailed display.
+        """
+        stats = {"imported": 0, "skipped": 0, "not_found": 0}
+
+        urn_col = self._find_col(df, ["school_urn", "URN", "urn"])
+        if not urn_col:
+            self._logger.error("No URN column in KS5 grades data. Columns: %s", df.columns)
+            return stats
+
+        subject_col = self._find_col(df, ["subject"])
+        qual_col = self._find_col(df, ["qualification"])
+        grade_col = self._find_col(df, ["grade_structure"])
+        total_col = self._find_col(df, ["grade_total_entries"])
+        count_col = self._find_col(df, ["number_of_exams"])
+
+        self._logger.info(
+            "KS5 grades columns: urn=%s, subject=%s, qual=%s, grade=%s, total=%s, count=%s",
+            urn_col, subject_col, qual_col, grade_col, total_col, count_col,
+        )
+
+        if not all([subject_col, count_col]):
+            self._logger.warning("KS5 grades dataset missing required columns; skipping")
+            return stats
+
+        # Filter to A level only (exclude Applied general, Tech level, etc.)
+        if qual_col:
+            df = df.filter(pl.col(qual_col) == "A level")
+
+        self._logger.info("KS5 grades after filtering to A level: %d rows", df.height)
+
+        # Build per-school per-subject aggregations:
+        # For each school+subject, we need total entries and A*-A count
+        school_subjects: dict[str, dict[str, dict[str, int]]] = {}
+
+        for row in df.iter_rows(named=True):
+            urn = str(row.get(urn_col, "")).strip()
+            if urn not in urn_map:
+                continue
+
+            subject = str(row.get(subject_col, "")).strip()
+            if not subject or subject == "Total":
+                continue
+
+            count_raw = str(row.get(count_col, "")).strip()
+            if not count_raw or count_raw in self._KS5_SUPPRESS:
+                continue
+
+            count = self._safe_int(count_raw)
+            if count is None or count <= 0:
+                continue
+
+            grade = str(row.get(grade_col, "")).strip() if grade_col else ""
+            is_total = (
+                (total_col and str(row.get(total_col, "")).strip() == "Total entries")
+                or grade == "Total entries"
+            )
+            is_top_grade = grade in ("*", "A")  # A* and A
+
+            school_subjects.setdefault(urn, {}).setdefault(subject, {"total": 0, "a_star_a": 0})
+            if is_total:
+                school_subjects[urn][subject]["total"] = count
+            elif is_top_grade:
+                school_subjects[urn][subject]["a_star_a"] += count
+
+        self._logger.info("KS5 grades: aggregated data for %d schools", len(school_subjects))
+
+        source_url = "https://explore-education-statistics.service.gov.uk/find-statistics/a-level-and-other-16-to-18-results"
+
+        engine = create_engine(f"sqlite:///{db_path}")
+        with Session(engine) as session:
+            for urn, subjects in school_subjects.items():
+                school_id = urn_map.get(urn)
+                if school_id is None:
+                    stats["not_found"] += 1
+                    continue
+
+                # Sort subjects by total entries (most popular first)
+                sorted_subjects = sorted(
+                    ((subj, data) for subj, data in subjects.items() if data["total"] > 0),
+                    key=lambda x: x[1]["total"],
+                    reverse=True,
+                )
+
+                if not sorted_subjects:
+                    stats["skipped"] += 1
+                    continue
+
+                # Store individual subject results (top 10 by entries)
+                for subj_name, data in sorted_subjects[:10]:
+                    total = data["total"]
+                    a_star_a = data["a_star_a"]
+                    pct = round((a_star_a / total) * 100) if total > 0 else 0
+                    session.add(
+                        SchoolPerformance(
+                            school_id=school_id,
+                            metric_type=f"A-level_Subject",
+                            metric_value=f"{subj_name}: {total} entries, {pct}% A*-A",
+                            year=2023,  # 2023/24 dataset
+                            source_url=source_url,
+                        )
+                    )
+                    stats["imported"] += 1
+
+                # Store a summary count of total subjects offered
+                session.add(
+                    SchoolPerformance(
+                        school_id=school_id,
+                        metric_type="A-level_SubjectCount",
+                        metric_value=str(len(sorted_subjects)),
+                        year=2023,
+                        source_url=source_url,
+                    )
+                )
+                stats["imported"] += 1
+
+            session.commit()
+
+        self._logger.info("KS5 grades import: %s", stats)
+        return stats
+
+    # ------------------------------------------------------------------
     # Admissions data (supporting file - not an API dataset)
     # ------------------------------------------------------------------
 
@@ -850,17 +1229,18 @@ class EESService(BaseGovDataService):
         force_download: bool = False,
         db_path: str | None = None,
     ) -> dict[str, dict[str, int]]:
-        """Refresh KS2, KS4, and absence data.
+        """Refresh KS2, KS4, KS5 (A-level), and absence data.
 
         Returns
         -------
         dict
-            Nested statistics: {ks2: {...}, ks4: {...}, absence: {...}}.
+            Nested statistics: {ks2: {...}, ks4: {...}, ks5: {...}, absence: {...}}.
         """
         ks2_stats = self.refresh_ks2(council=council, force_download=force_download, db_path=db_path)
         ks4_stats = self.refresh_ks4(council=council, force_download=force_download, db_path=db_path)
+        ks5_stats = self.refresh_ks5(council=council, force_download=force_download, db_path=db_path)
         absence_stats = self.refresh_absence(council=council, force_download=force_download, db_path=db_path)
-        return {"ks2": ks2_stats, "ks4": ks4_stats, "absence": absence_stats}
+        return {"ks2": ks2_stats, "ks4": ks4_stats, "ks5": ks5_stats, "absence": absence_stats}
 
     # ------------------------------------------------------------------
     # Helpers

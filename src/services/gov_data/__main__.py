@@ -9,6 +9,7 @@ Usage::
     python -m src.services.gov_data refresh --source gias --council "Milton Keynes"
     python -m src.services.gov_data refresh --source ofsted --council "Milton Keynes"
     python -m src.services.gov_data refresh --source performance --council "Milton Keynes"
+    python -m src.services.gov_data refresh --source alevel --council "Milton Keynes"
     python -m src.services.gov_data refresh --source admissions --council "Milton Keynes"
 
     # Force re-download (bypass cache)
@@ -25,7 +26,7 @@ from src.services.gov_data.ees import EESService
 from src.services.gov_data.gias import GIASService
 from src.services.gov_data.ofsted import OfstedService
 
-ALL_SOURCES = ("gias", "ofsted", "performance", "admissions")
+ALL_SOURCES = ("gias", "ofsted", "performance", "alevel", "admissions")
 
 
 def _setup_logging() -> None:
@@ -103,6 +104,18 @@ def _refresh_performance(council: str, force: bool, db_path: str | None) -> None
             print(f"    {k}: {v}")
 
 
+def _refresh_alevel(council: str, force: bool, db_path: str | None) -> None:
+    print(f"\n{'=' * 60}")
+    print("EES - A-Level / 16-18 Results")
+    print(f"{'=' * 60}")
+    service = EESService()
+    stats = service.refresh_ks5(council=council, force_download=force, db_path=db_path)
+    for key, sub_stats in stats.items():
+        print(f"  {key.upper()}:")
+        for k, v in sub_stats.items():
+            print(f"    {k}: {v}")
+
+
 def _refresh_admissions(council: str, force: bool, db_path: str | None) -> None:
     print(f"\n{'=' * 60}")
     print("EES - Admissions Data")
@@ -117,6 +130,7 @@ _REFRESH_FUNCS = {
     "gias": _refresh_gias,
     "ofsted": _refresh_ofsted,
     "performance": _refresh_performance,
+    "alevel": _refresh_alevel,
     "admissions": _refresh_admissions,
 }
 
