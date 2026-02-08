@@ -438,13 +438,29 @@ export default function PrivateSchoolDetail() {
   const openDays = school.open_days ?? [];
   const siblingDiscounts = school.sibling_discounts ?? [];
 
+  // Check if any detail has actual hidden cost data (not just base fees)
+  const hasHiddenCostData = details.some(
+    (d) =>
+      d.lunches_per_term ||
+      d.trips_per_term ||
+      d.exam_fees_per_year ||
+      d.textbooks_per_year ||
+      d.music_tuition_per_term ||
+      d.sports_per_term ||
+      d.uniform_per_year ||
+      d.registration_fee ||
+      d.deposit_fee ||
+      d.insurance_per_year ||
+      d.building_fund_per_year
+  );
+
   // Determine which tabs to show
   const visibleTabs = ALL_TABS.filter((tab) => {
     if (tab === "Overview") return true;
     if (tab === "Fees") return true; // Always show — has empty state
     if (tab === "Admissions") return true; // Always show — has empty state
     if (tab === "Hours & Transport") return true;
-    if (tab === "True Cost") return details.length > 0;
+    if (tab === "True Cost") return hasHiddenCostData;
     return true;
   });
 

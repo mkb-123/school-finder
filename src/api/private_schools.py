@@ -21,9 +21,12 @@ router = APIRouter(tags=["private-schools"])
 
 
 def _to_private_filters(params: PrivateSchoolFilterParams) -> SchoolFilters:
-    """Convert private school API filter params to the repository's filter dataclass."""
+    """Convert private school API filter params to the repository's filter dataclass.
+
+    Private schools are not scoped to a single council — they are returned
+    from all nearby areas that were imported during seeding.
+    """
     return SchoolFilters(
-        council=params.council,
         age=params.age,
         gender=params.gender,
         is_private=True,
@@ -50,14 +53,13 @@ async def list_private_schools(
 )
 async def compare_private_school_fees(
     repo: Annotated[SchoolRepository, Depends(get_school_repository)],
-    council: str | None = Query(None, description="Filter by council"),
 ) -> FeeComparisonResponse:
-    """Compare fees across all private schools side by side.
+    """Compare fees across all nearby private schools side by side.
 
     Returns fee tiers, bursary/scholarship availability, and transport info
-    for each private school in the specified council.
+    for every private school in the database (imported by radius during seeding).
     """
-    schools = await repo.get_all_private_schools_with_fees(council=council)
+    schools = await repo.get_all_private_schools_with_fees()
     entries = []
     for school in schools:
         details = school.private_details
