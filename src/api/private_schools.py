@@ -8,13 +8,26 @@ from src.db.base import SchoolFilters, SchoolRepository
 from src.db.factory import get_school_repository
 from src.schemas.filters import PrivateSchoolFilterParams
 from src.schemas.school import (
+    BursaryResponse,
+    BursarySchoolEntry,
+    CurriculumResponse,
+    EntryAssessmentResponse,
+    FacilityResponse,
     FeeComparisonEntry,
     FeeComparisonResponse,
     HiddenCostItem,
+    ISIInspectionResponse,
+    OpenDayResponse,
     PrivateSchoolDetailsResponse,
+    PrivateSchoolResultsResponse,
+    ScholarshipResponse,
+    ScholarshipSchoolEntry,
     SchoolDetailResponse,
     SchoolResponse,
+    SiblingDiscountResponse,
     TrueAnnualCostResponse,
+    UpcomingOpenDayEntry,
+    UpcomingOpenDaysResponse,
 )
 
 router = APIRouter(tags=["private-schools"])
@@ -31,6 +44,12 @@ def _to_private_filters(params: PrivateSchoolFilterParams) -> SchoolFilters:
         gender=params.gender,
         is_private=True,
         max_fee=params.max_fee,
+        min_fee=params.min_fee,
+        has_transport=params.has_transport,
+        has_bursaries=params.has_bursaries,
+        has_scholarships=params.has_scholarships,
+        entry_point=params.entry_point,
+        search=params.search,
         limit=params.limit,
         offset=params.offset,
     )
@@ -63,14 +82,8 @@ async def compare_private_school_fees(
     entries = []
     for school in schools:
         details = school.private_details
-        termly_fees = [
-            d.termly_fee for d in details if d.termly_fee is not None
-        ]
-        transport_flags = [
-            d.provides_transport
-            for d in details
-            if d.provides_transport is not None
-        ]
+        termly_fees = [d.termly_fee for d in details if d.termly_fee is not None]
+        transport_flags = [d.provides_transport for d in details if d.provides_transport is not None]
 
         entries.append(
             FeeComparisonEntry(
@@ -80,22 +93,103 @@ async def compare_private_school_fees(
                 age_range_to=school.age_range_to,
                 gender_policy=school.gender_policy,
                 faith=school.faith,
-                fee_tiers=[
-                    PrivateSchoolDetailsResponse.model_validate(
-                        d, from_attributes=True
-                    )
-                    for d in details
-                ],
+                fee_tiers=[PrivateSchoolDetailsResponse.model_validate(d, from_attributes=True) for d in details],
                 min_termly_fee=min(termly_fees) if termly_fees else None,
                 max_termly_fee=max(termly_fees) if termly_fees else None,
-                provides_transport=(
-                    any(transport_flags) if transport_flags else None
-                ),
+                provides_transport=(any(transport_flags) if transport_flags else None),
                 has_bursaries=len(school.bursaries) > 0,
                 has_scholarships=len(school.scholarships) > 0,
             )
         )
     return FeeComparisonResponse(schools=entries)
+
+
+# ---------------------------------------------------------------------------
+# Discovery / aggregate endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/api/private-schools/upcoming-open-days",
+    response_model=UpcomingOpenDaysResponse,
+)
+async def list_upcoming_open_days(
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> UpcomingOpenDaysResponse:
+    """List all upcoming open days across all private schools, sorted by date."""
+    rows = await repo.get_upcoming_open_days()
+    entries = [
+        UpcomingOpenDayEntry(
+            school_id=school.id,
+            school_name=school.name,
+            event_date=open_day.event_date,
+            event_time=open_day.event_time,
+            event_type=open_day.event_type,
+            registration_required=open_day.registration_required,
+            booking_url=open_day.booking_url,
+            description=open_day.description,
+        )
+        for open_day, school in rows
+    ]
+    return UpcomingOpenDaysResponse(open_days=entries)
+
+
+@router.get(
+    "/api/private-schools/with-scholarships",
+    response_model=list[ScholarshipSchoolEntry],
+)
+async def list_private_schools_with_scholarships(
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[ScholarshipSchoolEntry]:
+    """List all private schools that offer scholarships, with scholarship details."""
+    schools = await repo.get_private_schools_with_scholarships()
+    entries = []
+    for school in schools:
+        termly_fees = [d.termly_fee for d in school.private_details if d.termly_fee is not None]
+        transport_flags = [d.provides_transport for d in school.private_details if d.provides_transport is not None]
+        entries.append(
+            ScholarshipSchoolEntry(
+                school_id=school.id,
+                school_name=school.name,
+                age_range_from=school.age_range_from,
+                age_range_to=school.age_range_to,
+                gender_policy=school.gender_policy,
+                min_termly_fee=min(termly_fees) if termly_fees else None,
+                max_termly_fee=max(termly_fees) if termly_fees else None,
+                provides_transport=any(transport_flags) if transport_flags else None,
+                scholarships=school.scholarships,
+            )
+        )
+    return entries
+
+
+@router.get(
+    "/api/private-schools/with-bursaries",
+    response_model=list[BursarySchoolEntry],
+)
+async def list_private_schools_with_bursaries(
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[BursarySchoolEntry]:
+    """List all private schools that offer bursaries, with bursary details."""
+    schools = await repo.get_private_schools_with_bursaries()
+    entries = []
+    for school in schools:
+        termly_fees = [d.termly_fee for d in school.private_details if d.termly_fee is not None]
+        transport_flags = [d.provides_transport for d in school.private_details if d.provides_transport is not None]
+        entries.append(
+            BursarySchoolEntry(
+                school_id=school.id,
+                school_name=school.name,
+                age_range_from=school.age_range_from,
+                age_range_to=school.age_range_to,
+                gender_policy=school.gender_policy,
+                min_termly_fee=min(termly_fees) if termly_fees else None,
+                max_termly_fee=max(termly_fees) if termly_fees else None,
+                provides_transport=any(transport_flags) if transport_flags else None,
+                bursaries=school.bursaries,
+            )
+        )
+    return entries
 
 
 @router.get("/api/private-schools/{school_id}", response_model=SchoolDetailResponse)
@@ -120,6 +214,10 @@ async def get_private_school(
     entry_assessments = await repo.get_entry_assessments_for_school(school_id)
     open_days = await repo.get_open_days_for_school(school_id)
     sibling_discounts = await repo.get_sibling_discounts_for_school(school_id)
+    curricula = await repo.get_curricula_for_school(school_id)
+    facilities = await repo.get_facilities_for_school(school_id)
+    isi_inspections = await repo.get_isi_inspections_for_school(school_id)
+    private_results = await repo.get_private_results_for_school(school_id)
 
     base = SchoolResponse.model_validate(school, from_attributes=True)
     return SchoolDetailResponse(
@@ -134,7 +232,169 @@ async def get_private_school(
         entry_assessments=entry_assessments,
         open_days=open_days,
         sibling_discounts=sibling_discounts,
+        curricula=curricula,
+        facilities=facilities,
+        isi_inspections=isi_inspections,
+        private_results=private_results,
     )
+
+
+# ---------------------------------------------------------------------------
+# Sub-resource endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/api/private-schools/{school_id}/fees",
+    response_model=list[PrivateSchoolDetailsResponse],
+)
+async def get_private_school_fees(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[PrivateSchoolDetailsResponse]:
+    """Get fee tiers for a private school (one per age group)."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None or not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+    return await repo.get_private_school_details(school_id)
+
+
+@router.get(
+    "/api/private-schools/{school_id}/bursaries",
+    response_model=list[BursaryResponse],
+)
+async def get_private_school_bursaries(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[BursaryResponse]:
+    """Get bursary (means-tested financial aid) information for a private school."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None or not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+    return await repo.get_bursaries_for_school(school_id)
+
+
+@router.get(
+    "/api/private-schools/{school_id}/scholarships",
+    response_model=list[ScholarshipResponse],
+)
+async def get_private_school_scholarships(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[ScholarshipResponse]:
+    """Get scholarship (merit-based award) information for a private school."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None or not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+    return await repo.get_scholarships_for_school(school_id)
+
+
+@router.get(
+    "/api/private-schools/{school_id}/entry-assessments",
+    response_model=list[EntryAssessmentResponse],
+)
+async def get_private_school_entry_assessments(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[EntryAssessmentResponse]:
+    """Get entry assessment details (e.g. 4+, 7+, 11+) for a private school."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None or not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+    return await repo.get_entry_assessments_for_school(school_id)
+
+
+@router.get(
+    "/api/private-schools/{school_id}/open-days",
+    response_model=list[OpenDayResponse],
+)
+async def get_private_school_open_days(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[OpenDayResponse]:
+    """Get open day and taster day events for a private school."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None or not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+    return await repo.get_open_days_for_school(school_id)
+
+
+@router.get(
+    "/api/private-schools/{school_id}/sibling-discounts",
+    response_model=list[SiblingDiscountResponse],
+)
+async def get_private_school_sibling_discounts(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[SiblingDiscountResponse]:
+    """Get sibling discount information for a private school."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None or not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+    return await repo.get_sibling_discounts_for_school(school_id)
+
+
+@router.get(
+    "/api/private-schools/{school_id}/curriculum",
+    response_model=list[CurriculumResponse],
+)
+async def get_private_school_curriculum(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[CurriculumResponse]:
+    """Get curriculum and qualification offerings for a private school."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None or not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+    return await repo.get_curricula_for_school(school_id)
+
+
+@router.get(
+    "/api/private-schools/{school_id}/facilities",
+    response_model=list[FacilityResponse],
+)
+async def get_private_school_facilities(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[FacilityResponse]:
+    """Get facilities available at a private school."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None or not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+    return await repo.get_facilities_for_school(school_id)
+
+
+@router.get(
+    "/api/private-schools/{school_id}/inspections",
+    response_model=list[ISIInspectionResponse],
+)
+async def get_private_school_inspections(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[ISIInspectionResponse]:
+    """Get ISI inspection results for a private school.
+
+    Most UK independent schools are inspected by ISI rather than Ofsted.
+    """
+    school = await repo.get_school_by_id(school_id)
+    if school is None or not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+    return await repo.get_isi_inspections_for_school(school_id)
+
+
+@router.get(
+    "/api/private-schools/{school_id}/results",
+    response_model=list[PrivateSchoolResultsResponse],
+)
+async def get_private_school_results(
+    school_id: int,
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+) -> list[PrivateSchoolResultsResponse]:
+    """Get exam results and university destination data for a private school."""
+    school = await repo.get_school_by_id(school_id)
+    if school is None or not school.is_private:
+        raise HTTPException(status_code=404, detail="School not found")
+    return await repo.get_private_results_for_school(school_id)
 
 
 @router.get("/api/private-schools/{school_id}/true-cost", response_model=list[TrueAnnualCostResponse])

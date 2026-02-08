@@ -551,9 +551,6 @@ export default function PrivateSchoolDetail() {
         <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">
           {school.gender_policy}
         </span>
-        <span className="inline-flex items-center rounded-full bg-private-50 px-3 py-1 font-medium text-private-700 ring-1 ring-private-600/20">
-          Independent
-        </span>
         {school.faith && (
           <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">{school.faith}</span>
         )}

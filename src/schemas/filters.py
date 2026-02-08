@@ -33,5 +33,11 @@ class PrivateSchoolFilterParams(BaseModel):
     age: int | None = None
     gender: str | None = None
     max_fee: float | None = None
+    min_fee: float | None = None
+    has_transport: bool | None = None
+    has_bursaries: bool | None = None
+    has_scholarships: bool | None = None
+    entry_point: str | None = None  # e.g. "11+", "7+", "4+"
+    search: str | None = None  # name-based search
     limit: int | None = None
     offset: int | None = None

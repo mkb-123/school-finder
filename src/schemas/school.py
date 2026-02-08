@@ -187,6 +187,10 @@ class SchoolDetailResponse(SchoolResponse):
     entry_assessments: list[EntryAssessmentResponse] = []
     open_days: list[OpenDayResponse] = []
     sibling_discounts: list[SiblingDiscountResponse] = []
+    curricula: list[CurriculumResponse] = []
+    facilities: list[FacilityResponse] = []
+    isi_inspections: list[ISIInspectionResponse] = []
+    private_results: list[PrivateSchoolResultsResponse] = []
 
 
 class CompareResponse(BaseModel):
@@ -422,6 +426,68 @@ class SiblingDiscountResponse(BaseModel):
     source_url: str | None = None
 
 
+class CurriculumResponse(BaseModel):
+    """Curriculum and qualification offered by a private school."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    qualification_type: str
+    subjects_offered: str | None = None
+    key_stage: str | None = None
+    notes: str | None = None
+    source_url: str | None = None
+
+
+class FacilityResponse(BaseModel):
+    """Facility available at a private school."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    facility_type: str
+    name: str
+    description: str | None = None
+    notes: str | None = None
+    source_url: str | None = None
+
+
+class ISIInspectionResponse(BaseModel):
+    """ISI inspection result for a private school."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    inspection_date: datetime.date
+    overall_rating: str | None = None
+    achievement_rating: str | None = None
+    personal_development_rating: str | None = None
+    compliance_met: bool | None = None
+    inspection_type: str | None = None
+    report_url: str | None = None
+    key_findings: str | None = None
+    recommendations: str | None = None
+    is_current: bool = False
+
+
+class PrivateSchoolResultsResponse(BaseModel):
+    """Exam results or university destination data for a private school."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    result_type: str
+    year: str
+    metric_name: str
+    metric_value: str
+    source_url: str | None = None
+    notes: str | None = None
+
+
 class PrivateSchoolFullResponse(BaseModel):
     """Complete private school response with all extended data."""
 
@@ -432,6 +498,54 @@ class PrivateSchoolFullResponse(BaseModel):
     entry_assessments: list[EntryAssessmentResponse] = []
     open_days: list[OpenDayResponse] = []
     sibling_discounts: list[SiblingDiscountResponse] = []
+    curricula: list[CurriculumResponse] = []
+    facilities: list[FacilityResponse] = []
+    isi_inspections: list[ISIInspectionResponse] = []
+    private_results: list[PrivateSchoolResultsResponse] = []
+
+
+class UpcomingOpenDayEntry(BaseModel):
+    """An upcoming open day with school info attached."""
+
+    school_id: int
+    school_name: str
+    event_date: datetime.date
+    event_time: str | None = None
+    event_type: str
+    registration_required: bool = True
+    booking_url: str | None = None
+    description: str | None = None
+
+
+class UpcomingOpenDaysResponse(BaseModel):
+    """All upcoming open days across private schools."""
+
+    open_days: list[UpcomingOpenDayEntry]
+
+
+class PrivateSchoolSummaryEntry(BaseModel):
+    """Summary of a private school for discovery endpoints."""
+
+    school_id: int
+    school_name: str
+    age_range_from: int | None = None
+    age_range_to: int | None = None
+    gender_policy: str | None = None
+    min_termly_fee: float | None = None
+    max_termly_fee: float | None = None
+    provides_transport: bool | None = None
+
+
+class ScholarshipSchoolEntry(PrivateSchoolSummaryEntry):
+    """A private school with its scholarship offerings."""
+
+    scholarships: list[ScholarshipResponse] = []
+
+
+class BursarySchoolEntry(PrivateSchoolSummaryEntry):
+    """A private school with its bursary offerings."""
+
+    bursaries: list[BursaryResponse] = []
 
 
 class FeeComparisonEntry(BaseModel):
