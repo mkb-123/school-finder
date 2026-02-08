@@ -166,6 +166,19 @@ class SchoolResponse(BaseModel):
     prospectus_url: str | None = None
     ethos: str | None = None
 
+    # Additional GIAS fields
+    boarding_provision: str | None = None
+    number_of_pupils: int | None = None
+    number_of_boys: int | None = None
+    number_of_girls: int | None = None
+    school_capacity: int | None = None
+    admissions_policy: str | None = None
+    proprietor_name: str | None = None
+    has_nursery: bool | None = None
+    has_sixth_form: bool | None = None
+    phase_of_education: str | None = None
+    head_teacher: str | None = None
+
 
 class SchoolDetailResponse(SchoolResponse):
     """Full school detail including related data."""

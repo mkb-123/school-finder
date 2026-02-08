@@ -39,6 +39,20 @@ class School(Base):
     website: Mapped[str | None] = mapped_column(String(500), nullable=True)
     ethos: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
+    # Additional GIAS fields (public CSV data)
+    # "No boarders" / "Boarding school"
+    boarding_provision: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    number_of_pupils: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    number_of_boys: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    number_of_girls: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    school_capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    admissions_policy: Mapped[str | None] = mapped_column(String(50), nullable=True)  # "Selective" / "Non-selective"
+    proprietor_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    has_nursery: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    has_sixth_form: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    phase_of_education: Mapped[str | None] = mapped_column(String(50), nullable=True)  # "Primary" / "Secondary" / etc.
+    head_teacher: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # Relationships
     term_dates: Mapped[list[SchoolTermDate]] = relationship("SchoolTermDate", back_populates="school", lazy="select")
     clubs: Mapped[list[SchoolClub]] = relationship("SchoolClub", back_populates="school", lazy="select")

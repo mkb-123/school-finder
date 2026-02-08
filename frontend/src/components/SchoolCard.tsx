@@ -16,6 +16,12 @@ interface SchoolCardProps {
   postcode?: string;
   /** Fee range string for private schools, e.g. "3,500 - 6,200 per term" */
   feeRange?: string | null;
+  /** Whether the school offers boarding */
+  boarding?: boolean;
+  /** Whether the school is academically selective */
+  selective?: boolean;
+  /** Number of pupils on roll */
+  pupils?: number;
 }
 
 const RATING_STYLES: Record<string, { badge: string; dot: string }> = {
@@ -68,6 +74,9 @@ export default function SchoolCard({
   ageRange,
   postcode,
   feeRange,
+  boarding,
+  selective,
+  pupils,
 }: SchoolCardProps) {
   const ratingStyle = RATING_STYLES[ofstedRating] ?? DEFAULT_STYLE;
   const borderColor = isPrivate
@@ -150,13 +159,32 @@ export default function SchoolCard({
         </p>
       )}
 
-      {/* Fee range for private schools */}
-      {isPrivate && feeRange && (
-        <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-private-50/70 px-2.5 py-1 text-xs font-medium text-private-800">
-          <svg className="h-3.5 w-3.5 text-private-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {feeRange}
+      {/* Fee range and tags for private schools */}
+      {isPrivate && (feeRange || boarding || selective != null || pupils != null) && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {feeRange && (
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-private-50/70 px-2.5 py-1 text-xs font-medium text-private-800">
+              <svg className="h-3.5 w-3.5 text-private-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {feeRange}
+            </span>
+          )}
+          {boarding && (
+            <span className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-indigo-600/20">
+              Boarding
+            </span>
+          )}
+          {selective && (
+            <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-600/20">
+              Selective
+            </span>
+          )}
+          {pupils != null && (
+            <span className="inline-flex items-center rounded-md bg-stone-50 px-2 py-1 text-xs text-stone-500">
+              {pupils.toLocaleString()} pupils
+            </span>
+          )}
         </div>
       )}
 
