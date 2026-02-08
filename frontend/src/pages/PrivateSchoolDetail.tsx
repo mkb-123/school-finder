@@ -124,6 +124,19 @@ interface PrivateSchoolResponse extends School {
   entry_assessments?: EntryAssessmentData[];
   open_days?: OpenDayData[];
   sibling_discounts?: SiblingDiscountData[];
+
+  // Additional GIAS fields
+  boarding_provision?: string | null;
+  number_of_pupils?: number | null;
+  number_of_boys?: number | null;
+  number_of_girls?: number | null;
+  school_capacity?: number | null;
+  admissions_policy?: string | null;
+  proprietor_name?: string | null;
+  has_nursery?: boolean | null;
+  has_sixth_form?: boolean | null;
+  phase_of_education?: string | null;
+  head_teacher?: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -554,6 +567,21 @@ export default function PrivateSchoolDetail() {
         {school.faith && (
           <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">{school.faith}</span>
         )}
+        {school.boarding_provision === "Boarding school" && (
+          <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-indigo-700 ring-1 ring-indigo-600/20">Boarding</span>
+        )}
+        {school.admissions_policy === "Selective" && (
+          <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-amber-700 ring-1 ring-amber-600/20">Selective</span>
+        )}
+        {school.admissions_policy === "Non-selective" && (
+          <span className="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-green-700 ring-1 ring-green-600/20">Non-selective</span>
+        )}
+        {school.has_sixth_form && (
+          <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">Sixth Form</span>
+        )}
+        {school.has_nursery && (
+          <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">Nursery</span>
+        )}
         <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-400 text-xs">
           URN: {school.urn}
         </span>
@@ -692,6 +720,30 @@ export default function PrivateSchoolDetail() {
                       <dd className="font-medium text-stone-900">{school.faith}</dd>
                     </div>
                   )}
+                  {school.admissions_policy && (
+                    <div className="flex justify-between py-2.5">
+                      <dt className="text-stone-500">Admissions</dt>
+                      <dd className="font-medium text-stone-900">{school.admissions_policy}</dd>
+                    </div>
+                  )}
+                  {school.boarding_provision && (
+                    <div className="flex justify-between py-2.5">
+                      <dt className="text-stone-500">Boarding</dt>
+                      <dd className="font-medium text-stone-900">{school.boarding_provision}</dd>
+                    </div>
+                  )}
+                  {school.head_teacher && (
+                    <div className="flex justify-between py-2.5">
+                      <dt className="text-stone-500">Head</dt>
+                      <dd className="font-medium text-stone-900">{school.head_teacher}</dd>
+                    </div>
+                  )}
+                  {school.proprietor_name && (
+                    <div className="flex justify-between py-2.5">
+                      <dt className="text-stone-500">Proprietor</dt>
+                      <dd className="max-w-[60%] text-right font-medium text-stone-900">{school.proprietor_name}</dd>
+                    </div>
+                  )}
                   <div className="flex justify-between py-2.5">
                     <dt className="text-stone-500">Council</dt>
                     <dd className="font-medium text-stone-900">{school.council}</dd>
@@ -720,6 +772,56 @@ export default function PrivateSchoolDetail() {
                 </div>
               </section>
             </div>
+
+            {/* Pupils & Capacity (shown only if data available) */}
+            {(school.number_of_pupils != null || school.school_capacity != null) && (
+              <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+                <div className="flex items-center gap-2.5">
+                  <Users className="h-5 w-5 text-private-500" aria-hidden="true" />
+                  <h2 className="text-lg font-semibold text-stone-900">Pupils &amp; Capacity</h2>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  {school.number_of_pupils != null && (
+                    <div className="rounded-xl bg-private-50/50 border border-private-100 p-4 text-center">
+                      <p className="text-xs font-medium uppercase tracking-wider text-private-600">Pupils</p>
+                      <p className="mt-1 text-2xl font-bold text-private-900">{school.number_of_pupils.toLocaleString()}</p>
+                    </div>
+                  )}
+                  {school.school_capacity != null && (
+                    <div className="rounded-xl bg-stone-50 border border-stone-200 p-4 text-center">
+                      <p className="text-xs font-medium uppercase tracking-wider text-stone-600">Capacity</p>
+                      <p className="mt-1 text-2xl font-bold text-stone-900">{school.school_capacity.toLocaleString()}</p>
+                    </div>
+                  )}
+                  {school.number_of_boys != null && (
+                    <div className="rounded-xl bg-blue-50/50 border border-blue-100 p-4 text-center">
+                      <p className="text-xs font-medium uppercase tracking-wider text-blue-600">Boys</p>
+                      <p className="mt-1 text-2xl font-bold text-blue-900">{school.number_of_boys.toLocaleString()}</p>
+                    </div>
+                  )}
+                  {school.number_of_girls != null && (
+                    <div className="rounded-xl bg-pink-50/50 border border-pink-100 p-4 text-center">
+                      <p className="text-xs font-medium uppercase tracking-wider text-pink-600">Girls</p>
+                      <p className="mt-1 text-2xl font-bold text-pink-900">{school.number_of_girls.toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+                {school.number_of_pupils != null && school.school_capacity != null && school.school_capacity > 0 && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-xs text-stone-500 mb-1.5">
+                      <span>Occupancy</span>
+                      <span className="font-medium">{Math.round((school.number_of_pupils / school.school_capacity) * 100)}%</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-stone-200">
+                      <div
+                        className="h-2 rounded-full bg-private-500 transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.round((school.number_of_pupils / school.school_capacity) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
 
             {/* Holiday Schedule (shown in Overview since it's general info) */}
             <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">

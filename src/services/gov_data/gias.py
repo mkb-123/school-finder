@@ -48,6 +48,18 @@ COL_OFSTED_RATING = "OfstedRating (name)"
 COL_OFSTED_DATE = "OfstedLastInsp"
 COL_PHASE = "PhaseOfEducation (name)"
 COL_WEBSITE = "SchoolWebsite"
+COL_BOARDERS = "Boarders (name)"
+COL_NUM_PUPILS = "NumberOfPupils"
+COL_NUM_BOYS = "NumberOfBoys"
+COL_NUM_GIRLS = "NumberOfGirls"
+COL_CAPACITY = "SchoolCapacity"
+COL_ADMISSIONS_POLICY = "AdmissionsPolicy (name)"
+COL_PROPRIETOR = "PropsName"
+COL_NURSERY = "NurseryProvision (name)"
+COL_SIXTH_FORM = "OfficialSixthForm (name)"
+COL_HEAD_TITLE = "HeadTitle (name)"
+COL_HEAD_FIRST = "HeadFirstName"
+COL_HEAD_LAST = "HeadLastName"
 
 _PRIVATE_TYPE_GROUPS = frozenset({"Independent schools", "Independent special schools"})
 _OPEN_STATUSES = frozenset({"Open", "Open, but proposed to close"})
@@ -233,6 +245,41 @@ def _normalise_faith(raw: str) -> str | None:
     return raw
 
 
+def _normalise_boarding(raw: str) -> str | None:
+    raw = raw.strip()
+    if not raw or raw.lower() in {"not applicable", ""}:
+        return None
+    return raw
+
+
+def _normalise_yes_no(raw: str) -> bool | None:
+    raw = raw.strip().lower()
+    if not raw or raw in {"not applicable", ""}:
+        return None
+    if raw in {"has a nursery", "has boarders", "has a sixth form"}:
+        return True
+    if raw in {"no nursery classes", "does not have boarders", "does not have a sixth form"}:
+        return False
+    return None
+
+
+def _build_head_teacher(row: dict[str, str]) -> str | None:
+    title = row.get(COL_HEAD_TITLE, "").strip()
+    first = row.get(COL_HEAD_FIRST, "").strip()
+    last = row.get(COL_HEAD_LAST, "").strip()
+    if not last:
+        return None
+    parts = [title, first, last]
+    return " ".join(p for p in parts if p)
+
+
+def _normalise_admissions_policy(raw: str) -> str | None:
+    raw = raw.strip()
+    if not raw or raw.lower() in {"not applicable", ""}:
+        return None
+    return raw
+
+
 def _prospectus_url(website: str) -> str | None:
     """Derive a prospectus URL from a school website."""
     if not website or website.strip() == "":
@@ -318,6 +365,17 @@ def _row_to_school(row: dict[str, str]) -> School | None:
         prospectus_url=_prospectus_url(website),
         website=website if website else None,
         ethos="",  # Not available in GIAS - populated by ethos agent
+        boarding_provision=_normalise_boarding(row.get(COL_BOARDERS, "")),
+        number_of_pupils=_safe_int(row.get(COL_NUM_PUPILS, "")),
+        number_of_boys=_safe_int(row.get(COL_NUM_BOYS, "")),
+        number_of_girls=_safe_int(row.get(COL_NUM_GIRLS, "")),
+        school_capacity=_safe_int(row.get(COL_CAPACITY, "")),
+        admissions_policy=_normalise_admissions_policy(row.get(COL_ADMISSIONS_POLICY, "")),
+        proprietor_name=row.get(COL_PROPRIETOR, "").strip() or None,
+        has_nursery=_normalise_yes_no(row.get(COL_NURSERY, "")),
+        has_sixth_form=_normalise_yes_no(row.get(COL_SIXTH_FORM, "")),
+        phase_of_education=phase if phase else None,
+        head_teacher=_build_head_teacher(row),
     )
 
 
@@ -554,6 +612,18 @@ class GIASService(BaseGovDataService):
                         existing.ofsted_rating = school.ofsted_rating
                     if school.ofsted_date and not existing.ofsted_date:
                         existing.ofsted_date = school.ofsted_date
+                    # Update additional GIAS fields (always overwrite with latest)
+                    existing.boarding_provision = school.boarding_provision
+                    existing.number_of_pupils = school.number_of_pupils
+                    existing.number_of_boys = school.number_of_boys
+                    existing.number_of_girls = school.number_of_girls
+                    existing.school_capacity = school.school_capacity
+                    existing.admissions_policy = school.admissions_policy
+                    existing.proprietor_name = school.proprietor_name
+                    existing.has_nursery = school.has_nursery
+                    existing.has_sixth_form = school.has_sixth_form
+                    existing.phase_of_education = school.phase_of_education
+                    existing.head_teacher = school.head_teacher
                     updated_count += 1
 
             session.commit()

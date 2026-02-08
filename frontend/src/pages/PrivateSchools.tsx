@@ -14,6 +14,11 @@ interface PrivateDetailSummary {
 /** Extended school with optional private_details for fee previews. */
 interface PrivateSchoolListItem extends School {
   private_details?: PrivateDetailSummary[];
+  boarding_provision?: string | null;
+  admissions_policy?: string | null;
+  number_of_pupils?: number | null;
+  has_sixth_form?: boolean | null;
+  has_nursery?: boolean | null;
 }
 
 /** Format a currency amount as GBP with no decimals. */
@@ -69,6 +74,8 @@ export default function PrivateSchools() {
   const [ageRange, setAgeRange] = useState<string>("");
   const [gender, setGender] = useState<string>("");
   const [transportOnly, setTransportOnly] = useState(false);
+  const [boardingOnly, setBoardingOnly] = useState(false);
+  const [selectiveOnly, setSelectiveOnly] = useState<string>("");
 
   // Fetch all nearby private schools (not scoped to a single council)
   useEffect(() => {
@@ -81,13 +88,15 @@ export default function PrivateSchools() {
       .finally(() => setLoading(false));
   }, []);
 
-  const hasActiveFilters = ageRange !== "" || gender !== "" || transportOnly || maxFee !== "";
+  const hasActiveFilters = ageRange !== "" || gender !== "" || transportOnly || maxFee !== "" || boardingOnly || selectiveOnly !== "";
 
   const clearFilters = useCallback(() => {
     setAgeRange("");
     setGender("");
     setTransportOnly(false);
     setMaxFee("");
+    setBoardingOnly(false);
+    setSelectiveOnly("");
   }, []);
 
   // Client-side filtering
@@ -104,15 +113,22 @@ export default function PrivateSchools() {
       if (gender === "boys" && s.gender_policy !== "Boys" && s.gender_policy !== "Mixed") return false;
       if (gender === "girls" && s.gender_policy !== "Girls" && s.gender_policy !== "Mixed") return false;
 
+      // Boarding filter
+      if (boardingOnly && s.boarding_provision !== "Boarding school") return false;
+
+      // Admissions policy filter
+      if (selectiveOnly === "selective" && s.admissions_policy !== "Selective") return false;
+      if (selectiveOnly === "non-selective" && s.admissions_policy !== "Non-selective") return false;
+
       return true;
     });
-  }, [schools, ageRange, gender]);
+  }, [schools, ageRange, gender, boardingOnly, selectiveOnly]);
 
   const handleSchoolSelect = useCallback((id: number) => {
     setSelectedSchoolId((prev) => (prev === id ? null : id));
   }, []);
 
-  const activeFilterCount = [ageRange, gender, transportOnly ? "t" : "", maxFee].filter(Boolean).length;
+  const activeFilterCount = [ageRange, gender, transportOnly ? "t" : "", maxFee, boardingOnly ? "b" : "", selectiveOnly].filter(Boolean).length;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8" role="main">
@@ -287,6 +303,26 @@ export default function PrivateSchools() {
                 </select>
               </div>
 
+              {/* Admissions Policy */}
+              <div>
+                <label
+                  htmlFor="selective"
+                  className="block text-sm font-medium text-stone-700"
+                >
+                  Admissions
+                </label>
+                <select
+                  id="selective"
+                  value={selectiveOnly}
+                  onChange={(e) => setSelectiveOnly(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors duration-200 focus:border-private-500 focus:outline-none focus:ring-2 focus:ring-private-500/20"
+                >
+                  <option value="">Any</option>
+                  <option value="selective">Selective</option>
+                  <option value="non-selective">Non-selective</option>
+                </select>
+              </div>
+
               {/* Transport checkbox with proper touch target */}
               <label
                 htmlFor="transport"
@@ -301,6 +337,23 @@ export default function PrivateSchools() {
                 />
                 <span className="text-sm text-stone-700">
                   Provides transport
+                </span>
+              </label>
+
+              {/* Boarding checkbox */}
+              <label
+                htmlFor="boarding"
+                className="flex cursor-pointer items-center gap-3 rounded-lg p-2 -mx-2 transition-colors duration-200 hover:bg-stone-50"
+              >
+                <input
+                  id="boarding"
+                  type="checkbox"
+                  checked={boardingOnly}
+                  onChange={(e) => setBoardingOnly(e.target.checked)}
+                  className="h-5 w-5 rounded border-stone-300 text-private-600 focus:ring-2 focus:ring-private-500"
+                />
+                <span className="text-sm text-stone-700">
+                  Boarding schools only
                 </span>
               </label>
 
@@ -390,6 +443,9 @@ export default function PrivateSchools() {
                 ethos={s.ethos}
                 ageRange={`${s.age_range_from}\u2013${s.age_range_to}`}
                 feeRange={feeRangeLabel(s.private_details)}
+                boarding={s.boarding_provision === "Boarding school"}
+                selective={s.admissions_policy === "Selective"}
+                pupils={s.number_of_pupils ?? undefined}
               />
             </div>
           ))}
