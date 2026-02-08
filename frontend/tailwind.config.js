@@ -67,6 +67,24 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(6px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'tab-slide-in': {
+          '0%': { opacity: '0', transform: 'translateY(6px) scale(0.99)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        'tab-slide-left': {
+          '0%': { opacity: '0', transform: 'translateX(12px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'tab-slide-right': {
+          '0%': { opacity: '0', transform: 'translateX(-12px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'share-toast': {
+          '0%': { opacity: '0', transform: 'translateY(8px) scale(0.95)' },
+          '50%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+          '80%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+          '100%': { opacity: '0', transform: 'translateY(-4px) scale(0.98)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.3s ease-out',
@@ -74,6 +92,10 @@ export default {
         'slide-in-right': 'slide-in-right 0.3s ease-out',
         'scale-in': 'scale-in 0.2s ease-out',
         'count-up': 'count-up 0.25s ease-out',
+        'tab-slide-in': 'tab-slide-in 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        'tab-slide-left': 'tab-slide-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        'tab-slide-right': 'tab-slide-right 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        'share-toast': 'share-toast 2s cubic-bezier(0.4, 0, 0.2, 1) forwards',
       },
     },
   },

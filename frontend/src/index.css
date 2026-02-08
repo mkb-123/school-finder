@@ -79,6 +79,43 @@
     display: none;
   }
 
+  /* Thin styled scrollbar for tab overflow on desktop */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.stone.300') transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 9999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: theme('colors.stone.300');
+    border-radius: 9999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.stone.400');
+  }
+
+  /* Tab content slide animations */
+  .tab-panel-enter {
+    animation: tab-slide-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .tab-panel-enter-left {
+    animation: tab-slide-left 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .tab-panel-enter-right {
+    animation: tab-slide-right 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  /* Gradient left border for private school cards */
+  .border-l-gradient-private {
+    border-left: 4px solid transparent;
+    border-image: linear-gradient(to bottom, #a78bfa, #7c3aed) 1;
+  }
+
   /* Staggered animation delays for list items */
   .stagger-1 { animation-delay: 0.03s; }
   .stagger-2 { animation-delay: 0.06s; }
@@ -133,4 +170,36 @@
 .sticky-header-blur {
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
+
+/* ------------------------------------------------------------------ */
+/* Global scrollbar styling                                            */
+/* ------------------------------------------------------------------ */
+@media (min-width: 640px) {
+  /* Styled scrollbar for non-mobile browsers */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d6d3d1; /* stone-300 */
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a8a29e; /* stone-400 */
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Share toast notification                                             */
+/* ------------------------------------------------------------------ */
+.share-toast {
+  animation: share-toast 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }

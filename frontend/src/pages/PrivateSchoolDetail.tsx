@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   GraduationCap,
@@ -17,6 +17,8 @@ import {
   ClipboardCheck,
   Users,
   CalendarDays,
+  Share2,
+  Check,
 } from "lucide-react";
 import { get } from "../api/client";
 import Map, { type School } from "../components/Map";
@@ -309,6 +311,54 @@ export default function PrivateSchoolDetail() {
   const [school, setSchool] = useState<PrivateSchoolResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
+  const [tabDirection, setTabDirection] = useState<"left" | "right" | "none">("none");
+  const prevTabIndexRef = useRef(0);
+  const [shareToast, setShareToast] = useState(false);
+
+  /** Switch tab with directional awareness for animation. */
+  const switchTab = useCallback((newTab: Tab) => {
+    const allTabs = ALL_TABS as readonly string[];
+    const oldIndex = allTabs.indexOf(activeTab);
+    const newIndex = allTabs.indexOf(newTab);
+    if (newIndex > oldIndex) setTabDirection("left");
+    else if (newIndex < oldIndex) setTabDirection("right");
+    else setTabDirection("none");
+    prevTabIndexRef.current = newIndex;
+    setActiveTab(newTab);
+  }, [activeTab]);
+
+  /** Share school via Web Share API or copy link to clipboard. */
+  async function handleShare() {
+    const url = window.location.href;
+    const title = school?.name ? `${school.name} - School Finder` : "School Finder";
+    const text = school?.name
+      ? `Check out ${school.name} on School Finder`
+      : "Check out this school on School Finder";
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+      } catch {
+        // User cancelled the share dialog — do nothing
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareToast(true);
+        setTimeout(() => setShareToast(false), 2200);
+      } catch {
+        // Clipboard API not available — try fallback
+        const input = document.createElement("input");
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+        setShareToast(true);
+        setTimeout(() => setShareToast(false), 2200);
+      }
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -335,7 +385,7 @@ export default function PrivateSchoolDetail() {
       return;
     }
     e.preventDefault();
-    setActiveTab(tabs[nextIndex]);
+    switchTab(tabs[nextIndex]);
     const tabBtn = document.getElementById(`private-tab-${tabs[nextIndex]}`);
     tabBtn?.focus();
   }
@@ -446,9 +496,18 @@ export default function PrivateSchoolDetail() {
 
         {/* Action buttons */}
         <div className="flex flex-shrink-0 flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-sm font-medium text-stone-700 transition-all duration-200 hover:border-stone-300 hover:shadow-sm active:scale-[0.98] min-h-[44px] min-w-[44px]"
+            aria-label="Share this school"
+          >
+            <Share2 className="h-4 w-4 text-stone-500" aria-hidden="true" />
+            <span className="hidden sm:inline">Share</span>
+          </button>
           <Link
             to={`/compare?ids=${school.id}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-private-200 bg-private-50 px-3.5 py-2 text-sm font-medium text-private-700 transition-all duration-200 hover:bg-private-100 hover:border-private-300 active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-private-200 bg-private-50 px-3.5 py-2 text-sm font-medium text-private-700 transition-all duration-200 hover:bg-private-100 hover:border-private-300 active:scale-[0.98] min-h-[44px]"
           >
             <PlusCircle className="h-4 w-4" aria-hidden="true" />
             Add to comparison
@@ -458,7 +517,7 @@ export default function PrivateSchoolDetail() {
               href={school.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-sm font-medium text-stone-700 transition-all duration-200 hover:border-stone-300 hover:shadow-sm"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-sm font-medium text-stone-700 transition-all duration-200 hover:border-stone-300 hover:shadow-sm min-h-[44px]"
             >
               <Globe className="h-4 w-4 text-private-500" aria-hidden="true" />
               School website
@@ -487,23 +546,29 @@ export default function PrivateSchoolDetail() {
         </span>
       </div>
 
-      {/* Sticky fee summary banner */}
+      {/* Sticky fee summary banner — compact on mobile, expanded on desktop */}
       {feeMin != null && feeMax != null && (
-        <div className="sticky top-14 z-20 -mx-4 mt-5 border-y border-private-200 bg-gradient-to-r from-private-50 to-indigo-50 px-4 py-3 sticky-header-blur sm:static sm:mx-0 sm:mt-6 sm:rounded-xl sm:border sm:py-4 sm:px-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-private-600">Termly fees</p>
-              <p className="mt-0.5 text-lg font-bold text-private-900 sm:text-xl">
+        <div className="sticky top-14 z-20 -mx-4 mt-4 border-y border-private-200 bg-gradient-to-r from-private-50 to-indigo-50 px-3 py-2.5 sticky-header-blur sm:static sm:mx-0 sm:mt-6 sm:rounded-xl sm:border sm:py-4 sm:px-5">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-private-600 sm:text-xs">Termly fees</p>
+              <p className="mt-0.5 truncate text-base font-bold text-private-900 sm:text-xl">
                 {feeMin === feeMax
-                  ? `${formatFee(feeMin)} per term`
-                  : `${formatFee(feeMin)} \u2013 ${formatFee(feeMax)} per term`}
+                  ? `${formatFee(feeMin)} / term`
+                  : `${formatFee(feeMin)} \u2013 ${formatFee(feeMax)}`}
               </p>
+              {/* Show "per term" label on a separate line on mobile for space */}
+              {feeMin !== feeMax && (
+                <p className="text-[10px] text-private-600 sm:hidden">per term</p>
+              )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
               {feeIncreasePct != null && (
-                <div className="rounded-lg bg-white/70 px-3 py-1.5 text-right">
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-private-600">Est. increase</p>
-                  <p className="text-sm font-semibold text-private-900">~{feeIncreasePct}%/yr</p>
+                <div className="rounded-lg bg-white/70 px-2 py-1 text-right sm:px-3 sm:py-1.5">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-private-600 hidden sm:block">Est. increase</p>
+                  <p className="text-xs font-semibold text-private-900 sm:text-sm">
+                    <span className="sm:hidden">+</span>~{feeIncreasePct}%<span className="hidden sm:inline">/yr</span>
+                  </p>
                 </div>
               )}
             </div>
@@ -515,7 +580,7 @@ export default function PrivateSchoolDetail() {
       <div className="relative mt-6">
         <div className="border-b border-stone-200">
           <nav
-            className="-mb-px flex overflow-x-auto scrollbar-hide"
+            className="-mb-px flex overflow-x-auto scrollbar-hide sm:scrollbar-thin"
             role="tablist"
             aria-label="School information sections"
           >
@@ -527,7 +592,7 @@ export default function PrivateSchoolDetail() {
                 aria-selected={activeTab === tab}
                 aria-controls={`private-tabpanel-${tab}`}
                 tabIndex={activeTab === tab ? 0 : -1}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => switchTab(tab)}
                 onKeyDown={(e) => handleTabKeyDown(e, idx)}
                 className={`flex-shrink-0 whitespace-nowrap border-b-2 px-3.5 py-3 text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-private-500 sm:px-4 ${
                   activeTab === tab
@@ -546,7 +611,13 @@ export default function PrivateSchoolDetail() {
 
       {/* Tab content */}
       <div
-        className="mt-6 animate-fade-in"
+        className={`mt-6 ${
+          tabDirection === "left"
+            ? "animate-tab-slide-left"
+            : tabDirection === "right"
+              ? "animate-tab-slide-right"
+              : "animate-tab-slide-in"
+        }`}
         id={`private-tabpanel-${activeTab}`}
         role="tabpanel"
         aria-labelledby={`private-tab-${activeTab}`}
@@ -1267,6 +1338,20 @@ export default function PrivateSchoolDetail() {
           </div>
         )}
       </div>
+
+      {/* Share toast notification */}
+      {shareToast && (
+        <div
+          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 share-toast"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white shadow-lg">
+            <Check className="h-4 w-4 text-green-400" aria-hidden="true" />
+            Link copied to clipboard
+          </div>
+        </div>
+      )}
     </main>
   );
 }
