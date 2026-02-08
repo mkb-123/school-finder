@@ -9,6 +9,7 @@ import Compare from "./pages/Compare";
 import TermDates from "./pages/TermDates";
 import DecisionSupport from "./pages/DecisionSupport";
 import Journey from "./pages/Journey";
+import FeeComparison from "./pages/FeeComparison";
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/schools" element={<SchoolList />} />
           <Route path="/schools/:id" element={<SchoolDetail />} />
           <Route path="/private-schools" element={<PrivateSchools />} />
+          <Route path="/private-schools/fees" element={<FeeComparison />} />
           <Route path="/private-schools/:id" element={<PrivateSchoolDetail />} />
           <Route path="/compare" element={<Compare />} />
           <Route path="/term-dates" element={<TermDates />} />

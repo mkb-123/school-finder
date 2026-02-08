@@ -7,7 +7,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from src.db.base import SchoolFilters, SchoolRepository
 from src.db.factory import get_school_repository
 from src.schemas.filters import PrivateSchoolFilterParams
-from src.schemas.school import HiddenCostItem, SchoolDetailResponse, SchoolResponse, TrueAnnualCostResponse
+from src.schemas.school import (
+    FeeComparisonEntry,
+    FeeComparisonResponse,
+    HiddenCostItem,
+    PrivateSchoolDetailsResponse,
+    SchoolDetailResponse,
+    SchoolResponse,
+    TrueAnnualCostResponse,
+)
 
 router = APIRouter(tags=["private-schools"])
 
@@ -36,12 +44,64 @@ async def list_private_schools(
     return schools
 
 
+@router.get(
+    "/api/private-schools/compare/fees",
+    response_model=FeeComparisonResponse,
+)
+async def compare_private_school_fees(
+    repo: Annotated[SchoolRepository, Depends(get_school_repository)],
+    council: str | None = Query(None, description="Filter by council"),
+) -> FeeComparisonResponse:
+    """Compare fees across all private schools side by side.
+
+    Returns fee tiers, bursary/scholarship availability, and transport info
+    for each private school in the specified council.
+    """
+    schools = await repo.get_all_private_schools_with_fees(council=council)
+    entries = []
+    for school in schools:
+        details = school.private_details
+        termly_fees = [
+            d.termly_fee for d in details if d.termly_fee is not None
+        ]
+        transport_flags = [
+            d.provides_transport
+            for d in details
+            if d.provides_transport is not None
+        ]
+
+        entries.append(
+            FeeComparisonEntry(
+                school_id=school.id,
+                school_name=school.name,
+                age_range_from=school.age_range_from,
+                age_range_to=school.age_range_to,
+                gender_policy=school.gender_policy,
+                faith=school.faith,
+                fee_tiers=[
+                    PrivateSchoolDetailsResponse.model_validate(
+                        d, from_attributes=True
+                    )
+                    for d in details
+                ],
+                min_termly_fee=min(termly_fees) if termly_fees else None,
+                max_termly_fee=max(termly_fees) if termly_fees else None,
+                provides_transport=(
+                    any(transport_flags) if transport_flags else None
+                ),
+                has_bursaries=len(school.bursaries) > 0,
+                has_scholarships=len(school.scholarships) > 0,
+            )
+        )
+    return FeeComparisonResponse(schools=entries)
+
+
 @router.get("/api/private-schools/{school_id}", response_model=SchoolDetailResponse)
 async def get_private_school(
     school_id: int,
     repo: Annotated[SchoolRepository, Depends(get_school_repository)],
 ) -> SchoolDetailResponse:
-    """Get full details for a private school."""
+    """Get full details for a private school including bursaries, scholarships, etc."""
     school = await repo.get_school_by_id(school_id)
     if school is None:
         raise HTTPException(status_code=404, detail="School not found")
@@ -53,6 +113,11 @@ async def get_private_school(
     term_dates = await repo.get_term_dates_for_school(school_id)
     admissions = await repo.get_admissions_history(school_id)
     private_details = await repo.get_private_school_details(school_id)
+    bursaries = await repo.get_bursaries_for_school(school_id)
+    scholarships = await repo.get_scholarships_for_school(school_id)
+    entry_assessments = await repo.get_entry_assessments_for_school(school_id)
+    open_days = await repo.get_open_days_for_school(school_id)
+    sibling_discounts = await repo.get_sibling_discounts_for_school(school_id)
 
     base = SchoolResponse.model_validate(school, from_attributes=True)
     return SchoolDetailResponse(
@@ -62,6 +127,11 @@ async def get_private_school(
         term_dates=term_dates,
         admissions_history=admissions,
         private_details=private_details,
+        bursaries=bursaries,
+        scholarships=scholarships,
+        entry_assessments=entry_assessments,
+        open_days=open_days,
+        sibling_discounts=sibling_discounts,
     )
 
 

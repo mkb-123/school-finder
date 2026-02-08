@@ -182,6 +182,11 @@ class SchoolDetailResponse(SchoolResponse):
     uniform: list[UniformResponse] = []
     absence_policy: list[AbsencePolicyResponse] = []
     ofsted_trajectory: OfstedTrajectoryResponse | None = None
+    bursaries: list[BursaryResponse] = []
+    scholarships: list[ScholarshipResponse] = []
+    entry_assessments: list[EntryAssessmentResponse] = []
+    open_days: list[OpenDayResponse] = []
+    sibling_discounts: list[SiblingDiscountResponse] = []
 
 
 class CompareResponse(BaseModel):
@@ -330,6 +335,126 @@ class TrueAnnualCostResponse(BaseModel):
     total_with_optional: float = 0.0
 
     notes: str | None = None
+
+
+class BursaryResponse(BaseModel):
+    """Means-tested financial assistance offered by a private school."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    max_percentage: int | None = None
+    min_percentage: int | None = None
+    income_threshold: float | None = None
+    eligibility_notes: str | None = None
+    application_deadline: datetime.date | None = None
+    application_url: str | None = None
+    percentage_of_pupils: float | None = None
+    notes: str | None = None
+    source_url: str | None = None
+
+
+class ScholarshipResponse(BaseModel):
+    """Merit-based financial award offered by a private school."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    scholarship_type: str
+    value_description: str | None = None
+    value_percentage: int | None = None
+    entry_points: str | None = None
+    assessment_method: str | None = None
+    application_deadline: datetime.date | None = None
+    notes: str | None = None
+    source_url: str | None = None
+
+
+class EntryAssessmentResponse(BaseModel):
+    """Entry assessment details for a specific age entry point."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    entry_point: str
+    assessment_type: str | None = None
+    subjects_tested: str | None = None
+    registration_deadline: datetime.date | None = None
+    assessment_date: datetime.date | None = None
+    offer_date: datetime.date | None = None
+    registration_fee: float | None = None
+    notes: str | None = None
+    source_url: str | None = None
+
+
+class OpenDayResponse(BaseModel):
+    """Upcoming open day or taster day event."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    event_date: datetime.date
+    event_time: str | None = None
+    event_type: str
+    registration_required: bool = True
+    booking_url: str | None = None
+    description: str | None = None
+    source_url: str | None = None
+
+
+class SiblingDiscountResponse(BaseModel):
+    """Sibling fee discount details."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    school_id: int
+    second_child_percent: float | None = None
+    third_child_percent: float | None = None
+    fourth_child_percent: float | None = None
+    conditions: str | None = None
+    stacks_with_bursary: bool | None = None
+    notes: str | None = None
+    source_url: str | None = None
+
+
+class PrivateSchoolFullResponse(BaseModel):
+    """Complete private school response with all extended data."""
+
+    school: SchoolResponse
+    private_details: list[PrivateSchoolDetailsResponse] = []
+    bursaries: list[BursaryResponse] = []
+    scholarships: list[ScholarshipResponse] = []
+    entry_assessments: list[EntryAssessmentResponse] = []
+    open_days: list[OpenDayResponse] = []
+    sibling_discounts: list[SiblingDiscountResponse] = []
+
+
+class FeeComparisonEntry(BaseModel):
+    """Fee comparison entry for a single school."""
+
+    school_id: int
+    school_name: str
+    age_range_from: int | None = None
+    age_range_to: int | None = None
+    gender_policy: str | None = None
+    faith: str | None = None
+    fee_tiers: list[PrivateSchoolDetailsResponse] = []
+    min_termly_fee: float | None = None
+    max_termly_fee: float | None = None
+    provides_transport: bool | None = None
+    has_bursaries: bool = False
+    has_scholarships: bool = False
+
+
+class FeeComparisonResponse(BaseModel):
+    """Side-by-side fee comparison across multiple private schools."""
+
+    schools: list[FeeComparisonEntry]
 
 
 class AbsencePolicyResponse(BaseModel):

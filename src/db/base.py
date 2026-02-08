@@ -6,17 +6,22 @@ from dataclasses import dataclass, field
 from src.db.models import (
     AdmissionsCriteria,
     AdmissionsHistory,
+    Bursary,
     BusRoute,
     BusStop,
+    EntryAssessment,
     HolidayClub,
+    OpenDay,
     ParkingRating,
     PrivateSchoolDetails,
+    Scholarship,
     School,
     SchoolClassSize,
     SchoolClub,
     SchoolPerformance,
     SchoolTermDate,
     SchoolUniform,
+    SiblingDiscount,
 )
 
 
@@ -175,4 +180,38 @@ class SchoolRepository(ABC):
 
         Returns list of tuples: (BusStop, BusRoute, School, distance_km).
         """
+        ...
+
+    # ------------------------------------------------------------------
+    # Private school extended data
+    # ------------------------------------------------------------------
+
+    @abstractmethod
+    async def get_bursaries_for_school(self, school_id: int) -> list[Bursary]:
+        """Return bursary information for a private school."""
+        ...
+
+    @abstractmethod
+    async def get_scholarships_for_school(self, school_id: int) -> list[Scholarship]:
+        """Return scholarship information for a private school."""
+        ...
+
+    @abstractmethod
+    async def get_entry_assessments_for_school(self, school_id: int) -> list[EntryAssessment]:
+        """Return entry assessment details for a private school."""
+        ...
+
+    @abstractmethod
+    async def get_open_days_for_school(self, school_id: int) -> list[OpenDay]:
+        """Return upcoming open day events for a school."""
+        ...
+
+    @abstractmethod
+    async def get_sibling_discounts_for_school(self, school_id: int) -> list[SiblingDiscount]:
+        """Return sibling discount information for a private school."""
+        ...
+
+    @abstractmethod
+    async def get_all_private_schools_with_fees(self, council: str | None = None) -> list[School]:
+        """Return all private schools with their fee details eagerly loaded."""
         ...
